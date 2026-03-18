@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import styles from './layout.module.css'
 
 const NAV_ITEMS = [
@@ -42,14 +43,40 @@ function NavIcon({ name, className }: { name: string; className?: string }) {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const supabase = createClient()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [businessName, setBusinessName] = useState('Your Business')
+  const [slug, setSlug] = useState('')
+  const [planLabel, setPlanLabel] = useState('Loading...')
 
-  // TODO: Replace with real user data from Supabase
-  const businessName = 'Your Business'
+  useEffect(() => {
+    async function loadProfile() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data } = await supabase
+        .from('profiles')
+        .select('company_name, slug, subscription_status')
+        .eq('id', user.id)
+        .single()
+      if (data) {
+        setBusinessName(data.company_name || 'Your Business')
+        setSlug(data.slug || '')
+        const status = data.subscription_status
+        setPlanLabel(
+          status === 'active' ? 'Pro' :
+          status === 'trialing' ? 'Pro · Trial' :
+          status === 'past_due' ? 'Past Due' :
+          status === 'canceled' ? 'Canceled' : 'Free'
+        )
+      }
+    }
+    loadProfile()
+  }, [supabase])
 
   const copyLink = () => {
-    navigator.clipboard.writeText(`${window.location.origin}/book/your-slug`)
+    const link = slug ? `${window.location.origin}/${slug}` : ''
+    if (link) navigator.clipboard.writeText(link)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -87,7 +114,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
           <div style={{ overflow: 'hidden' }}>
             <p className={styles.userName}>{businessName}</p>
-            <p className={styles.userPlan}>Pro · Trial Active</p>
+            <p className={styles.userPlan}>{planLabel}</p>
           </div>
         </div>
 
