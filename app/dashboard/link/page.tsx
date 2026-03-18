@@ -1,10 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import styles from './page.module.css'
-
-// TODO: Replace with real profile data from Supabase
-const MOCK_SLUG = 'carlos-detail-co'
 
 function LinkSvg({ className }: { className?: string }) {
   return (
@@ -111,9 +109,23 @@ const INFO_CARDS = [
 ]
 
 export default function MyLinkPage() {
+  const supabase = createClient()
   const [copied, setCopied] = useState(false)
+  const [slug, setSlug] = useState('')
+  const [loading, setLoading] = useState(true)
 
-  const profileUrl = `glossio.app/${MOCK_SLUG}`
+  useEffect(() => {
+    async function load() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { setLoading(false); return }
+      const { data } = await supabase.from('profiles').select('slug').eq('id', user.id).single()
+      if (data?.slug) setSlug(data.slug)
+      setLoading(false)
+    }
+    load()
+  }, [supabase])
+
+  const profileUrl = slug ? `glossio.org/${slug}` : 'glossio.org/your-slug'
 
   const handleCopy = async () => {
     try {
@@ -134,7 +146,7 @@ export default function MyLinkPage() {
   }
 
   const handlePreview = () => {
-    window.open(`/${MOCK_SLUG}`, '_blank')
+    if (slug) window.open(`/${slug}`, '_blank')
   }
 
   return (
