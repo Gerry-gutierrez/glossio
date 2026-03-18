@@ -36,7 +36,24 @@
       "Bash(cmd //c \"gh --version\")",
       "Bash(cmd //c \"gh auth status\")",
       "Bash(export PATH=\"$PATH:/c/Program Files/GitHub CLI\")",
-      "Bash(gh auth:*)"
+      "Bash(gh auth:*)",
+      "Skill(setup-browser-cookies)",
+      "Skill(setup-browser-cookies:*)",
+      "Bash(B=~/.claude/skills/gstack/browse/dist/browse)",
+      "Bash($B cookie-import-browser:*)",
+      "Bash($B cookies:*)",
+      "Skill(browse)",
+      "Skill(browse:*)",
+      "Skill(plan-ceo-review)",
+      "Skill(plan-ceo-review:*)",
+      "Skill(plan-eng-review)",
+      "Skill(plan-eng-review:*)",
+      "Skill(plan-design-review)",
+      "Skill(plan-design-review:*)",
+      "Skill(design-consultation)",
+      "Skill(design-consultation:*)",
+      "Skill(qa)",
+      "Skill(qa:*)"
     ]
   }
 }
