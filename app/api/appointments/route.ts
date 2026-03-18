@@ -102,6 +102,24 @@ export async function POST(request: Request) {
       clientId = newClient.id
     }
 
+    // Check for duplicate booking (same client, same service, same date)
+    const { data: existingAppt } = await supabaseAdmin
+      .from('appointments')
+      .select('id')
+      .eq('client_id', clientId)
+      .eq('service_id', serviceId)
+      .eq('scheduled_date', scheduledDate)
+      .eq('profile_id', profileId)
+      .in('status', ['pending', 'confirmed'])
+      .single()
+
+    if (existingAppt) {
+      return NextResponse.json(
+        { error: 'You already have a booking for this service on this date. Check your text/email for confirmation.' },
+        { status: 409 }
+      )
+    }
+
     // Create appointment
     const { data: appointment, error: appointmentError } = await supabaseAdmin
       .from('appointments')
