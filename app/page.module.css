@@ -30,6 +30,27 @@
   color: var(--text);
 }
 
+.navActions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.navLogin {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 16px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s;
+}
+
+.navLogin:hover {
+  color: var(--text);
+}
+
 .navCta {
   background: var(--primary);
   border-radius: var(--radius-sm);
@@ -37,6 +58,9 @@
   font-size: 13px;
   font-weight: 700;
   padding: 10px 22px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
   transition: opacity 0.2s;
 }
 
@@ -530,6 +554,10 @@
 
   .navLinks {
     display: none;
+  }
+
+  .navActions {
+    gap: 10px;
   }
 
   .hero {
