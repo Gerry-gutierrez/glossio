@@ -1,0 +1,538 @@
+/* ─── Public Booking Profile ───────────────────────────────────────────────── */
+
+/* Top bar */
+.topBar {
+  background: rgba(10, 10, 15, 0.97);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.logo {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.verifiedBadge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.verifiedDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+}
+
+.verifiedText {
+  font-size: 11px;
+  color: var(--text-faint);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* Container */
+.container {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 0 0 80px;
+}
+
+/* Hero */
+.hero {
+  min-height: calc(100vh - 53px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px 28px;
+  text-align: center;
+  position: relative;
+}
+
+.heroGlow {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 280px;
+  height: 280px;
+  background: radial-gradient(circle, rgba(0, 194, 255, 0.05), transparent 70%);
+  pointer-events: none;
+}
+
+.profilePic {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  margin-bottom: 18px;
+  box-shadow: 0 0 0 4px var(--bg), 0 0 0 7px rgba(0, 194, 255, 0.27), 0 0 40px rgba(0, 194, 255, 0.1);
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  color: #fff;
+  font-weight: 700;
+}
+
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.profileName {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.proBadge {
+  background: rgba(0, 194, 255, 0.13);
+  border: 1px solid rgba(0, 194, 255, 0.27);
+  border-radius: 20px;
+  font-size: 10px;
+  color: var(--primary);
+  font-weight: 700;
+  padding: 2px 8px;
+  letter-spacing: 0.1em;
+}
+
+.tagline {
+  margin: 0 0 18px;
+  font-size: 14px;
+  color: #777;
+}
+
+/* Stats pill */
+.statsPill {
+  display: flex;
+  gap: 0;
+  margin-bottom: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.statsItem {
+  text-align: center;
+  padding: 12px 22px;
+}
+
+.statsItemBorder {
+  border-right: 1px solid var(--border);
+}
+
+.statsValue {
+  margin: 0 0 2px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.statsLabel {
+  margin: 0;
+  font-size: 10px;
+  color: var(--text-faint);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Book Button */
+.bookBtn {
+  width: 100%;
+  background: var(--primary);
+  border: none;
+  border-radius: 16px;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 700;
+  padding: 20px;
+  min-height: 44px;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  box-shadow: 0 6px 40px rgba(0, 194, 255, 0.27);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: opacity 0.15s;
+}
+
+.bookBtn:hover {
+  opacity: 0.92;
+}
+
+.bookSub {
+  margin: 0 0 28px;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+/* Scroll hint */
+.scrollHint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.35;
+}
+
+.scrollHintText {
+  margin: 0;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+/* Section Divider */
+.sectionDivider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 24px;
+  margin-bottom: 20px;
+}
+
+.dividerLine {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.dividerText {
+  font-size: 10px;
+  color: #444;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+}
+
+/* Photo Grid */
+.photoSection {
+  padding: 0 24px;
+  margin-bottom: 32px;
+}
+
+.photoGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.photoCard {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  transition: border-color 0.15s;
+}
+
+.photoCard:hover {
+  border-color: var(--border-light);
+}
+
+.photoOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.015), transparent 60%);
+  pointer-events: none;
+}
+
+.photoPlaceholder {
+  font-size: 30px;
+}
+
+.photoLabel {
+  font-size: 9px;
+  color: var(--text-faint);
+  text-align: center;
+  padding: 0 6px;
+}
+
+.photoHint {
+  text-align: center;
+  margin: 14px 0 0;
+  font-size: 11px;
+  color: #444;
+}
+
+/* Bio */
+.bioBox {
+  margin: 0 24px 28px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 22px 24px;
+}
+
+.bioLabel {
+  margin: 0 0 10px;
+  font-size: 10px;
+  color: var(--text-faint);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.bioText {
+  margin: 0;
+  font-size: 14px;
+  color: #C8C4BC;
+  line-height: 1.8;
+}
+
+/* Bottom CTA */
+.bottomCta {
+  padding: 0 24px;
+}
+
+.bottomBookBtn {
+  width: 100%;
+  background: var(--primary);
+  border: none;
+  border-radius: 14px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 16px;
+  min-height: 44px;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  box-shadow: 0 4px 32px rgba(0, 194, 255, 0.13);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: opacity 0.15s;
+}
+
+.bottomBookBtn:hover {
+  opacity: 0.92;
+}
+
+.poweredBy {
+  text-align: center;
+  margin: 0;
+  font-size: 11px;
+  color: #444;
+}
+
+.poweredByBrand {
+  color: var(--primary);
+}
+
+/* ── Photo Expand Modal ─────────────────────────────────────────────────── */
+.photoModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.93);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 24px;
+}
+
+.photoModalContent {
+  border: 1px solid var(--border-light);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 400px;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background-size: cover;
+  background-position: center;
+}
+
+.photoModalPlaceholder {
+  font-size: 72px;
+}
+
+.photoModalLabel {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.photoModalHint {
+  margin: 0;
+  font-size: 11px;
+  color: #444;
+}
+
+/* ── Services Bottom Sheet ──────────────────────────────────────────────── */
+.sheetOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.88);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 100;
+}
+
+.sheet {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-width: 520px;
+  padding: 32px 28px 48px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.sheetHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.sheetTitle {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.sheetCloseBtn {
+  background: var(--bg-hover);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 18px;
+  width: 36px;
+  height: 36px;
+  min-height: 44px;
+  min-width: 44px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sheetSub {
+  margin: 0 0 24px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.servicesList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.serviceItem {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.serviceItem:hover {
+  border-color: var(--border-light);
+}
+
+.serviceItemIcon {
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.serviceItemInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.serviceItemName {
+  margin: 0 0 3px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.serviceItemDesc {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.serviceItemPrice {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.sheetInfo {
+  background: rgba(0, 194, 255, 0.03);
+  border: 1px solid rgba(0, 194, 255, 0.1);
+  border-radius: 10px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.sheetInfoText {
+  margin: 0;
+  font-size: 12px;
+  color: var(--primary);
+  line-height: 1.6;
+}
+
+/* ─── Responsive ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  .profileName {
+    font-size: 22px;
+  }
+
+  .statsItem {
+    padding: 10px 14px;
+  }
+
+  .sheet {
+    padding: 24px 20px 40px;
+  }
+}

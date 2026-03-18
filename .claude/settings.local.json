@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(unzip -l files.zip)",
+      "Bash(unzip -o files.zip -d mockups/)",
+      "Bash(npx create-next-app@latest . --typescript --app --no-src-dir --import-alias \"@/*\" --no-tailwind --yes)",
+      "Bash(cmd.exe /c \"node --version && npm --version && npx --version\")",
+      "Bash(cmd.exe /c \"where node & where npm & where npx\")",
+      "Bash(cmd.exe /c \"dir C:\\\\Windows\\\\System32\\\\node.exe 2>nul & dir C:\\\\nodejs 2>nul & dir C:\\\\nvm 2>nul & echo PATH=%PATH%\")",
+      "Bash(powershell.exe -Command \"Get-Command node,npm,npx,bun,pnpm -ErrorAction SilentlyContinue | Select-Object Name,Source\")",
+      "Bash(powershell.exe \"Get-Command node -ErrorAction SilentlyContinue; Get-Command bun -ErrorAction SilentlyContinue; Get-Command pnpm -ErrorAction SilentlyContinue; ls $env:APPDATA\\\\npm 2>$null; ls $env:LOCALAPPDATA\\\\Microsoft\\\\WindowsApps 2>$null | Select Name | head\")",
+      "Bash(powershell.exe \"Get-Command node -ErrorAction SilentlyContinue\")",
+      "Bash(powershell.exe \"Get-Command bun -ErrorAction SilentlyContinue\")",
+      "Bash(powershell.exe \"Get-Command pnpm -ErrorAction SilentlyContinue\")",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(git clone:*)",
+      "Bash(powershell -c \"irm bun.sh/install.ps1 | iex\")",
+      "Bash(export PATH=\"$HOME/.bun/bin:$PATH\")",
+      "Bash(bash ./setup)",
+      "Bash(bunx playwright:*)",
+      "Bash(npm install:*)",
+      "Bash(npx next:*)",
+      "Bash(find /c/Users/Gerar/Desktop/gloss-io -name *.tsx -path */[*)",
+      "Bash(for f:*)",
+      "Bash(do echo:*)",
+      "Read(//c/Users/Gerar/Desktop/gloss-io/**)",
+      "Bash(done)",
+      "Bash(npx tsc:*)",
+      "Bash(node -e \"console.log\\(require\\(''stripe/package.json''\\).version\\)\")",
+      "Bash(gh repo:*)",
+      "Bash(where gh:*)",
+      "Bash(git --version)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" --version)",
+      "Bash(\"/c/Program Files \\(x86\\)/GitHub CLI/gh.exe\" --version)",
+      "Bash(cmd //c \"gh --version\")",
+      "Bash(cmd //c \"gh auth status\")",
+      "Bash(export PATH=\"$PATH:/c/Program Files/GitHub CLI\")",
+      "Bash(gh auth:*)"
+    ]
+  }
+}

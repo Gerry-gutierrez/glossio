@@ -1,0 +1,229 @@
+/* ─── My Link Page ─────────────────────────────────────────────────────────── */
+
+.header {
+  margin-bottom: 32px;
+}
+
+.headerLabel {
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  margin: 0 0 6px;
+}
+
+.headerTitle {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
+}
+
+/* Link Card */
+.linkCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 40px;
+  max-width: 600px;
+  margin-bottom: 28px;
+}
+
+.linkCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.linkIconBox {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: rgba(0, 194, 255, 0.08);
+  border: 1px solid rgba(0, 194, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.linkCardTitle {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.linkCardSub {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+/* Link URL display */
+.linkDisplay {
+  background: var(--bg);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.linkUrl {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.linkUrlText {
+  font-size: 14px;
+  color: var(--primary);
+  font-family: monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.copyBtn {
+  background: var(--primary);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 9px 18px;
+  min-height: 44px;
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+
+.copyBtn:hover {
+  opacity: 0.9;
+}
+
+.copyBtnCopied {
+  background: rgba(0, 229, 160, 0.1);
+  border: 1px solid rgba(0, 229, 160, 0.3);
+  color: var(--success);
+}
+
+/* Share Options */
+.shareGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+
+.shareCard {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px 14px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.shareCard:hover {
+  border-color: var(--border-light);
+}
+
+.shareIcon {
+  margin-bottom: 6px;
+}
+
+.shareLabel {
+  margin: 0 0 3px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.shareSub {
+  margin: 0;
+  font-size: 10px;
+  color: var(--text-faint);
+}
+
+/* Preview Button */
+.previewBtn {
+  width: 100%;
+  background: transparent;
+  border: 1px solid rgba(162, 89, 255, 0.25);
+  border-radius: var(--radius-md);
+  color: var(--secondary);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 14px;
+  min-height: 44px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 0.15s;
+}
+
+.previewBtn:hover {
+  background: rgba(162, 89, 255, 0.06);
+}
+
+/* Info Cards */
+.infoGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  max-width: 600px;
+}
+
+.infoCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 22px 24px;
+}
+
+.infoCardIcon {
+  margin-bottom: 10px;
+}
+
+.infoCardTitle {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.infoCardBody {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.7;
+}
+
+/* ─── Responsive ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .linkCard {
+    padding: 24px 20px;
+  }
+
+  .linkCardHeader {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .shareGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .infoGrid {
+    grid-template-columns: 1fr;
+  }
+}

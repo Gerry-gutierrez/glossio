@@ -1,0 +1,697 @@
+/* ─── Booking Flow ─────────────────────────────────────────────────────────── */
+
+/* Top bar */
+.topBar {
+  background: rgba(10, 10, 15, 0.97);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 13px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  height: 53px;
+  box-sizing: border-box;
+}
+
+.logo {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.backBtn {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 14px;
+  min-height: 44px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: border-color 0.15s;
+}
+
+.backBtn:hover {
+  border-color: var(--text-dim);
+}
+
+/* Container */
+.container {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 28px 24px 60px;
+}
+
+.containerWide {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 32px 24px 60px;
+}
+
+/* Page Header */
+.headerLabel {
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  margin: 0 0 6px;
+}
+
+.pageTitle {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 0 0 6px;
+}
+
+.pageSubtitle {
+  font-size: 14px;
+  color: var(--text-dim);
+  margin: 0 0 28px;
+}
+
+/* Service Selection */
+.serviceList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.serviceCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.serviceCardExpanded {
+  border-color: transparent;
+}
+
+.serviceRow {
+  padding: 15px 16px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  cursor: pointer;
+}
+
+.serviceIconBox {
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+
+.serviceInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.serviceName {
+  margin: 0 0 3px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.serviceDesc {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.serviceDescTruncated {
+  white-space: nowrap;
+}
+
+.servicePriceCol {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.servicePrice {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.expandArrow {
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+/* Expanded service */
+.serviceExpanded {
+  padding: 0 16px 18px;
+}
+
+.expandedLabel {
+  margin: 14px 0 8px;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+}
+
+.expandedDesc {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: #C8C4BC;
+  line-height: 1.8;
+}
+
+.priceBox {
+  border-radius: 10px;
+  padding: 11px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.priceBoxLabel {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.priceBoxValue {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.bookServiceBtn {
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  color: var(--bg);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 13px;
+  min-height: 44px;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  transition: opacity 0.15s;
+}
+
+.bookServiceBtn:hover {
+  opacity: 0.9;
+}
+
+/* Service Chip */
+.serviceChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 20px;
+  padding: 6px 14px;
+  margin-bottom: 24px;
+}
+
+.serviceChipName {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.serviceChipPrice {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Progress Bar */
+.progressBar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 32px;
+}
+
+.progressStep {
+  flex: 1;
+}
+
+.progressTrack {
+  height: 3px;
+  border-radius: 2px;
+  margin-bottom: 6px;
+  transition: all 0.3s;
+}
+
+.progressLabel {
+  margin: 0;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+/* Step Header */
+.stepTitle {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 6px;
+}
+
+.stepSub {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin: 0 0 28px;
+}
+
+/* Form Fields */
+.fieldRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+}
+
+.fieldGroup {
+  margin-bottom: 18px;
+}
+
+.fieldLabel {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 7px;
+}
+
+.fieldRequired {
+  color: var(--highlight);
+  margin-left: 3px;
+}
+
+.fieldInput {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 14px;
+  padding: 12px 14px;
+  outline: none;
+  font-family: var(--font-serif);
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.fieldInput:focus {
+  border-color: var(--primary);
+}
+
+.fieldInputError {
+  border-color: rgba(255, 107, 53, 0.2);
+}
+
+.fieldTextarea {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 13px;
+  padding: 12px 14px;
+  outline: none;
+  resize: vertical;
+  font-family: var(--font-serif);
+  box-sizing: border-box;
+  margin-bottom: 24px;
+}
+
+.fieldHint {
+  margin: 0 0 24px;
+  font-size: 11px;
+  color: var(--text-faint);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Vehicle Preview */
+.vehiclePreview {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.vehicleName {
+  margin: 0 0 2px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.vehicleColor {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+/* Date Picker */
+.dateScroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 12px;
+  margin-bottom: 22px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dateCard {
+  flex-shrink: 0;
+  width: 64px;
+  border-radius: 12px;
+  padding: 12px 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.dateCardDay {
+  margin: 0 0 4px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.dateCardNum {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.dateCardMonth {
+  margin: 3px 0 0;
+  font-size: 9px;
+}
+
+/* Time Grid */
+.timeGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 28px;
+}
+
+.timeSlot {
+  border-radius: 10px;
+  padding: 10px 6px;
+  text-align: center;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.15s;
+}
+
+/* How Heard Grid */
+.howHeardGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 22px;
+}
+
+.howHeardOption {
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+/* Booking Summary */
+.summaryCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 22px 24px;
+  margin-bottom: 22px;
+}
+
+.summaryLabel {
+  margin: 0 0 16px;
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #1A1A2E;
+}
+
+.summaryRowKey {
+  font-size: 11px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  flex-shrink: 0;
+}
+
+.summaryRowValue {
+  font-size: 13px;
+  color: #C8C4BC;
+  text-align: right;
+}
+
+.summaryTotal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 4px;
+}
+
+.summaryTotalLabel {
+  font-size: 11px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.summaryTotalValue {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* Next Step Button */
+.nextBtn {
+  width: 100%;
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 16px;
+  min-height: 44px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.nextBtnDisabled {
+  background: #1A1A2E;
+  color: #444;
+  cursor: not-allowed;
+}
+
+.nextBtnHint {
+  text-align: center;
+  margin: 10px 0 0;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+/* Confirm Button */
+.confirmBtn {
+  width: 100%;
+  background: var(--primary);
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 18px;
+  min-height: 44px;
+  cursor: pointer;
+  box-shadow: 0 6px 32px rgba(0, 194, 255, 0.2);
+  letter-spacing: 0.03em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: opacity 0.15s;
+}
+
+.confirmBtn:hover {
+  opacity: 0.92;
+}
+
+/* ── Confirmation Screen ────────────────────────────────────────────────── */
+.confirmationScreen {
+  min-height: 100vh;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.successIcon {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(0, 229, 160, 0.13), rgba(0, 194, 255, 0.13));
+  border: 2px solid rgba(0, 229, 160, 0.33);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  box-shadow: 0 0 40px rgba(0, 229, 160, 0.09);
+  color: var(--success);
+  font-size: 36px;
+  font-weight: 700;
+}
+
+.confirmTitle {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 0 0 10px;
+}
+
+.confirmSub {
+  font-size: 14px;
+  color: #777;
+  margin: 0 0 32px;
+  max-width: 340px;
+  line-height: 1.7;
+}
+
+.confirmCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 24px;
+  margin-bottom: 28px;
+  width: 100%;
+  max-width: 360px;
+  text-align: left;
+}
+
+.confirmName {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.confirmContact {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.confirmDivider {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+  margin-top: 16px;
+}
+
+.confirmService {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.confirmDate {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.confirmInfo {
+  background: rgba(0, 194, 255, 0.03);
+  border: 1px solid rgba(0, 194, 255, 0.1);
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-bottom: 28px;
+  max-width: 360px;
+  width: 100%;
+}
+
+.confirmInfoText {
+  margin: 0;
+  font-size: 12px;
+  color: var(--primary);
+  line-height: 1.7;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.backToProfileBtn {
+  background: transparent;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 12px 28px;
+  min-height: 44px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: border-color 0.15s;
+}
+
+.backToProfileBtn:hover {
+  border-color: var(--text-dim);
+}
+
+/* ─── Responsive ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  .fieldRow {
+    grid-template-columns: 1fr;
+  }
+
+  .timeGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .howHeardGrid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,180 @@
+/* ─── Settings Hub ─────────────────────────────────────────────────────────── */
+
+.header {
+  margin-bottom: 36px;
+}
+
+.headerLabel {
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  margin: 0 0 6px;
+}
+
+.headerTitle {
+  font-size: 30px;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+
+.headerSub {
+  font-size: 14px;
+  color: var(--text-faint);
+  margin: 0;
+}
+
+/* Quick Info Bar */
+.infoBar {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 24px;
+  display: flex;
+  gap: 32px;
+  margin-bottom: 36px;
+  flex-wrap: wrap;
+}
+
+.infoItem {
+  min-width: 0;
+}
+
+.infoLabel {
+  margin: 0 0 3px;
+  font-size: 10px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+
+.infoValue {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* Section Grid */
+.sectionGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.sectionCard {
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px 26px;
+  transition: all 0.2s;
+}
+
+.sectionCard:hover {
+  border-color: transparent;
+}
+
+.sectionCardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.sectionCardInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sectionIconBox {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sectionLabel {
+  margin: 0 0 3px;
+  font-size: 15px;
+  font-weight: 700;
+  transition: color 0.2s;
+}
+
+.sectionDesc {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-faint);
+  line-height: 1.5;
+}
+
+.sectionArrow {
+  font-size: 16px;
+  color: #333;
+  transition: color 0.2s;
+  margin-top: 2px;
+}
+
+.sectionCard:hover .sectionArrow {
+  color: var(--text-muted);
+}
+
+/* Sub-items */
+.sectionItems {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 14px;
+}
+
+.sectionItemChip {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 11px;
+  color: var(--text-faint);
+  padding: 5px 13px;
+  transition: all 0.2s;
+  cursor: default;
+}
+
+.sectionCard:hover .sectionItemChip {
+  font-weight: 700;
+}
+
+/* Bottom note */
+.bottomNote {
+  margin-top: 32px;
+  padding: 16px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bottomNoteText {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-faint);
+  line-height: 1.7;
+}
+
+.bottomNoteLink {
+  color: var(--primary);
+}
+
+/* ─── Responsive ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .sectionGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .infoBar {
+    gap: 20px;
+  }
+}

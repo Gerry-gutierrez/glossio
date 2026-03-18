@@ -1,0 +1,615 @@
+/* ─── Services Page ────────────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.headerLabel {
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  margin: 0 0 6px;
+}
+
+.headerTitle {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.headerActions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.savedMsg {
+  font-size: 12px;
+  color: var(--success);
+  font-weight: 700;
+}
+
+.addBtn {
+  background: var(--primary);
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 20px;
+  letter-spacing: 0.05em;
+  transition: opacity 0.2s;
+}
+
+.addBtn:hover {
+  opacity: 0.9;
+}
+
+/* Info banner */
+.infoBanner {
+  background: rgba(0, 194, 255, 0.04);
+  border: 1px solid rgba(0, 194, 255, 0.1);
+  border-radius: var(--radius-md);
+  padding: 12px 18px;
+  margin-bottom: 28px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.infoText {
+  margin: 0;
+  font-size: 13px;
+  color: var(--primary);
+  line-height: 1.5;
+}
+
+/* Stat row */
+.statRow {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.statCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  flex: 1;
+}
+
+.statValue {
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.statLabel {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* Service card */
+.serviceCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+/* Tabs row */
+.tabsRow {
+  background: var(--bg-sidebar);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+}
+
+.tabBtn {
+  border-bottom: 2px solid transparent;
+  font-size: 13px;
+  padding: 14px 18px;
+  white-space: nowrap;
+  transition: color 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.tabBtnActive {
+  background: var(--bg-card);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.tabBtnInactive {
+  color: var(--text-dim);
+}
+
+.tabBtnInactive:hover {
+  color: var(--text-muted);
+}
+
+/* Service content */
+.serviceContent {
+  padding: 32px 36px;
+}
+
+/* View mode */
+.serviceHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.serviceInfo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.serviceIcon {
+  width: 68px;
+  height: 68px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  flex-shrink: 0;
+}
+
+.serviceName {
+  margin: 0 0 6px;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.servicePrice {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.serviceActions {
+  display: flex;
+  gap: 8px;
+}
+
+.editBtn {
+  background: #1A1A2E;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  color: #C8C4BC;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 9px 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: border-color 0.15s;
+}
+
+.editBtn:hover {
+  border-color: var(--text-faint);
+}
+
+.removeBtn {
+  background: #1E0A0F;
+  border: 1px solid rgba(255, 51, 102, 0.2);
+  border-radius: var(--radius-sm);
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 9px 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: opacity 0.15s;
+}
+
+.removeBtn:hover {
+  opacity: 0.85;
+}
+
+/* Description box */
+.descBox {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 20px 24px;
+  margin-bottom: 24px;
+}
+
+.descLabel {
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  color: #444;
+  text-transform: uppercase;
+  margin: 0 0 10px;
+}
+
+.descText {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.8;
+  color: #C8C4BC;
+}
+
+/* Price display */
+.priceDivider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.priceLine {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.priceLabel {
+  font-size: 10px;
+  color: #444;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.priceDisplay {
+  text-align: center;
+  font-size: 42px;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+
+.priceNote {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-faint);
+  margin: 0;
+}
+
+/* Edit mode */
+.editLabel {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.editInput {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 14px;
+  padding: 10px 14px;
+  font-family: var(--font-serif);
+  margin-bottom: 16px;
+  transition: border-color 0.2s;
+}
+
+.editInput:focus {
+  border-color: var(--primary);
+}
+
+.editTextarea {
+  composes: editInput;
+  height: 100px;
+  resize: vertical;
+}
+
+.editRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 4px;
+}
+
+.iconPicker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.iconBtn {
+  font-size: 20px;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s;
+}
+
+.iconBtnSelected {
+  background: #1E1E2E;
+  border: 2px solid var(--primary);
+}
+
+.iconBtnDefault {
+  background: transparent;
+  border: 2px solid var(--border-light);
+}
+
+.colorPicker {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.colorBtn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  transition: transform 0.15s;
+}
+
+.colorBtn:hover {
+  transform: scale(1.1);
+}
+
+.btnRow {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.primaryBtn {
+  background: var(--primary);
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 11px 24px;
+  letter-spacing: 0.05em;
+  transition: opacity 0.2s;
+}
+
+.primaryBtn:hover {
+  opacity: 0.9;
+}
+
+.ghostBtn {
+  background: transparent;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 11px 24px;
+  transition: color 0.15s;
+}
+
+.ghostBtn:hover {
+  color: var(--text);
+}
+
+/* Empty state */
+.emptyState {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 80px 40px;
+  text-align: center;
+}
+
+.emptyIcon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: rgba(162, 89, 255, 0.1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.emptyTitle {
+  margin: 0 0 10px;
+  font-size: 20px;
+  color: var(--text-muted);
+}
+
+.emptySub {
+  margin: 0 0 24px;
+  font-size: 14px;
+  color: var(--text-faint);
+}
+
+/* Modal */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+}
+
+.modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 36px 40px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.modalTitle {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.closeBtn {
+  background: #1A1A2E;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 18px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s;
+}
+
+.closeBtn:hover {
+  color: var(--text);
+}
+
+/* Preview in modal */
+.preview {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  margin-bottom: 24px;
+}
+
+.previewLabel {
+  margin: 0 0 4px;
+  font-size: 10px;
+  color: var(--text-faint);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.previewRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.previewIcon {
+  font-size: 24px;
+}
+
+.previewName {
+  margin: 0 0 2px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.previewPrice {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Delete confirm */
+.deleteModal {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 36px 40px;
+  width: 380px;
+  text-align: center;
+}
+
+.deleteIcon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: rgba(255, 51, 102, 0.1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.deleteTitle {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.deleteSub {
+  margin: 0 0 28px;
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.deleteBtn {
+  background: var(--danger);
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 11px 24px;
+  transition: opacity 0.2s;
+}
+
+.deleteBtn:hover {
+  opacity: 0.85;
+}
+
+.deleteBtnRow {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+/* ─── Responsive ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .statRow {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .serviceContent {
+    padding: 24px 20px;
+  }
+
+  .serviceHeader {
+    flex-direction: column;
+  }
+
+  .editRow {
+    grid-template-columns: 1fr;
+  }
+
+  .tabsRow {
+    padding: 0 12px;
+  }
+
+  .modal {
+    padding: 24px;
+  }
+}

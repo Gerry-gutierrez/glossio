@@ -1,0 +1,386 @@
+/* ─── Dashboard Overview ───────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 36px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.headerLabel {
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  margin: 0 0 6px;
+}
+
+.headerTitle {
+  font-size: 30px;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.pendingBanner {
+  background: rgba(255, 214, 10, 0.08);
+  border: 1px solid rgba(255, 214, 10, 0.2);
+  border-radius: 10px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pendingText {
+  font-size: 13px;
+  color: var(--gold);
+  font-weight: 700;
+}
+
+/* Stat cards */
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-bottom: 36px;
+}
+
+.statCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px 26px;
+  position: relative;
+  overflow: hidden;
+}
+
+.statGlow {
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.statIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.statValue {
+  margin: 0 0 4px;
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.statLabel {
+  margin: 0 0 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.statSub {
+  margin: 0 0 4px;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.statDetail {
+  margin: 0;
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+/* Appointments card */
+.apptCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+  margin-bottom: 28px;
+}
+
+.apptHeader {
+  padding: 20px 28px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.apptTitle {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.apptSubtitle {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.viewToggle {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+  display: flex;
+  gap: 3px;
+}
+
+.viewBtn {
+  border-radius: 6px;
+  font-size: 12px;
+  padding: 6px 14px;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.viewBtnActive {
+  background: #1E1E2E;
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.viewBtnInactive {
+  background: transparent;
+  color: var(--text-faint);
+}
+
+.viewBtnInactive:hover {
+  color: var(--text-muted);
+}
+
+/* Status legend */
+.statusLegend {
+  padding: 12px 28px;
+  border-bottom: 1px solid #1A1A2A;
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.statusItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+/* Table */
+.apptTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.apptTable th {
+  padding: 12px 20px;
+  text-align: left;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: #444;
+  text-transform: uppercase;
+  font-weight: 600;
+  border-bottom: 1px solid #1A1A2A;
+}
+
+.apptTable td {
+  padding: 14px 20px;
+}
+
+.apptTable tbody tr {
+  border-bottom: 1px solid #141420;
+}
+
+.apptTable tbody tr:last-child {
+  border-bottom: none;
+}
+
+.clientName {
+  margin: 0 0 2px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.clientPhone {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.statusBadge {
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Action buttons */
+.actionBtn {
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 10px;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+
+.actionBtn:hover {
+  opacity: 0.85;
+}
+
+/* Quick Actions */
+.quickActions {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 24px 28px;
+}
+
+.quickTitle {
+  margin: 0 0 20px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.quickGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.quickCard {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  transition: border-color 0.15s;
+}
+
+.quickCard:hover {
+  border-color: var(--border-light);
+}
+
+.quickIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quickLabel {
+  font-size: 12px;
+  color: #C8C4BC;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* Empty state */
+.emptyState {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.emptyIcon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.emptyTitle {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  color: var(--text-muted);
+}
+
+.emptySub {
+  font-size: 13px;
+  color: var(--text-faint);
+  margin: 0 0 20px;
+}
+
+.emptyBtn {
+  background: var(--primary);
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 22px;
+  transition: opacity 0.2s;
+}
+
+.emptyBtn:hover {
+  opacity: 0.9;
+}
+
+/* ─── Responsive ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .statGrid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .quickGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .apptHeader {
+    padding: 16px 20px;
+  }
+
+  .statusLegend {
+    padding: 10px 20px;
+  }
+
+  .apptTable th,
+  .apptTable td {
+    padding: 10px 12px;
+  }
+
+  .headerTitle {
+    font-size: 24px;
+  }
+
+  .statValue {
+    font-size: 24px;
+  }
+}
