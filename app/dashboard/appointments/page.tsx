@@ -1,14 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import styles from './page.module.css'
-
-// TODO: Replace with Supabase data
-const INITIAL_APPOINTMENTS = [
-  { id: 1, clientName: 'Marcus Rivera', phone: '(239) 555-0181', email: 'marcus@email.com', vehicle: '2020 Toyota Camry (Black)', service: 'Full Detail', serviceIcon: '\u2728', serviceColor: '#A259FF', price: '159.99', date: 'Mon, Mar 16', time: '10:00 AM', status: 'confirmed' as const, notes: '', isNew: false },
-  { id: 2, clientName: 'Destiny Walton', phone: '(239) 555-0142', email: 'destiny@email.com', vehicle: '2022 Honda Civic (White)', service: 'Exterior Wash', serviceIcon: '\uD83D\uDCA7', serviceColor: '#00C2FF', price: '49.99', date: 'Tue, Mar 17', time: '2:00 PM', status: 'pending' as const, notes: 'Has a small scratch on the driver door.', isNew: true },
-  { id: 3, clientName: 'Trevor Lane', phone: '(239) 555-0199', email: 'trevor@email.com', vehicle: '2019 Ford F-150 (Silver)', service: 'Paint Correction', serviceIcon: '\uD83D\uDD27', serviceColor: '#FFD60A', price: '299.99', date: 'Wed, Mar 18', time: '9:00 AM', status: 'complete' as const, notes: '', isNew: false },
-]
+import { createClient } from '@/lib/supabase/client'
 
 interface Appointment {
   id: number; clientName: string; phone: string; email: string; vehicle: string
@@ -47,13 +41,52 @@ function TrendingSvg() {
 const fmtMoney = (n: number) => `$${n.toFixed(2)}`
 
 export default function AppointmentsPage() {
-  const [appointments, setAppointments] = useState<Appointment[]>(INITIAL_APPOINTMENTS as unknown as Appointment[])
+  const [appointments, setAppointments] = useState<Appointment[]>([])
   const [filter, setFilter] = useState('all')
 
-  const updateStatus = (id: number, status: 'pending' | 'confirmed' | 'complete' | 'cancelled') => {
+  const loadAppointments = useCallback(async () => {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { data } = await supabase
+      .from('appointments')
+      .select('id, scheduled_date, scheduled_time, status, price, notes, clients(first_name, last_name, phone, email, vehicle_info), services(name, icon, color)')
+      .eq('profile_id', user.id)
+      .order('scheduled_date', { ascending: true })
+
+    if (data && data.length > 0) {
+      setAppointments(data.map((a: Record<string, unknown>) => {
+        const client = a.clients as Record<string, string> | null
+        const service = a.services as Record<string, string> | null
+        return {
+          id: a.id as number,
+          clientName: client ? `${client.first_name} ${client.last_name || ''}`.trim() : 'Unknown',
+          phone: client?.phone || '',
+          email: client?.email || '',
+          vehicle: client?.vehicle_info || '',
+          service: service?.name || 'Service',
+          serviceIcon: service?.icon || '🔧',
+          serviceColor: service?.color || '#00C2FF',
+          price: String(a.price || '0'),
+          date: a.scheduled_date as string,
+          time: (a.scheduled_time as string) || '',
+          status: (a.status as Appointment['status']) || 'pending',
+          notes: (a.notes as string) || '',
+          isNew: a.status === 'pending',
+        }
+      }))
+    }
+  }, [])
+
+  useEffect(() => { loadAppointments() }, [loadAppointments])
+
+  const updateStatus = async (id: number, status: 'pending' | 'confirmed' | 'complete' | 'cancelled') => {
     setAppointments(prev => prev.map(a =>
       a.id === id ? { ...a, status, isNew: false } : a
     ))
+    const supabase = createClient()
+    await supabase.from('appointments').update({ status }).eq('id', id)
   }
 
   const counts = {

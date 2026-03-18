@@ -1,21 +1,17 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import styles from './page.module.css'
+import { createClient } from '@/lib/supabase/client'
 
-// TODO: Replace with Supabase data
-const MOCK_CLIENTS = [
-  { id: 1, firstName: 'Marcus', lastName: 'T.', phone: '(239) 555-0101', email: 'marcus@gmail.com', vehicle: '2021 BMW M3', source: 'Instagram', since: 'Jan 2025', lastVisit: 'Mar 6, 2025', totalSpent: 479.97, visits: 3, status: 'active' as const, notes: 'Prefers morning appointments. Very particular about interior.', history: [{ date: 'Mar 6, 2025', service: 'Full Detail', price: 159.99, status: 'complete' as const }, { date: 'Feb 10, 2025', service: 'Paint Correction', price: 299.99, status: 'complete' as const }, { date: 'Jan 15, 2025', service: 'Exterior Wash', price: 49.99, status: 'complete' as const }] },
-  { id: 2, firstName: 'Jenna', lastName: 'R.', phone: '(239) 555-0102', email: 'jenna@gmail.com', vehicle: '2019 Honda Civic', source: 'Word of Mouth', since: 'Feb 2025', lastVisit: 'Mar 6, 2025', totalSpent: 99.98, visits: 2, status: 'active' as const, notes: '', history: [{ date: 'Mar 6, 2025', service: 'Exterior Wash', price: 49.99, status: 'complete' as const }, { date: 'Feb 20, 2025', service: 'Exterior Wash', price: 49.99, status: 'complete' as const }] },
-  { id: 3, firstName: 'Devon', lastName: 'S.', phone: '(239) 555-0103', email: 'devon@gmail.com', vehicle: '2020 Dodge Charger', source: 'TikTok', since: 'Mar 2025', lastVisit: 'Upcoming Mar 10', totalSpent: 0, visits: 0, status: 'never_came' as const, notes: 'First time client. Found us on TikTok.', history: [{ date: 'Mar 10, 2025', service: 'Paint Correction', price: 299.99, status: 'confirmed' as const }] },
-  { id: 4, firstName: 'Aisha', lastName: 'M.', phone: '(239) 555-0104', email: 'aisha@gmail.com', vehicle: '2022 Tesla Model 3', source: 'Instagram', since: 'Feb 2025', lastVisit: 'Upcoming Mar 12', totalSpent: 89.99, visits: 1, status: 'active' as const, notes: 'Interested in ceramic coating down the line.', history: [{ date: 'Mar 12, 2025', service: 'Interior Detail', price: 89.99, status: 'confirmed' as const }, { date: 'Feb 5, 2025', service: 'Interior Detail', price: 89.99, status: 'complete' as const }] },
-  { id: 5, firstName: 'Tyler', lastName: 'W.', phone: '(239) 555-0105', email: 'tyler@gmail.com', vehicle: '2023 Ford F-150', source: 'Facebook', since: 'Mar 2025', lastVisit: '\u2014', totalSpent: 0, visits: 0, status: 'never_came' as const, notes: '', history: [{ date: 'Mar 15, 2025', service: 'Full Detail', price: 159.99, status: 'pending' as const }] },
-  { id: 6, firstName: 'Sofia', lastName: 'L.', phone: '(239) 555-0106', email: 'sofia@gmail.com', vehicle: '2020 Porsche Cayenne', source: 'Word of Mouth', since: 'Jan 2025', lastVisit: 'Upcoming Mar 20', totalSpent: 759.98, visits: 2, status: 'active' as const, notes: 'High value client. Referred 2 friends.', history: [{ date: 'Mar 20, 2025', service: 'Ceramic Coat', price: 599.99, status: 'confirmed' as const }, { date: 'Jan 8, 2025', service: 'Full Detail', price: 159.99, status: 'complete' as const }] },
-  { id: 7, firstName: 'Ray', lastName: 'P.', phone: '(239) 555-0107', email: 'ray@gmail.com', vehicle: '2022 Chevy Silverado', source: 'TikTok', since: 'Mar 2025', lastVisit: '\u2014', totalSpent: 0, visits: 0, status: 'never_came' as const, notes: '', history: [{ date: 'Apr 2, 2025', service: 'Full Detail', price: 159.99, status: 'confirmed' as const }] },
-  { id: 8, firstName: 'Chris', lastName: 'B.', phone: '(239) 555-0109', email: 'chris@gmail.com', vehicle: '2019 Toyota Camry', source: 'Facebook', since: 'Feb 2025', lastVisit: 'Feb 15, 2025', totalSpent: 209.97, visits: 3, status: 'active' as const, notes: 'Always books on weekends.', history: [{ date: 'Apr 8, 2025', service: 'Exterior Wash', price: 49.99, status: 'confirmed' as const }, { date: 'Feb 15, 2025', service: 'Full Detail', price: 159.99, status: 'complete' as const }, { date: 'Jan 20, 2025', service: 'Exterior Wash', price: 49.99, status: 'complete' as const }] },
-]
+type HistoryItem = { date: string; service: string; price: number; status: 'pending' | 'confirmed' | 'complete' }
 
-type Client = typeof MOCK_CLIENTS[number]
+type Client = {
+  id: string | number; firstName: string; lastName: string; phone: string; email: string
+  vehicle: string; source: string; since: string; lastVisit: string
+  totalSpent: number; visits: number; status: 'active' | 'never_came'
+  notes: string; history: HistoryItem[]
+}
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; border: string; label: string }> = {
   pending: { color: '#FFD60A', bg: '#FFD60A15', border: '#FFD60A33', label: 'Pending' },
@@ -203,8 +199,66 @@ export default function ClientsPage() {
   const [sortBy, setSortBy] = useState('recent')
   const [filterBy, setFilterBy] = useState('all')
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
+  const [clients, setClients] = useState<Client[]>([])
 
-  const clients = MOCK_CLIENTS
+  const loadClients = useCallback(async () => {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    // Load clients with their appointment history
+    const { data: clientsData } = await supabase
+      .from('clients')
+      .select('id, first_name, last_name, phone, email, vehicle_info, source, notes, created_at')
+      .eq('profile_id', user.id)
+      .order('created_at', { ascending: false })
+
+    if (clientsData && clientsData.length > 0) {
+      // Load appointments for all clients
+      const clientIds = clientsData.map(c => c.id)
+      const { data: allAppts } = await supabase
+        .from('appointments')
+        .select('id, client_id, scheduled_date, scheduled_time, status, price, services(name)')
+        .in('client_id', clientIds)
+        .order('scheduled_date', { ascending: false })
+
+      setClients(clientsData.map(c => {
+        const appts = (allAppts || []).filter((a: Record<string, unknown>) => a.client_id === c.id)
+        const completed = appts.filter((a: Record<string, unknown>) => a.status === 'complete')
+        const totalSpent = completed.reduce((s: number, a: Record<string, unknown>) => s + ((a.price as number) || 0), 0)
+        const lastComplete = completed[0] as Record<string, unknown> | undefined
+        const created = new Date(c.created_at)
+        const sinceStr = created.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+
+        return {
+          id: c.id,
+          firstName: c.first_name,
+          lastName: c.last_name || '',
+          phone: c.phone || '',
+          email: c.email || '',
+          vehicle: c.vehicle_info || '',
+          source: c.source || 'Direct',
+          since: sinceStr,
+          lastVisit: lastComplete ? (lastComplete.scheduled_date as string) : '\u2014',
+          totalSpent,
+          visits: completed.length,
+          status: completed.length > 0 ? 'active' as const : 'never_came' as const,
+          notes: c.notes || '',
+          history: appts.map((a: Record<string, unknown>) => {
+            const svc = a.services as Record<string, string> | null
+            return {
+              date: a.scheduled_date as string,
+              service: svc?.name || 'Service',
+              price: (a.price as number) || 0,
+              status: (a.status as HistoryItem['status']) || 'pending',
+            }
+          }),
+        }
+      }))
+    }
+  }, [])
+
+  useEffect(() => { loadClients() }, [loadClients])
   const activeCount = clients.filter(c => c.status === 'active').length
   const neverCount = clients.filter(c => c.status === 'never_came').length
   const totalRevenue = clients.reduce((s, c) => s + c.totalSpent, 0)

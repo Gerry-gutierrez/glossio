@@ -1,18 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import styles from './page.module.css'
-
-// TODO: Replace with real Supabase data
-const MOCK_APPOINTMENTS = [
-  { id: 1, client: 'Marcus T.', service: 'Full Detail', price: 159.99, date: '2025-03-06', time: '10:00 AM', status: 'complete' as const, vehicle: '2021 BMW M3', phone: '(239) 555-0101' },
-  { id: 2, client: 'Jenna R.', service: 'Exterior Wash', price: 49.99, date: '2025-03-06', time: '1:00 PM', status: 'complete' as const, vehicle: '2019 Honda Civic', phone: '(239) 555-0102' },
-  { id: 3, client: 'Devon S.', service: 'Paint Correction', price: 299.99, date: '2025-03-10', time: '9:00 AM', status: 'confirmed' as const, vehicle: '2020 Dodge Charger', phone: '(239) 555-0103' },
-  { id: 4, client: 'Aisha M.', service: 'Interior Detail', price: 89.99, date: '2025-03-12', time: '11:00 AM', status: 'confirmed' as const, vehicle: '2022 Tesla Model 3', phone: '(239) 555-0104' },
-  { id: 5, client: 'Tyler W.', service: 'Full Detail', price: 159.99, date: '2025-03-15', time: '2:00 PM', status: 'pending' as const, vehicle: '2023 Ford F-150', phone: '(239) 555-0105' },
-  { id: 6, client: 'Sofia L.', service: 'Ceramic Coat', price: 599.99, date: '2025-03-20', time: '10:00 AM', status: 'confirmed' as const, vehicle: '2020 Porsche Cayenne', phone: '(239) 555-0106' },
-]
+import { createClient } from '@/lib/supabase/client'
 
 const STATUS_CONFIG = {
   pending:   { color: '#FFD60A', bg: '#FFD60A15', border: '#FFD60A33', label: 'Pending' },
@@ -41,18 +32,72 @@ function QuickIcon({ type, color }: { type: string; color: string }) {
   return <svg {...props}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
 }
 
+type DashAppt = {
+  id: string | number; client: string; service: string; price: number
+  date: string; time: string; status: 'pending' | 'confirmed' | 'complete'
+  vehicle: string; phone: string
+}
+
 export default function DashboardPage() {
-  const [appointments, setAppointments] = useState(MOCK_APPOINTMENTS)
+  const [appointments, setAppointments] = useState<DashAppt[]>([])
   const [apptView, setApptView] = useState<'table' | 'calendar'>('table')
+  const [businessName, setBusinessName] = useState('Your Business')
+
+  const loadData = useCallback(async () => {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    // Load profile name
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('company_name')
+      .eq('id', user.id)
+      .single()
+    if (profile?.company_name) setBusinessName(profile.company_name)
+
+    // Load appointments with client and service info
+    const { data: appts } = await supabase
+      .from('appointments')
+      .select('id, scheduled_date, scheduled_time, status, price, notes, clients(first_name, last_name, phone, vehicle_info), services(name)')
+      .eq('profile_id', user.id)
+      .order('scheduled_date', { ascending: true })
+
+    if (appts && appts.length > 0) {
+      setAppointments(appts.map((a: Record<string, unknown>) => {
+        const client = a.clients as Record<string, string> | null
+        const service = a.services as Record<string, string> | null
+        return {
+          id: a.id as string,
+          client: client ? `${client.first_name} ${(client.last_name || '').charAt(0)}.` : 'Unknown',
+          service: service?.name || 'Service',
+          price: (a.price as number) || 0,
+          date: a.scheduled_date as string,
+          time: a.scheduled_time as string || '',
+          status: (a.status as 'pending' | 'confirmed' | 'complete') || 'pending',
+          vehicle: client?.vehicle_info || '',
+          phone: client?.phone || '',
+        }
+      }))
+    }
+  }, [])
+
+  useEffect(() => { loadData() }, [loadData])
 
   const revenueMTD = appointments.filter(a => a.status === 'complete').reduce((s, a) => s + a.price, 0)
   const projectedThisMonth = appointments.filter(a => ['confirmed', 'pending'].includes(a.status)).reduce((s, a) => s + a.price, 0)
   const pending = appointments.filter(a => a.status === 'pending').length
 
-  const confirmAppt = (id: number) => setAppointments(p => p.map(a => a.id === id ? { ...a, status: 'confirmed' as const } : a))
-  const completeAppt = (id: number) => setAppointments(p => p.map(a => a.id === id ? { ...a, status: 'complete' as const } : a))
-
-  const businessName = 'Your Business'
+  const confirmAppt = async (id: string | number) => {
+    setAppointments(p => p.map(a => a.id === id ? { ...a, status: 'confirmed' as const } : a))
+    const supabase = createClient()
+    await supabase.from('appointments').update({ status: 'confirmed' }).eq('id', id)
+  }
+  const completeAppt = async (id: string | number) => {
+    setAppointments(p => p.map(a => a.id === id ? { ...a, status: 'complete' as const } : a))
+    const supabase = createClient()
+    await supabase.from('appointments').update({ status: 'complete' }).eq('id', id)
+  }
 
   return (
     <>

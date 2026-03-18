@@ -1,42 +1,20 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { useParams } from 'next/navigation'
 import styles from './page.module.css'
+import { createClient } from '@/lib/supabase/client'
 
-// TODO: Replace with Supabase data fetched by slug param
-const MOCK_PROFILE = {
-  company_name: 'Carlos Detail Co.',
-  tagline: 'Premium mobile detailing · Naples, FL',
-  bio: '5 years of making cars shine. Specializing in paint correction and ceramic coatings. Every vehicle gets treated like it\'s my own. Based in Naples, FL — mobile service available throughout Collier County.',
-  is_pro: true,
-  avatar_url: null as string | null,
+type ProfileData = {
+  company_name: string; tagline: string; bio: string; is_pro: boolean; avatar_url: string | null
 }
-
-const MOCK_STATS = [
-  { value: '150+', label: 'Details' },
-  { value: '5.0', label: 'Rating' },
-  { value: '3 yrs', label: 'Experience' },
-]
-
-const MOCK_SERVICES = [
-  { id: 1, name: 'Exterior Wash', price: '49.99', description: 'Full exterior hand wash, clay bar treatment, and streak-free window cleaning.', icon: '💧', color: '#00C2FF' },
-  { id: 2, name: 'Interior Detail', price: '89.99', description: 'Deep vacuum, leather conditioning, dashboard wipe-down, and odor elimination.', icon: '🪑', color: '#FF6B35' },
-  { id: 3, name: 'Full Detail', price: '159.99', description: 'Our signature top-to-bottom treatment. Interior, exterior, tire dressing, engine bay.', icon: '✨', color: '#A259FF' },
-  { id: 4, name: 'Paint Correction', price: '299.99', description: 'Multi-stage machine polish to remove swirls, scratches, and oxidation.', icon: '🔧', color: '#FFD60A' },
-  { id: 5, name: 'Ceramic Coating', price: '599.99', description: 'Long-lasting ceramic protection. Repels water, dirt, and UV damage for years.', icon: '💎', color: '#00E5A0' },
-]
-
-const MOCK_PHOTOS = [
-  { id: 1, color: '#1a1a2e', label: 'BMW M3 · Full Detail', url: null as string | null },
-  { id: 2, color: '#0d1117', label: 'Porsche · Paint Correction', url: null },
-  { id: 3, color: '#141420', label: 'Tesla · Ceramic Coat', url: null },
-  { id: 4, color: '#0a0a1a', label: 'F-150 · Interior Detail', url: null },
-  { id: 5, color: '#111118', label: 'Charger · Full Detail', url: null },
-  { id: 6, color: '#0d0d15', label: 'Civic · Exterior Wash', url: null },
-  { id: 7, color: '#1a1020', label: 'Cayenne · Ceramic Coat', url: null },
-  { id: 8, color: '#0a1a1a', label: 'Silverado · Full Detail', url: null },
-  { id: 9, color: '#1a0a0a', label: 'Model 3 · Paint Correction', url: null },
-]
+type ServiceData = {
+  id: string | number; name: string; price: string; description: string; icon: string; color: string
+}
+type PhotoData = {
+  id: string | number; color: string; label: string; url: string | null
+}
+type StatData = { value: string; label: string }
 
 function WrenchSvg() {
   return (
@@ -74,10 +52,80 @@ function ArrowDownSvg() {
 type Photo = typeof MOCK_PHOTOS[number]
 
 export default function PublicProfilePage() {
-  const [expandedPhoto, setExpandedPhoto] = useState<Photo | null>(null)
-  const [showServices, setShowServices] = useState(false)
+  const params = useParams()
+  const slug = params.slug as string
 
-  const profile = MOCK_PROFILE
+  const [expandedPhoto, setExpandedPhoto] = useState<PhotoData | null>(null)
+  const [showServices, setShowServices] = useState(false)
+  const [profile, setProfile] = useState<ProfileData>({ company_name: '', tagline: '', bio: '', is_pro: false, avatar_url: null })
+  const [services, setServices] = useState<ServiceData[]>([])
+  const [photos, setPhotos] = useState<PhotoData[]>([])
+  const [stats, setStats] = useState<StatData[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const loadProfile = useCallback(async () => {
+    const supabase = createClient()
+
+    // Load profile by slug
+    const { data: prof } = await supabase
+      .from('profiles')
+      .select('id, company_name, tagline, bio, is_pro, avatar_url')
+      .eq('slug', slug)
+      .single()
+
+    if (!prof) { setLoading(false); return }
+
+    setProfile(prof)
+
+    // Load services
+    const { data: svcs } = await supabase
+      .from('services')
+      .select('id, name, description, price, icon, color')
+      .eq('profile_id', prof.id)
+      .eq('is_active', true)
+      .order('sort_order')
+
+    if (svcs) setServices(svcs.map(s => ({ ...s, price: String(s.price) })))
+
+    // Load work photos
+    const { data: workPhotos } = await supabase
+      .from('work_photos')
+      .select('id, url, sort_order')
+      .eq('profile_id', prof.id)
+      .order('sort_order')
+
+    if (workPhotos) setPhotos(workPhotos.map(p => ({ id: p.id, color: '#111118', label: '', url: p.url })))
+
+    // Load stats (completed appointments count)
+    const { count: completedCount } = await supabase
+      .from('appointments')
+      .select('*', { count: 'exact', head: true })
+      .eq('profile_id', prof.id)
+      .eq('status', 'complete')
+
+    setStats([
+      { value: completedCount ? `${completedCount}+` : '0', label: 'Details' },
+      { value: '5.0', label: 'Rating' },
+      { value: 'New', label: 'Experience' },
+    ])
+
+    setLoading(false)
+  }, [slug])
+
+  useEffect(() => { loadProfile() }, [loadProfile])
+
+  if (loading) {
+    return <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>Loading...</div>
+  }
+
+  if (!profile.company_name) {
+    return <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', flexDirection: 'column', gap: 12 }}><h1 style={{ fontSize: 24, margin: 0 }}>Profile Not Found</h1><p style={{ margin: 0, color: 'var(--text-faint)' }}>This detailer profile doesn&apos;t exist.</p></div>
+  }
+
+  const MOCK_SERVICES = services
+  const MOCK_PHOTOS = photos
+  const MOCK_STATS = stats
+
   const initials = profile.company_name
     .split(' ')
     .map(w => w[0])
