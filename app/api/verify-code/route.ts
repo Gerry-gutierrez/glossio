@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServiceClient } from '@/lib/supabase/server'
+import { checkVerificationCode } from '@/lib/twilio'
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,29 +13,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
     }
 
-    const supabase = createServiceClient()
+    // Check OTP via Twilio Verify
+    const approved = await checkVerificationCode(identifier, code)
 
-    const { data, error } = await supabase
-      .from('verification_codes')
-      .select('*')
-      .eq('identifier', identifier)
-      .eq('code', code)
-      .eq('type', type)
-      .is('used_at', null)
-      .gt('expires_at', new Date().toISOString())
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single()
-
-    if (error || !data) {
+    if (!approved) {
       return NextResponse.json({ error: 'Invalid or expired code' }, { status: 400 })
     }
-
-    // Mark code as used
-    await supabase
-      .from('verification_codes')
-      .update({ used_at: new Date().toISOString() })
-      .eq('id', data.id)
 
     return NextResponse.json({ success: true })
   } catch (err) {
