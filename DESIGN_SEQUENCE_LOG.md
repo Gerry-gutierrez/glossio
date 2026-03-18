@@ -1,6 +1,6 @@
 # Perfect Design Sequence — Progress Log
 
-## Status: IN PROGRESS
+## Status: COMPLETE
 
 | # | Skill | Status | Notes |
 |---|-------|--------|-------|
@@ -16,5 +16,5 @@
 | 10 | /review | SKIPPED | On main branch — no feature branch diff to review. All commits are atomic and already on main. |
 | 11 | /retro | DONE | 19 commits, 22.8k LOC, 2 days, 3 deep sessions. 0% tests (flagged). Streak: 2d. |
 | 12 | /document-release | DONE | Updated SETUP.md routes table (8→18 routes), added live site URL, Twilio Verify config, DESIGN.md reference. |
-| 13 | /ship | Pending | |
-| 14 | /gstack-upgrade | Pending | |
+| 13 | /ship | DONE | Pushed 8 commits to origin/main. Railway will auto-deploy. |
+| 14 | /gstack-upgrade | DONE | Already on latest (v0.7.0). No upgrade needed. |
