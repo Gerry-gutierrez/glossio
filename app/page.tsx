@@ -259,9 +259,7 @@ export default function LandingPage() {
         <span className="gradient-text" style={{ fontSize: 16, fontWeight: 700 }}>GlossIO</span>
         <p className={styles.footerCopy}>© {new Date().getFullYear()} GlossIO. All rights reserved.</p>
         <div className={styles.footerLinks}>
-          <a href="#" className={styles.footerLink}>Privacy</a>
-          <a href="#" className={styles.footerLink}>Terms</a>
-          <a href="#" className={styles.footerLink}>Contact</a>
+          <a href="mailto:support@glossio.app" className={styles.footerLink}>Contact</a>
         </div>
       </footer>
 
