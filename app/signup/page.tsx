@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 
@@ -156,6 +156,7 @@ function passwordStrength(pw: string): { label: string; width: string; color: st
 
 export default function SignupPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
 
   const [step, setStep] = useState(1)
@@ -165,6 +166,14 @@ export default function SignupPage() {
     emailCode: '', phoneCode: '',
     password: '', confirmPassword: '',
   })
+
+  // Pre-fill email from landing page CTA
+  useEffect(() => {
+    const emailParam = searchParams.get('email')
+    if (emailParam) {
+      setForm(f => ({ ...f, email: emailParam }))
+    }
+  }, [searchParams])
   const [showPass, setShowPass] = useState(false)
   const [showConfirmPass, setShowConfirmPass] = useState(false)
   const [emailVerified, setEmailVerified] = useState(false)
