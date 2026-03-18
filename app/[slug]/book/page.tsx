@@ -1,22 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
 import styles from './page.module.css'
-
-// TODO: Replace with Supabase data fetched by slug
-const MOCK_SERVICES = [
-  { id: 1, name: 'Exterior Wash', price: '49.99', description: 'Full exterior hand wash, clay bar treatment, and streak-free window cleaning.', icon: '💧', color: '#00C2FF' },
-  { id: 2, name: 'Interior Detail', price: '89.99', description: 'Deep vacuum, leather conditioning, dashboard wipe-down, and odor elimination.', icon: '🪑', color: '#FF6B35' },
-  { id: 3, name: 'Full Detail', price: '159.99', description: 'Our signature top-to-bottom treatment. Interior, exterior, tire dressing, engine bay.', icon: '✨', color: '#A259FF' },
-  { id: 4, name: 'Paint Correction', price: '299.99', description: 'Multi-stage machine polish to remove swirls, scratches, and oxidation.', icon: '🔧', color: '#FFD60A' },
-  { id: 5, name: 'Ceramic Coating', price: '599.99', description: 'Long-lasting ceramic protection. Repels water, dirt, and UV damage for years.', icon: '💎', color: '#00E5A0' },
-]
 
 const HOW_HEARD = ['Instagram', 'Facebook', 'Google', 'TikTok', 'Friend / Family Referral', 'Saw the vehicle', 'Business Card', 'Other']
 const TIMES = ['8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM']
-const DETAILER_NAME = 'Carlos'
 
 const getDates = () => {
   const dates: Date[] = []
@@ -31,7 +22,7 @@ const getDates = () => {
 const fmt = (d: Date) => d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 const fmtLong = (d: Date) => d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
 
-type Service = typeof MOCK_SERVICES[number]
+type Service = { id: string; name: string; price: string; description: string; icon: string; color: string }
 
 interface FormState {
   firstName: string; lastName: string; phone: string; email: string
@@ -106,11 +97,41 @@ function CalendarCheckSvg() {
 export default function BookingFlowPage() {
   const params = useParams()
   const slug = params.slug as string
+  const supabase = createClient()
 
+  const [services, setServices] = useState<Service[]>([])
+  const [detailerName, setDetailerName] = useState('')
+  const [loadingData, setLoadingData] = useState(true)
   const [selectedService, setSelectedService] = useState<Service | null>(null)
   const [step, setStep] = useState(0)
-  const [expandedService, setExpandedService] = useState<number | null>(null)
+  const [expandedService, setExpandedService] = useState<string | null>(null)
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
+
+  const loadData = useCallback(async () => {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, company_name')
+      .eq('slug', slug)
+      .single()
+
+    if (!profile) { setLoadingData(false); return }
+
+    setDetailerName(profile.company_name?.split(' ')[0] || 'Detailer')
+
+    const { data: svcs } = await supabase
+      .from('services')
+      .select('id, name, description, price, icon, color')
+      .eq('profile_id', profile.id)
+      .eq('is_active', true)
+      .order('sort_order')
+
+    if (svcs) setServices(svcs.map(s => ({ ...s, price: String(s.price) })))
+    setLoadingData(false)
+  }, [supabase, slug])
+
+  useEffect(() => { loadData() }, [loadData])
 
   const set = (key: keyof FormState) => (val: string | Date | null) =>
     setForm(f => ({ ...f, [key]: val }))
@@ -130,7 +151,53 @@ export default function BookingFlowPage() {
     setForm(INITIAL_FORM)
   }
 
+  const submitBooking = async () => {
+    if (!selectedService || !form.date) return
+    setSubmitting(true)
+    setSubmitError('')
+    try {
+      const res = await fetch('/api/appointments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slug,
+          serviceId: selectedService.id,
+          firstName: form.firstName,
+          lastName: form.lastName,
+          phone: form.phone,
+          email: form.email,
+          vehicleYear: form.year,
+          vehicleMake: form.make,
+          vehicleModel: form.model,
+          vehicleColor: form.color,
+          scheduledDate: form.date.toISOString().split('T')[0],
+          scheduledTime: form.time,
+          howHeard: form.howHeard,
+          notes: form.notes,
+          price: selectedService.price,
+        }),
+      })
+      if (res.ok) {
+        setStep(5)
+      } else {
+        const data = await res.json()
+        setSubmitError(data.error || 'Failed to book appointment')
+      }
+    } catch {
+      setSubmitError('Network error. Please try again.')
+    }
+    setSubmitting(false)
+  }
+
   const STEP_LABELS = ['Your Info', 'Your Vehicle', 'Date & Time', 'Final Details']
+
+  if (loadingData) {
+    return <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>Loading...</div>
+  }
+
+  if (!loadingData && services.length === 0) {
+    return <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', flexDirection: 'column', gap: 12 }}><h1 style={{ fontSize: 24, margin: 0 }}>No Services Available</h1><p style={{ margin: 0, color: 'var(--text-faint)' }}>This detailer hasn&apos;t added any services yet.</p></div>
+  }
 
   // ── Confirmation Screen ──
   if (step === 5 && selectedService) {
@@ -142,7 +209,7 @@ export default function BookingFlowPage() {
 
         <h1 className={styles.confirmTitle}>Booking Request Sent!</h1>
         <p className={styles.confirmSub}>
-          {DETAILER_NAME} will review your request and confirm within 24 hours. You&apos;ll get a text and email at:
+          {detailerName} will review your request and confirm within 24 hours. You&apos;ll get a text and email at:
         </p>
 
         <div className={styles.confirmCard}>
@@ -160,7 +227,7 @@ export default function BookingFlowPage() {
         <div className={styles.confirmInfo}>
           <p className={styles.confirmInfoText}>
             <InfoSvg />
-            Once {DETAILER_NAME} confirms, you&apos;ll receive a final text with all the details. No payment is due until the job is complete.
+            Once {detailerName} confirms, you&apos;ll receive a final text with all the details. No payment is due until the job is complete.
           </p>
         </div>
 
@@ -189,12 +256,12 @@ export default function BookingFlowPage() {
       {/* Step 0: Service Selection */}
       {step === 0 && (
         <div className={styles.containerWide}>
-          <p className={styles.headerLabel}>Carlos Detail Co.</p>
+          <p className={styles.headerLabel}>{detailerName}</p>
           <h1 className={styles.pageTitle}>Book an Appointment</h1>
           <p className={styles.pageSubtitle}>Select a service to get started.</p>
 
           <div className={styles.serviceList}>
-            {MOCK_SERVICES.map(svc => {
+            {services.map(svc => {
               const isOpen = expandedService === svc.id
               return (
                 <div
@@ -267,7 +334,7 @@ export default function BookingFlowPage() {
           {step === 1 && (
             <div>
               <h2 className={styles.stepTitle}>Your Info</h2>
-              <p className={styles.stepSub}>So {DETAILER_NAME} knows who&apos;s coming in.</p>
+              <p className={styles.stepSub}>So {detailerName} knows who&apos;s coming in.</p>
               <div className={styles.fieldRow}>
                 <div className={styles.fieldGroup}>
                   <label className={styles.fieldLabel}>First Name<span className={styles.fieldRequired}>*</span></label>
@@ -287,7 +354,7 @@ export default function BookingFlowPage() {
                 <input className={styles.fieldInput} type="email" value={form.email} onChange={e => set('email')(e.target.value)} placeholder="john@email.com" />
               </div>
               <p className={styles.fieldHint}>
-                <PhoneSvg /> {DETAILER_NAME} will text and email your confirmation to these.
+                <PhoneSvg /> {detailerName} will text and email your confirmation to these.
               </p>
               <button
                 onClick={() => setStep(2)}
@@ -304,7 +371,7 @@ export default function BookingFlowPage() {
           {step === 2 && (
             <div>
               <h2 className={styles.stepTitle}>Your Vehicle</h2>
-              <p className={styles.stepSub}>Tell {DETAILER_NAME} what he&apos;ll be working on.</p>
+              <p className={styles.stepSub}>Tell {detailerName} what he&apos;ll be working on.</p>
               <div className={styles.fieldRow}>
                 <div className={styles.fieldGroup}>
                   <label className={styles.fieldLabel}>Year<span className={styles.fieldRequired}>*</span></label>
@@ -349,7 +416,7 @@ export default function BookingFlowPage() {
           {step === 3 && (
             <div>
               <h2 className={styles.stepTitle}>Pick a Date &amp; Time</h2>
-              <p className={styles.stepSub}>Choose your preferred slot. {DETAILER_NAME} will confirm within 24 hrs.</p>
+              <p className={styles.stepSub}>Choose your preferred slot. {detailerName} will confirm within 24 hrs.</p>
 
               <label className={styles.fieldLabel}>Preferred Date<span className={styles.fieldRequired}>*</span></label>
               <div className={styles.dateScroll}>
@@ -418,7 +485,7 @@ export default function BookingFlowPage() {
               <h2 className={styles.stepTitle}>Almost Done!</h2>
               <p className={styles.stepSub}>One last thing — then review your booking.</p>
 
-              <label className={styles.fieldLabel}>How did you hear about {DETAILER_NAME}?</label>
+              <label className={styles.fieldLabel}>How did you hear about {detailerName}?</label>
               <div className={styles.howHeardGrid}>
                 {HOW_HEARD.map(opt => {
                   const sel = form.howHeard === opt
@@ -473,10 +540,11 @@ export default function BookingFlowPage() {
                 </div>
               </div>
 
-              <button onClick={() => setStep(5)} className={styles.confirmBtn}>
-                <CalendarCheckSvg /> Confirm Booking Request
+              {submitError && <p style={{ color: '#FF3366', fontSize: 13, marginBottom: 12 }}>{submitError}</p>}
+              <button onClick={submitBooking} disabled={submitting} className={styles.confirmBtn}>
+                <CalendarCheckSvg /> {submitting ? 'Submitting...' : 'Confirm Booking Request'}
               </button>
-              <p className={styles.nextBtnHint}>{DETAILER_NAME} will confirm within 24 hours via text &amp; email.</p>
+              <p className={styles.nextBtnHint}>{detailerName} will confirm within 24 hours via text &amp; email.</p>
             </div>
           )}
         </div>
