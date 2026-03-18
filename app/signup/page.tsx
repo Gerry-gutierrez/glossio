@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
@@ -154,7 +154,15 @@ function passwordStrength(pw: string): { label: string; width: string; color: st
 
 // ─── Main Onboarding Page ─────────────────────────────────────────────────────
 
-export default function SignupPage() {
+export default function SignupPageWrapper() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0A0A0F' }} />}>
+      <SignupPage />
+    </Suspense>
+  )
+}
+
+function SignupPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
