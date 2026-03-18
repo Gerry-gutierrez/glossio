@@ -1,22 +1,15 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import styles from './page.module.css'
+import { createClient } from '@/lib/supabase/client'
 
-// TODO: Replace with Supabase data + storage
-const INITIAL_PHOTOS = [
-  { id: 1, color: '#1a1a2e', label: 'BMW M3 · Full Detail', url: null as string | null },
-  { id: 2, color: '#0d1117', label: 'Porsche · Paint Correction', url: null },
-  { id: 3, color: '#141420', label: 'Tesla · Ceramic Coat', url: null },
-  { id: 4, color: '#0a0a1a', label: 'F-150 · Interior Detail', url: null },
-  { id: 5, color: '#111118', label: 'Charger · Full Detail', url: null },
-  { id: 6, color: '#0d0d15', label: 'Civic · Exterior Wash', url: null },
-  { id: 7, color: '#1a1020', label: 'Cayenne · Ceramic Coat', url: null },
-  { id: 8, color: '#0a1a1a', label: 'Silverado · Full Detail', url: null },
-  { id: 9, color: '#1a0a0a', label: 'Model 3 · Paint Correction', url: null },
-]
-
-type Photo = typeof INITIAL_PHOTOS[number]
+type Photo = {
+  id: string | number
+  color: string
+  label: string
+  url: string | null
+}
 
 interface ProfileData {
   name: string
@@ -73,25 +66,92 @@ function CloseSvg() {
 }
 
 export default function ProfilePage() {
-  const [photos, setPhotos] = useState<Photo[]>(INITIAL_PHOTOS)
+  const [photos, setPhotos] = useState<Photo[]>([])
   const [removeMode, setRemoveMode] = useState(false)
-  const [selectedToRemove, setSelectedToRemove] = useState<number[]>([])
+  const [selectedToRemove, setSelectedToRemove] = useState<(string | number)[]>([])
   const [showEditModal, setShowEditModal] = useState(false)
   const [profile, setProfile] = useState<ProfileData>(INITIAL_PROFILE)
   const [editDraft, setEditDraft] = useState<ProfileData>({ ...INITIAL_PROFILE })
   const [previewMode, setPreviewMode] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Load photos and profile from Supabase on mount
+  const loadData = useCallback(async () => {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    // Load profile
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('company_name, tagline, instagram_handle, location, bio, avatar_url')
+      .eq('id', user.id)
+      .single()
+
+    if (profileData) {
+      setProfile({
+        name: profileData.company_name || 'Your Business',
+        tagline: profileData.tagline || '',
+        instagram: profileData.instagram_handle || '',
+        location: profileData.location || '',
+        bio: profileData.bio || '',
+        avatarUrl: profileData.avatar_url || null,
+      })
+      setEditDraft({
+        name: profileData.company_name || 'Your Business',
+        tagline: profileData.tagline || '',
+        instagram: profileData.instagram_handle || '',
+        location: profileData.location || '',
+        bio: profileData.bio || '',
+        avatarUrl: profileData.avatar_url || null,
+      })
+    }
+
+    // Load work photos
+    const { data: workPhotos } = await supabase
+      .from('work_photos')
+      .select('id, url, sort_order')
+      .eq('profile_id', user.id)
+      .order('sort_order', { ascending: true })
+
+    if (workPhotos && workPhotos.length > 0) {
+      setPhotos(workPhotos.map(p => ({
+        id: p.id,
+        color: '#111118',
+        label: '',
+        url: p.url,
+      })))
+    }
+  }, [])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
   const initials = profile.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
 
-  const toggleRemoveSelect = (id: number) => {
+  const toggleRemoveSelect = (id: string | number) => {
     setSelectedToRemove(prev =>
       prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
     )
   }
 
-  const confirmRemove = () => {
+  const confirmRemove = async () => {
+    // Delete from Supabase
+    const uuidIds = selectedToRemove.filter(id => typeof id === 'string')
+    if (uuidIds.length > 0) {
+      try {
+        await fetch('/api/upload-photo', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ photoIds: uuidIds }),
+        })
+      } catch (err) {
+        console.error('Delete failed:', err)
+      }
+    }
     setPhotos(prev => prev.filter(p => !selectedToRemove.includes(p.id)))
     setSelectedToRemove([])
     setRemoveMode(false)
@@ -102,31 +162,81 @@ export default function ProfilePage() {
     setRemoveMode(false)
   }
 
-  const saveProfile = () => {
+  const saveProfile = async () => {
     setProfile({ ...editDraft })
     setShowEditModal(false)
+
+    // Persist to Supabase
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      await supabase
+        .from('profiles')
+        .update({
+          company_name: editDraft.name,
+          tagline: editDraft.tagline,
+          instagram_handle: editDraft.instagram,
+          location: editDraft.location,
+          bio: editDraft.bio,
+        })
+        .eq('id', user.id)
+    }
+
     setSaved(true)
     setTimeout(() => setSaved(false), 2500)
   }
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
-    if (!files) return
+    if (!files || files.length === 0) return
 
-    // TODO: Upload to Supabase Storage, get public URL
-    // For now, create local object URLs as preview
-    Array.from(files).forEach(file => {
-      const url = URL.createObjectURL(file)
-      const newPhoto: Photo = {
-        id: Date.now() + Math.random(),
+    setUploading(true)
+
+    for (const file of Array.from(files)) {
+      // Show immediate preview while uploading
+      const previewUrl = URL.createObjectURL(file)
+      const tempId = `temp-${Date.now()}-${Math.random()}`
+      const tempPhoto: Photo = {
+        id: tempId,
         color: '#111118',
-        label: file.name.replace(/\.[^.]+$/, ''),
-        url,
+        label: 'Uploading...',
+        url: previewUrl,
       }
-      setPhotos(prev => [...prev, newPhoto])
-    })
+      setPhotos(prev => [...prev, tempPhoto])
 
-    // Reset input
+      // Upload to Supabase via API route
+      try {
+        const formData = new FormData()
+        formData.append('file', file)
+
+        const res = await fetch('/api/upload-photo', {
+          method: 'POST',
+          body: formData,
+        })
+
+        if (res.ok) {
+          const { photo } = await res.json()
+          // Replace temp photo with real record
+          setPhotos(prev => prev.map(p =>
+            p.id === tempId
+              ? { id: photo.id, color: '#111118', label: '', url: photo.url }
+              : p
+          ))
+        } else {
+          // Remove failed upload
+          setPhotos(prev => prev.filter(p => p.id !== tempId))
+          const errData = await res.json()
+          console.error('Upload failed:', errData.error)
+        }
+      } catch (err) {
+        setPhotos(prev => prev.filter(p => p.id !== tempId))
+        console.error('Upload error:', err)
+      }
+
+      URL.revokeObjectURL(previewUrl)
+    }
+
+    setUploading(false)
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
@@ -300,8 +410,8 @@ export default function ProfilePage() {
               className={styles.fileInput}
               onChange={handleFileUpload}
             />
-            <button onClick={() => fileInputRef.current?.click()} className={styles.uploadBtn}>
-              <UploadSvg /> Upload Photos
+            <button onClick={() => fileInputRef.current?.click()} className={styles.uploadBtn} disabled={uploading}>
+              <UploadSvg /> {uploading ? 'Uploading...' : 'Upload Photos'}
             </button>
             <button
               onClick={() => { setRemoveMode(true); setSelectedToRemove([]) }}
