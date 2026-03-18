@@ -1,5 +1,7 @@
 'use client'
 
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import styles from './page.module.css'
 
 function ShieldSvg() {
@@ -81,15 +83,47 @@ const SETTINGS_SECTIONS = [
   },
 ]
 
-// TODO: Replace with real profile data from Supabase
-const QUICK_INFO = [
-  { label: 'Plan', value: 'GlossIO Pro', color: 'var(--primary)' },
-  { label: 'Trial Ends', value: 'Mar 26, 2026', color: 'var(--gold)' },
-  { label: 'Member Since', value: 'Mar 12, 2026', color: 'var(--secondary)' },
-  { label: 'Account', value: 'carlos@detailco.com', color: 'var(--text)' },
-]
-
 export default function SettingsPage() {
+  const supabase = createClient()
+  const [quickInfo, setQuickInfo] = useState([
+    { label: 'Plan', value: '...', color: 'var(--primary)' },
+    { label: 'Trial Ends', value: '...', color: 'var(--gold)' },
+    { label: 'Member Since', value: '...', color: 'var(--secondary)' },
+    { label: 'Account', value: '...', color: 'var(--text)' },
+  ])
+
+  useEffect(() => {
+    async function load() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('subscription_status, trial_ends_at, created_at, email')
+        .eq('id', user.id)
+        .single()
+      if (!profile) return
+
+      const planLabel = profile.subscription_status === 'active' ? 'GlossIO Pro'
+        : profile.subscription_status === 'trialing' ? 'Pro Trial'
+        : profile.subscription_status === 'past_due' ? 'Past Due'
+        : profile.subscription_status === 'canceled' ? 'Canceled'
+        : 'Free'
+
+      const trialEnd = profile.trial_ends_at
+        ? new Date(profile.trial_ends_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        : 'N/A'
+
+      const memberSince = new Date(profile.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+
+      setQuickInfo([
+        { label: 'Plan', value: planLabel, color: 'var(--primary)' },
+        { label: 'Trial Ends', value: trialEnd, color: 'var(--gold)' },
+        { label: 'Member Since', value: memberSince, color: 'var(--secondary)' },
+        { label: 'Account', value: profile.email || user.email || '', color: 'var(--text)' },
+      ])
+    }
+    load()
+  }, [supabase])
   return (
     <>
       <div className={styles.header}>
@@ -100,7 +134,7 @@ export default function SettingsPage() {
 
       {/* Quick Info */}
       <div className={styles.infoBar}>
-        {QUICK_INFO.map(item => (
+        {quickInfo.map(item => (
           <div key={item.label} className={styles.infoItem}>
             <p className={styles.infoLabel}>{item.label}</p>
             <p className={styles.infoValue} style={{ color: item.color }}>{item.value}</p>
