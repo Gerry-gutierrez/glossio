@@ -29,7 +29,7 @@ const inputBase: React.CSSProperties = {
   borderRadius: 8,
   color: '#F0EDE8',
   fontSize: 14,
-  padding: '11px 14px',
+  padding: '14px',
   outline: 'none',
   fontFamily: 'Georgia, serif',
   display: 'block',
