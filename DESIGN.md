@@ -186,10 +186,10 @@ Audience: Solo auto detailers who currently manage their business via Instagram 
 ## Known Issues (from design audit 2026-03-18)
 
 These are specified correctly in DESIGN.md but NOT yet fixed in code:
-- [ ] H3 in landing page cards is 17px — code needs updating to 22px
+- [x] H3 in landing page cards is 17px — FIXED (22px) by /qa-design-review 2026-03-18
 - [ ] Nav links lack hover states — add per Interaction States section above
 - [ ] Nav doesn't collapse to hamburger on mobile — add per Responsive section above
-- [ ] Some input heights at 39px — code needs updating to 48px
+- [x] Some input heights at 39px — FIXED (48px) by /qa-design-review 2026-03-18
 - [ ] "How It Works" section uses AI-recognizable icon-in-circle grid pattern
 - [ ] No motion/transitions on any page — add per Motion section above
 - [ ] Login button appears disabled/faded — should match cyan CTA style
