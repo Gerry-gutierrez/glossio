@@ -1,32 +1,46 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import styles from './page.module.css'
-
-// TODO: Replace with Supabase data
-const INITIAL_SERVICES = [
-  { id: 1, name: 'Exterior Wash', price: '49.99', description: 'Full exterior hand wash, clay bar treatment, and streak-free window cleaning. Leaves your paint gleaming.', icon: '💧', color: '#00C2FF' },
-  { id: 2, name: 'Interior Detail', price: '89.99', description: 'Deep vacuum, leather conditioning, dashboard wipe-down, and odor elimination. Your cabin, refreshed.', icon: '🪑', color: '#FF6B35' },
-  { id: 3, name: 'Full Detail', price: '159.99', description: 'Our signature top-to-bottom treatment. Exterior wash, interior detail, tire dressing, and engine bay clean.', icon: '✨', color: '#A259FF' },
-  { id: 4, name: 'Paint Correction', price: '299.99', description: 'Multi-stage machine polish to remove swirls, scratches, and oxidation. Restore showroom-level gloss.', icon: '🔧', color: '#FFD60A' },
-]
 
 const ICON_OPTIONS = ['🚗', '💧', '✨', '🔧', '🪑', '🧼', '💎', '🏆', '⚡', '🌟', '🛞', '🪣', '🎯', '🔥', '🌊']
 const COLOR_OPTIONS = ['#00C2FF', '#FF6B35', '#A259FF', '#FFD60A', '#00E5A0', '#FF3366', '#FF9F1C', '#2EC4B6']
 
-type Service = { id: number; name: string; price: string; description: string; icon: string; color: string }
-
-let nextId = 5
+type Service = { id: string; name: string; price: string; description: string; icon: string; color: string; sort_order: number }
 
 export default function ServicesPage() {
-  const [services, setServices] = useState<Service[]>(INITIAL_SERVICES)
-  const [activeTab, setActiveTab] = useState(1)
-  const [editingId, setEditingId] = useState<number | null>(null)
+  const supabase = createClient()
+  const [services, setServices] = useState<Service[]>([])
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [editData, setEditData] = useState<Partial<Service>>({})
   const [showAddModal, setShowAddModal] = useState(false)
-  const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [newService, setNewService] = useState({ name: '', price: '', description: '', icon: '🚗', color: '#00C2FF' })
   const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  const loadServices = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { data } = await supabase
+      .from('services')
+      .select('id, name, description, price, icon, color, sort_order')
+      .eq('profile_id', user.id)
+      .order('sort_order')
+
+    if (data) {
+      const mapped = data.map(s => ({ ...s, price: String(s.price) }))
+      setServices(mapped)
+      if (mapped.length > 0 && !activeTab) setActiveTab(mapped[0].id)
+    }
+    setLoading(false)
+  }, [supabase, activeTab])
+
+  useEffect(() => { loadServices() }, [loadServices])
 
   const active = services.find(s => s.id === activeTab) || services[0]
 
@@ -35,32 +49,79 @@ export default function ServicesPage() {
     setEditData({ name: svc.name, price: svc.price, description: svc.description, icon: svc.icon, color: svc.color })
   }
 
-  const saveEdit = () => {
-    setServices(services.map(s => s.id === editingId ? { ...s, ...editData } : s))
-    setEditingId(null)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+  const saveEdit = async () => {
+    if (!editingId) return
+    setSaving(true)
+    const { error } = await supabase
+      .from('services')
+      .update({
+        name: editData.name,
+        price: parseFloat(editData.price || '0'),
+        description: editData.description,
+        icon: editData.icon,
+        color: editData.color,
+      })
+      .eq('id', editingId)
+
+    if (!error) {
+      setServices(services.map(s => s.id === editingId ? { ...s, ...editData } as Service : s))
+      setEditingId(null)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    }
+    setSaving(false)
   }
 
   const cancelEdit = () => setEditingId(null)
 
-  const confirmDelete = (id: number) => {
-    const remaining = services.filter(s => s.id !== id)
-    setServices(remaining)
-    setDeleteConfirm(null)
-    if (remaining.length > 0) setActiveTab(remaining[0].id)
+  const confirmDelete = async (id: string) => {
+    setSaving(true)
+    const { error } = await supabase.from('services').delete().eq('id', id)
+    if (!error) {
+      const remaining = services.filter(s => s.id !== id)
+      setServices(remaining)
+      setDeleteConfirm(null)
+      if (remaining.length > 0) setActiveTab(remaining[0].id)
+      else setActiveTab(null)
+    }
+    setSaving(false)
   }
 
-  const addService = () => {
+  const addService = async () => {
     if (!newService.name.trim()) return
-    const svc = { ...newService, id: nextId++ }
-    setServices([...services, svc])
-    setActiveTab(svc.id)
-    setShowAddModal(false)
-    setNewService({ name: '', price: '', description: '', icon: '🚗', color: '#00C2FF' })
+    setSaving(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setSaving(false); return }
+
+    const { data, error } = await supabase
+      .from('services')
+      .insert({
+        profile_id: user.id,
+        name: newService.name,
+        price: parseFloat(newService.price || '0'),
+        description: newService.description,
+        icon: newService.icon,
+        color: newService.color,
+        sort_order: services.length,
+      })
+      .select()
+      .single()
+
+    if (!error && data) {
+      const svc = { ...data, price: String(data.price) }
+      setServices([...services, svc])
+      setActiveTab(svc.id)
+      setShowAddModal(false)
+      setNewService({ name: '', price: '', description: '', icon: '🚗', color: '#00C2FF' })
+    }
+    setSaving(false)
   }
 
   const prices = services.map(s => parseFloat(s.price)).filter(p => !isNaN(p))
+
+  if (loading) {
+    return <div style={{ padding: 40, color: 'var(--text-muted)' }}>Loading services...</div>
+  }
 
   return (
     <>
@@ -180,7 +241,9 @@ export default function ServicesPage() {
                   />
 
                   <div className={styles.btnRow}>
-                    <button onClick={saveEdit} className={styles.primaryBtn}>Save Changes</button>
+                    <button onClick={saveEdit} disabled={saving} className={styles.primaryBtn}>
+                      {saving ? 'Saving...' : 'Save Changes'}
+                    </button>
                     <button onClick={cancelEdit} className={styles.ghostBtn}>Cancel</button>
                   </div>
                 </div>
@@ -325,11 +388,11 @@ export default function ServicesPage() {
               <button onClick={() => setShowAddModal(false)} className={styles.ghostBtn}>Cancel</button>
               <button
                 onClick={addService}
-                disabled={!newService.name.trim()}
+                disabled={!newService.name.trim() || saving}
                 className={styles.primaryBtn}
-                style={{ flex: 1, opacity: newService.name.trim() ? 1 : 0.4, cursor: newService.name.trim() ? 'pointer' : 'not-allowed' }}
+                style={{ flex: 1, opacity: newService.name.trim() && !saving ? 1 : 0.4, cursor: newService.name.trim() && !saving ? 'pointer' : 'not-allowed' }}
               >
-                Add Service
+                {saving ? 'Adding...' : 'Add Service'}
               </button>
             </div>
           </div>
@@ -350,7 +413,9 @@ export default function ServicesPage() {
               Clients will no longer see this on your public profile. This can&apos;t be undone.
             </p>
             <div className={styles.deleteBtnRow}>
-              <button onClick={() => confirmDelete(deleteConfirm)} className={styles.deleteBtn}>Yes, Remove It</button>
+              <button onClick={() => confirmDelete(deleteConfirm)} disabled={saving} className={styles.deleteBtn}>
+                {saving ? 'Removing...' : 'Yes, Remove It'}
+              </button>
               <button onClick={() => setDeleteConfirm(null)} className={styles.ghostBtn}>Cancel</button>
             </div>
           </div>
