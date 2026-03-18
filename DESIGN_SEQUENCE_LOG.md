@@ -12,9 +12,9 @@
 | 6 | /design-consultation | DONE | Updated DESIGN.md with interaction states, motion, responsive breakpoints, accessibility specs. Core locked. |
 | 7 | /qa | DONE | 4 issues found, 2 fixed (dead footer links, email pre-fill), 2 deferred (slug routing, mock booking). Health 82→89. |
 | 8 | /qa-only | DONE | Report-only QA. Health 89. 2 remaining issues (slug routing, mock booking). Both deferred to P1 scope. |
-| 9 | /qa-design-review | Pending | |
-| 10 | /review | Pending | |
-| 11 | /retro | Pending | |
-| 12 | /document-release | Pending | |
+| 9 | /qa-design-review | DONE | 2 design fixes (H3 scale 17→22px, inputs 39→48px). 6 deferred. Design B→B+. |
+| 10 | /review | SKIPPED | On main branch — no feature branch diff to review. All commits are atomic and already on main. |
+| 11 | /retro | DONE | 19 commits, 22.8k LOC, 2 days, 3 deep sessions. 0% tests (flagged). Streak: 2d. |
+| 12 | /document-release | DONE | Updated SETUP.md routes table (8→18 routes), added live site URL, Twilio Verify config, DESIGN.md reference. |
 | 13 | /ship | Pending | |
 | 14 | /gstack-upgrade | Pending | |

@@ -52,7 +52,7 @@ Then click Run.
 1. Go to https://twilio.com → Create account
 2. Console → Account SID → `TWILIO_ACCOUNT_SID`
 3. Console → Auth Token → `TWILIO_AUTH_TOKEN`
-4. Buy a phone number → `TWILIO_PHONE_NUMBER` (format: +1xxxxxxxxxx)
+4. Create a Verify Service → `TWILIO_VERIFY_SERVICE_SID`
 
 ## 4. Start the Dev Server
 
@@ -68,9 +68,28 @@ Open http://localhost:3000
 |-------|-------------|
 | `/` | Landing page |
 | `/login` | Sign in |
-| `/signup` | 5-step onboarding |
-| `/dashboard` | Main detailer dashboard (in progress) |
+| `/signup` | 4-step onboarding with OTP verification |
+| `/dashboard` | Main detailer dashboard |
+| `/dashboard/appointments` | Appointment management |
+| `/dashboard/clients` | Client CRM |
+| `/dashboard/services` | Service menu editor |
+| `/dashboard/profile` | Profile editor |
+| `/dashboard/link` | Booking link management |
+| `/dashboard/settings` | Account settings |
+| `/[slug]` | Public detailer profile |
+| `/[slug]/book` | Client booking flow |
+| `/api/stripe/checkout` | Create Stripe checkout session |
+| `/api/stripe/portal` | Stripe billing portal |
 | `/api/webhooks/stripe` | Stripe webhook endpoint |
-| `/api/send-code` | Send Twilio SMS verification code |
+| `/api/send-code` | Send Twilio OTP verification code |
 | `/api/verify-code` | Verify OTP code |
 | `/api/seed-profile` | Seed defaults after signup |
+| `/api/upload-photo` | Upload work photos to Supabase Storage |
+
+## 6. Live Site
+
+Production: https://www.glossio.org (deployed on Railway)
+
+## 7. Design System
+
+See `DESIGN.md` for the full design system specification (colors, fonts, spacing, interaction states, motion, responsive breakpoints).
