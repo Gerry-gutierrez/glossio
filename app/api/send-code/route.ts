@@ -21,8 +21,13 @@ export async function POST(request: NextRequest) {
     await sendVerificationCode(identifier)
 
     return NextResponse.json({ success: true })
-  } catch (err) {
+  } catch (err: unknown) {
     console.error('send-code error:', err)
-    return NextResponse.json({ error: 'Failed to send code' }, { status: 500 })
+    const message = err instanceof Error ? err.message : 'Failed to send code'
+    const isTwilioError = message.includes('Invalid parameter') || message.includes('not a valid phone number')
+    return NextResponse.json(
+      { error: isTwilioError ? 'Invalid phone number format. Use +1XXXXXXXXXX.' : 'Failed to send verification code. Please try again.' },
+      { status: isTwilioError ? 400 : 500 }
+    )
   }
 }

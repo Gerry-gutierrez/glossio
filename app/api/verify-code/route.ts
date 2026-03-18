@@ -21,8 +21,13 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true })
-  } catch (err) {
+  } catch (err: unknown) {
     console.error('verify-code error:', err)
-    return NextResponse.json({ error: 'Verification failed' }, { status: 500 })
+    const message = err instanceof Error ? err.message : ''
+    const isExpired = message.includes('expired') || message.includes('not found')
+    return NextResponse.json(
+      { error: isExpired ? 'Code expired. Request a new one.' : 'Verification failed. Please try again.' },
+      { status: isExpired ? 400 : 500 }
+    )
   }
 }
