@@ -49,7 +49,7 @@ function ArrowDownSvg() {
   )
 }
 
-type Photo = typeof MOCK_PHOTOS[number]
+type Photo = PhotoData
 
 export default function PublicProfilePage() {
   const params = useParams()
