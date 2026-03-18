@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { logInfo, logError } from '@/lib/logger'
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -143,13 +144,17 @@ export async function POST(request: Request) {
       )
     }
 
+    logInfo('/api/appointments', 'appointment_created', {
+      appointmentId: appointment.id, clientId, slug, serviceId,
+    })
+
     return NextResponse.json({
       success: true,
       appointmentId: appointment.id,
       clientId,
     })
   } catch (error) {
-    console.error('Appointment creation error:', error)
+    logError('/api/appointments', 'create_failed', error, { slug: 'unknown' })
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
