@@ -1,10 +1,19 @@
 import Stripe from 'stripe'
 
-// Server-side Stripe client (never exposed to browser)
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-02-24.acacia',
-  typescript: true,
-})
+// Server-side Stripe client (lazy init to avoid build-time crashes when env vars are missing)
+let _stripe: Stripe | null = null
+function getStripe(): Stripe {
+  if (!_stripe) {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error('STRIPE_SECRET_KEY is not set')
+    }
+    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2025-02-24.acacia',
+      typescript: true,
+    })
+  }
+  return _stripe
+}
 
 export const STRIPE_PRICES = {
   monthly: process.env.STRIPE_MONTHLY_PRICE_ID!,
@@ -13,7 +22,7 @@ export const STRIPE_PRICES = {
 
 // Create a Stripe customer for a new subscriber
 export async function createStripeCustomer(email: string, name: string) {
-  return stripe.customers.create({ email, name })
+  return getStripe().customers.create({ email, name })
 }
 
 // Create a checkout session for new subscriptions
@@ -30,7 +39,7 @@ export async function createCheckoutSession({
   cancelUrl: string
   trialDays?: number
 }) {
-  return stripe.checkout.sessions.create({
+  return getStripe().checkout.sessions.create({
     customer: customerId,
     mode: 'subscription',
     line_items: [{ price: priceId, quantity: 1 }],
@@ -43,7 +52,7 @@ export async function createCheckoutSession({
 
 // Create a billing portal session for plan/payment management
 export async function createBillingPortalSession(customerId: string, returnUrl: string) {
-  return stripe.billingPortal.sessions.create({
+  return getStripe().billingPortal.sessions.create({
     customer: customerId,
     return_url: returnUrl,
   })
@@ -51,7 +60,7 @@ export async function createBillingPortalSession(customerId: string, returnUrl: 
 
 // Verify and parse a Stripe webhook event
 export function constructWebhookEvent(payload: string | Buffer, sig: string) {
-  return stripe.webhooks.constructEvent(
+  return getStripe().webhooks.constructEvent(
     payload,
     sig,
     process.env.STRIPE_WEBHOOK_SECRET!
