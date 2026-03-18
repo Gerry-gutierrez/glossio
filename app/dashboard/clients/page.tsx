@@ -275,7 +275,7 @@ export default function ClientsPage() {
       if (sortBy === 'za') return b.firstName.localeCompare(a.firstName)
       if (sortBy === 'most_spent') return b.totalSpent - a.totalSpent
       if (sortBy === 'most_visits') return b.visits - a.visits
-      return b.id - a.id
+      return String(b.id).localeCompare(String(a.id))
     })
 
   if (selectedClient) {
