@@ -12,7 +12,30 @@ export async function GET(request: NextRequest) {
       { auth: { autoRefreshToken: false, persistSession: false } }
     )
 
-    // List all users and find one whose company_name generates a matching slug
+    // Primary: look up from profiles table
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, company_name, first_name, last_name, tagline, bio, is_pro, avatar_url, phone, location, instagram_handle, slug')
+      .eq('slug', slug)
+      .single()
+
+    if (profile) {
+      return NextResponse.json({
+        profile: {
+          id: profile.id,
+          company_name: profile.company_name || `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Detailer',
+          tagline: profile.tagline || 'Professional detailing in your area',
+          bio: profile.bio || '',
+          is_pro: profile.is_pro,
+          avatar_url: profile.avatar_url,
+          phone: profile.phone || '',
+          address: profile.location || '',
+          instagram: profile.instagram_handle || '',
+        },
+      })
+    }
+
+    // Fallback: check auth.users metadata for matching slug
     const { data: { users }, error } = await supabase.auth.admin.listUsers({ perPage: 1000 })
     if (error) {
       console.error('public-profile error:', error)
