@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
-  // Build redirect to login
-  const url = new URL('/login', request.url)
+  // Build redirect to login — use public URL, not internal Railway container URL
+  const origin = request.headers.get('origin')
+    || request.headers.get('x-forwarded-host') && `https://${request.headers.get('x-forwarded-host')}`
+    || 'https://www.glossio.org'
+  const url = new URL('/login', origin)
   const response = NextResponse.redirect(url, { status: 302 })
 
   // Nuke all Supabase auth cookies
