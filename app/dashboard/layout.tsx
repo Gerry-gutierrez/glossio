@@ -54,11 +54,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     async function loadProfile() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
+
+      // Try profiles table first
       const { data } = await supabase
         .from('profiles')
         .select('company_name, slug, subscription_status')
         .eq('id', user.id)
         .single()
+
       if (data) {
         setBusinessName(data.company_name || 'Your Business')
         setSlug(data.slug || '')
@@ -69,6 +72,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           status === 'past_due' ? 'Past Due' :
           status === 'canceled' ? 'Canceled' : 'Free'
         )
+      } else {
+        // Fallback to auth user_metadata (set during signup)
+        const meta = user.user_metadata || {}
+        const name = meta.company_name || `${meta.first_name || ''} ${meta.last_name || ''}`.trim() || 'Your Business'
+        setBusinessName(name)
+        setSlug(
+          name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+        )
+        setPlanLabel('Free Trial')
       }
     }
     loadProfile()

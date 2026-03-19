@@ -50,13 +50,18 @@ export default function DashboardPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    // Load profile name
+    // Load profile name (try profiles table, fallback to auth metadata)
     const { data: profile } = await supabase
       .from('profiles')
       .select('company_name')
       .eq('id', user.id)
       .single()
-    if (profile?.company_name) setBusinessName(profile.company_name)
+    if (profile?.company_name) {
+      setBusinessName(profile.company_name)
+    } else {
+      const meta = user.user_metadata || {}
+      setBusinessName(meta.company_name || `${meta.first_name || ''} ${meta.last_name || ''}`.trim() || 'Your Business')
+    }
 
     // Load appointments with client and service info
     const { data: appts } = await supabase

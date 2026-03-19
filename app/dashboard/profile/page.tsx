@@ -21,11 +21,11 @@ interface ProfileData {
 }
 
 const INITIAL_PROFILE: ProfileData = {
-  name: 'Carlos Detail Co.',
-  tagline: 'Premium mobile detailing in Naples, FL',
-  instagram: '@carlosdetail',
-  location: 'Naples, FL',
-  bio: '5 years of making cars shine. Specializing in paint correction and ceramic coatings. Every vehicle gets treated like it\'s my own.',
+  name: '',
+  tagline: '',
+  instagram: '',
+  location: '',
+  bio: '',
   avatarUrl: null,
 }
 
@@ -107,6 +107,20 @@ export default function ProfilePage() {
         bio: profileData.bio || '',
         avatarUrl: profileData.avatar_url || null,
       })
+    } else {
+      // Fallback to auth user_metadata (set during signup)
+      const meta = user.user_metadata || {}
+      const name = meta.company_name || `${meta.first_name || ''} ${meta.last_name || ''}`.trim() || 'Your Business'
+      const fallback: ProfileData = {
+        name,
+        tagline: '',
+        instagram: '',
+        location: meta.address || '',
+        bio: '',
+        avatarUrl: null,
+      }
+      setProfile(fallback)
+      setEditDraft(fallback)
     }
 
     // Load work photos
