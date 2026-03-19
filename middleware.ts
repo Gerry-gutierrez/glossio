@@ -29,16 +29,18 @@ export async function middleware(request: NextRequest) {
         setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({ name, value, options }) => {
+            // If Supabase is clearing the cookie (sign out), respect that
+            const isClearing = !value || value === ''
             supabaseResponse.cookies.set(name, value, {
               ...options,
-              maxAge: COOKIE_MAX_AGE,
+              maxAge: isClearing ? 0 : COOKIE_MAX_AGE,
               path: '/',
               sameSite: 'lax',
               secure: true,
               httpOnly: true,
             })
-          )
+          })
         },
       },
     }
