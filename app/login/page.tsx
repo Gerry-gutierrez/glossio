@@ -32,16 +32,38 @@ function LoginForm() {
 
     // Determine if identifier is email or phone
     const isEmail = identifier.includes('@')
-    const credentials = isEmail
-      ? { email: identifier, password }
-      : { phone: identifier.replace(/\D/g, ''), password }
 
-    const { error } = await supabase.auth.signInWithPassword(credentials as any)
+    if (isEmail) {
+      // Email login
+      const { error } = await supabase.auth.signInWithPassword({ email: identifier.trim(), password })
+      if (error) {
+        setError('Invalid email or password. Please try again.')
+        setLoading(false)
+        return
+      }
+    } else {
+      // Phone login: convert (239) 822-9268 → +12398229268
+      const digits = identifier.replace(/\D/g, '')
+      const e164 = digits.length === 10 ? `+1${digits}` : digits.length === 11 && digits.startsWith('1') ? `+${digits}` : `+${digits}`
 
-    if (error) {
-      setError('Invalid email/phone or password. Please try again.')
-      setLoading(false)
-      return
+      // Try phone auth first
+      const { error: phoneErr } = await supabase.auth.signInWithPassword({ phone: e164, password })
+      if (phoneErr) {
+        // Phone auth failed — look up email by phone and try email auth
+        const { data: profile } = await supabase.from('profiles').select('email').eq('phone', identifier).single()
+        if (profile?.email) {
+          const { error: emailErr } = await supabase.auth.signInWithPassword({ email: profile.email, password })
+          if (emailErr) {
+            setError('Invalid phone or password. Please try again.')
+            setLoading(false)
+            return
+          }
+        } else {
+          setError('No account found with that phone number. Try your email instead.')
+          setLoading(false)
+          return
+        }
+      }
     }
 
     router.push(redirect)
