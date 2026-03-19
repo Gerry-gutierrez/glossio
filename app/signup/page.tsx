@@ -205,8 +205,8 @@ function SignupPage() {
   // Send verification codes when moving to step 3
   const sendCodes = async () => {
     try {
-      // Send email OTP via Supabase
-      await supabase.auth.signInWithOtp({ email: form.email, options: { shouldCreateUser: false } })
+      // Send email OTP via Supabase (shouldCreateUser: true for signup flow)
+      await supabase.auth.signInWithOtp({ email: form.email, options: { shouldCreateUser: true } })
 
       // Send phone code via Twilio
       await fetch('/api/send-code', {
