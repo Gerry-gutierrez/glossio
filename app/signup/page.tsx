@@ -332,6 +332,12 @@ function SignupPage() {
           body: JSON.stringify({ userId: data.user.id }),
         })
 
+        // Now sign in properly so the session cookie is set
+        await supabase.auth.signInWithPassword({
+          email: form.email,
+          password: form.password,
+        })
+
         // Seed default business hours, notification settings, etc.
         await fetch('/api/seed-profile', {
           method: 'POST',
