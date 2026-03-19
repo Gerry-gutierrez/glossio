@@ -35,6 +35,12 @@ export async function POST(request: NextRequest) {
     })
 
     if (match?.email) {
+      // Auto-confirm email if not yet confirmed (we verify via phone, not email)
+      if (!match.email_confirmed_at) {
+        await supabase.auth.admin.updateUserById(match.id, {
+          email_confirm: true,
+        })
+      }
       return NextResponse.json({ email: match.email })
     }
 
