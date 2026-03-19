@@ -17,8 +17,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email changes handled by Supabase' }, { status: 400 })
     }
 
+    // Normalize phone to E.164 format (+1XXXXXXXXXX) — Twilio requires this
+    const digits = identifier.replace(/\D/g, '')
+    const e164 = digits.length === 10 ? `+1${digits}` : digits.length === 11 && digits.startsWith('1') ? `+${digits}` : identifier.startsWith('+') ? identifier : `+${digits}`
+
     // Send OTP via Twilio Verify (no A2P registration needed)
-    await sendVerificationCode(identifier)
+    await sendVerificationCode(e164)
 
     return NextResponse.json({ success: true })
   } catch (err: unknown) {

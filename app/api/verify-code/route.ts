@@ -13,8 +13,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
     }
 
+    // Normalize phone to E.164 format to match what was sent
+    const digits = identifier.replace(/\D/g, '')
+    const e164 = digits.length === 10 ? `+1${digits}` : digits.length === 11 && digits.startsWith('1') ? `+${digits}` : identifier.startsWith('+') ? identifier : `+${digits}`
+
     // Check OTP via Twilio Verify
-    const approved = await checkVerificationCode(identifier, code)
+    const approved = await checkVerificationCode(e164, code)
 
     if (!approved) {
       return NextResponse.json({ error: 'Invalid or expired code' }, { status: 400 })
