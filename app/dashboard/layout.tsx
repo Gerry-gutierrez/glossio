@@ -89,10 +89,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [supabase])
 
   const handleSignOut = async () => {
-    setSigningOut(true)
-    await supabase.auth.signOut()
-    router.push('/login')
-    router.refresh()
+    try {
+      setSigningOut(true)
+      await supabase.auth.signOut()
+    } catch (e) {
+      console.error('Sign out error:', e)
+    } finally {
+      // Hard redirect to ensure cookies are cleared
+      window.location.href = '/login'
+    }
   }
 
   const copyLink = () => {
