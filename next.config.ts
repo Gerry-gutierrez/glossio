@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next'
 import { withSentryConfig } from '@sentry/nextjs'
 
+// Railway deploy trigger — ensures NEXT_PUBLIC vars are baked at build time
 const nextConfig: NextConfig = {
   output: 'standalone',
   images: {
