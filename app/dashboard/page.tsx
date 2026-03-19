@@ -42,6 +42,8 @@ export default function DashboardPage() {
   const [appointments, setAppointments] = useState<DashAppt[]>([])
   const [apptView, setApptView] = useState<'table' | 'calendar'>('table')
   const [businessName, setBusinessName] = useState('Your Business')
+  const [calMonth, setCalMonth] = useState(new Date().getMonth())
+  const [calYear, setCalYear] = useState(new Date().getFullYear())
 
   const loadData = useCallback(async () => {
     const supabase = createClient()
@@ -265,17 +267,74 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {apptView === 'calendar' && (
-          <div className={styles.emptyState}>
-            <div className={styles.emptyIcon} style={{ background: 'rgba(0, 194, 255, 0.1)' }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00C2FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
-              </svg>
+        {apptView === 'calendar' && (() => {
+          const now = new Date()
+
+          const firstDay = new Date(calYear, calMonth, 1).getDay()
+          const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate()
+          const monthName = new Date(calYear, calMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+
+          const apptsByDate: Record<string, DashAppt[]> = {}
+          appointments.forEach(a => {
+            if (!apptsByDate[a.date]) apptsByDate[a.date] = []
+            apptsByDate[a.date].push(a)
+          })
+
+          const prevMonth = () => {
+            if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1) }
+            else setCalMonth(m => m - 1)
+          }
+          const nextMonth = () => {
+            if (calMonth === 11) { setCalMonth(0); setCalYear(y => y + 1) }
+            else setCalMonth(m => m + 1)
+          }
+
+          const cells = []
+          for (let i = 0; i < firstDay; i++) cells.push(<div key={`e${i}`} style={{ minHeight: 64 }} />)
+          for (let d = 1; d <= daysInMonth; d++) {
+            const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+            const dayAppts = apptsByDate[dateStr] || []
+            const isToday = d === now.getDate() && calMonth === now.getMonth() && calYear === now.getFullYear()
+
+            cells.push(
+              <div key={d} style={{
+                minHeight: 64, padding: '4px 6px', borderRadius: 8,
+                background: isToday ? 'rgba(0,194,255,0.08)' : 'transparent',
+                border: isToday ? '1px solid rgba(0,194,255,0.25)' : '1px solid var(--border)',
+              }}>
+                <span style={{ fontSize: 12, fontWeight: isToday ? 700 : 400, color: isToday ? '#00C2FF' : 'var(--text-muted)' }}>{d}</span>
+                {dayAppts.map((a, i) => (
+                  <div key={i} style={{
+                    fontSize: 10, marginTop: 2, padding: '2px 4px', borderRadius: 4,
+                    background: a.status === 'confirmed' ? 'rgba(0,229,160,0.15)' : a.status === 'pending' ? 'rgba(255,214,10,0.15)' : 'rgba(162,89,255,0.15)',
+                    color: a.status === 'confirmed' ? '#00E5A0' : a.status === 'pending' ? '#FFD60A' : '#A259FF',
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                  }}>
+                    {a.time} {a.client.split(' ')[0]}
+                  </div>
+                ))}
+              </div>
+            )
+          }
+
+          return (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <button onClick={prevMonth} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', padding: '6px 12px', cursor: 'pointer', fontSize: 13 }}>{'<'}</button>
+                <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{monthName}</span>
+                <button onClick={nextMonth} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', padding: '6px 12px', cursor: 'pointer', fontSize: 13 }}>{'>'}</button>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, marginBottom: 8 }}>
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                  <div key={d} style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-faint)', paddingBottom: 4 }}>{d}</div>
+                ))}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+                {cells}
+              </div>
             </div>
-            <p className={styles.emptyTitle}>Calendar View</p>
-            <p className={styles.emptySub}>Calendar view will be available once connected to Supabase.</p>
-          </div>
-        )}
+          )
+        })()}
       </div>
 
       {/* Quick Actions */}
