@@ -2,10 +2,12 @@ import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { logInfo, logError } from '@/lib/logger'
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 export async function POST(request: Request) {
   try {
@@ -38,7 +40,7 @@ export async function POST(request: Request) {
     }
 
     // Look up profile by slug
-    const { data: profile, error: profileError } = await supabaseAdmin
+    const { data: profile, error: profileError } = await getSupabaseAdmin()
       .from('profiles')
       .select('id')
       .eq('slug', slug)
@@ -52,7 +54,7 @@ export async function POST(request: Request) {
 
     // Upsert client by phone + profile_id
     // First check if client exists
-    const { data: existingClient } = await supabaseAdmin
+    const { data: existingClient } = await getSupabaseAdmin()
       .from('clients')
       .select('id')
       .eq('profile_id', profileId)
@@ -64,7 +66,7 @@ export async function POST(request: Request) {
     if (existingClient) {
       // Update existing client with latest info
       clientId = existingClient.id
-      await supabaseAdmin
+      await getSupabaseAdmin()
         .from('clients')
         .update({
           first_name: firstName,
@@ -79,7 +81,7 @@ export async function POST(request: Request) {
         .eq('id', clientId)
     } else {
       // Create new client
-      const { data: newClient, error: clientError } = await supabaseAdmin
+      const { data: newClient, error: clientError } = await getSupabaseAdmin()
         .from('clients')
         .insert({
           profile_id: profileId,
@@ -104,7 +106,7 @@ export async function POST(request: Request) {
     }
 
     // Check for duplicate booking (same client, same service, same date)
-    const { data: existingAppt } = await supabaseAdmin
+    const { data: existingAppt } = await getSupabaseAdmin()
       .from('appointments')
       .select('id')
       .eq('client_id', clientId)
@@ -122,7 +124,7 @@ export async function POST(request: Request) {
     }
 
     // Create appointment
-    const { data: appointment, error: appointmentError } = await supabaseAdmin
+    const { data: appointment, error: appointmentError } = await getSupabaseAdmin()
       .from('appointments')
       .insert({
         profile_id: profileId,

@@ -3,10 +3,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sendAppointmentReminder } from '@/lib/twilio'
 import { logInfo, logError } from '@/lib/logger'
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 // Called by a cron job (Railway cron, Vercel cron, or external scheduler)
 // Sends 24-hour reminders for tomorrow's confirmed appointments
@@ -25,7 +27,7 @@ export async function GET(request: NextRequest) {
     const tomorrowStr = tomorrow.toISOString().split('T')[0]
 
     // Find confirmed appointments for tomorrow
-    const { data: appointments, error } = await supabaseAdmin
+    const { data: appointments, error } = await getSupabaseAdmin()
       .from('appointments')
       .select(`
         id, scheduled_date, scheduled_time, price,
