@@ -42,27 +42,25 @@ function LoginForm() {
         return
       }
     } else {
-      // Phone login: convert (239) 822-9268 → +12398229268
-      const digits = identifier.replace(/\D/g, '')
-      const e164 = digits.length === 10 ? `+1${digits}` : digits.length === 11 && digits.startsWith('1') ? `+${digits}` : `+${digits}`
+      // Phone login: look up email via server API (queries auth.users metadata)
+      const res = await fetch('/api/lookup-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: identifier }),
+      })
+      const { email } = await res.json()
 
-      // Try phone auth first
-      const { error: phoneErr } = await supabase.auth.signInWithPassword({ phone: e164, password })
-      if (phoneErr) {
-        // Phone auth failed — look up email by phone and try email auth
-        const { data: profile } = await supabase.from('profiles').select('email').eq('phone', identifier).single()
-        if (profile?.email) {
-          const { error: emailErr } = await supabase.auth.signInWithPassword({ email: profile.email, password })
-          if (emailErr) {
-            setError('Invalid phone or password. Please try again.')
-            setLoading(false)
-            return
-          }
-        } else {
-          setError('No account found with that phone number. Try your email instead.')
-          setLoading(false)
-          return
-        }
+      if (!email) {
+        setError('No account found with that phone number. Try your email instead.')
+        setLoading(false)
+        return
+      }
+
+      const { error: emailErr } = await supabase.auth.signInWithPassword({ email, password })
+      if (emailErr) {
+        setError('Invalid phone or password. Please try again.')
+        setLoading(false)
+        return
       }
     }
 
