@@ -325,20 +325,14 @@ function SignupPage() {
       if (signUpError) throw signUpError
 
       if (data.user) {
-        await supabase.from('profiles').upsert({
-          id: data.user.id,
-          first_name: form.firstName,
-          last_name: form.lastName,
-          email: form.email,
-          phone: form.cell,
-          company_name: form.companyName || null,
-          location: form.address || null,
-          slug: (form.companyName || `${form.firstName} ${form.lastName}`)
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/(^-|-$)/g, ''),
+        // Confirm email via admin API (we verify identity via phone, not email)
+        await fetch('/api/confirm-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: data.user.id }),
         })
 
+        // Seed default business hours, notification settings, etc.
         await fetch('/api/seed-profile', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
