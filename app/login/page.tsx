@@ -5,6 +5,13 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 
+function formatPhone(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 10)
+  if (digits.length <= 3) return digits
+  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
+}
+
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -99,7 +106,15 @@ function LoginForm() {
             type="text"
             placeholder="carlos@gmail.com or (239) 555-0100"
             value={identifier}
-            onChange={e => setIdentifier(e.target.value)}
+            onChange={e => {
+              const v = e.target.value
+              // Auto-format as phone if it starts with a digit or ( and has no @
+              if (!v.includes('@') && /^[\d(]/.test(v)) {
+                setIdentifier(formatPhone(v))
+              } else {
+                setIdentifier(v)
+              }
+            }}
             required
             style={{
               width: '100%',

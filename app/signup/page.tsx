@@ -19,6 +19,15 @@ interface FormState {
   confirmPassword: string
 }
 
+// ─── Phone formatter ──────────────────────────────────────────────────────────
+
+function formatPhone(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 10)
+  if (digits.length <= 3) return digits
+  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
+}
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 const inputBase: React.CSSProperties = {
@@ -192,7 +201,7 @@ function SignupPage() {
     setForm(f => ({ ...f, [field]: val }))
 
   const canProceed = () => {
-    if (step === 1) return !!(form.firstName && form.lastName && form.cell && form.email)
+    if (step === 1) return !!(form.firstName && form.lastName && form.cell.replace(/\D/g, '').length === 10 && form.email)
     if (step === 2) return phoneVerified
     if (step === 3) return !!(form.password && form.password === form.confirmPassword && form.password.length >= 8)
     return true
@@ -409,7 +418,7 @@ function SignupPage() {
             </div>
 
             <FieldLabel>Cell Phone Number</FieldLabel>
-            <InputField type="tel" placeholder="(239) 555-0100" value={form.cell} onChange={e => update('cell', e.target.value)} />
+            <InputField type="tel" placeholder="(239) 555-0100" value={form.cell} onChange={e => update('cell', formatPhone(e.target.value))} />
             <p style={{ margin: '-10px 0 16px', fontSize: 11, color: '#555' }}>
               We&apos;ll send a 6-digit code to this number to verify your account.
             </p>
