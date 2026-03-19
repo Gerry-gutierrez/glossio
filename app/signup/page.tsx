@@ -517,7 +517,7 @@ function SignupPage() {
                 type={showPass ? 'text' : 'password'}
                 placeholder="Min. 8 characters"
                 value={form.password}
-                onChange={e => update('password', e.target.value)}
+                onChange={e => update('password', e.target.value.replace(/\s/g, ''))}
                 style={{ ...inputBase, marginBottom: 0, paddingRight: 44 }}
               />
               <button
@@ -533,7 +533,7 @@ function SignupPage() {
                 type={showConfirmPass ? 'text' : 'password'}
                 placeholder="Re-enter password"
                 value={form.confirmPassword}
-                onChange={e => update('confirmPassword', e.target.value)}
+                onChange={e => update('confirmPassword', e.target.value.replace(/\s/g, ''))}
                 style={{ ...inputBase, marginBottom: 0, paddingRight: 44 }}
               />
               <button
