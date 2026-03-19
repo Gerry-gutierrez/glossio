@@ -50,8 +50,8 @@ export async function GET(request: NextRequest) {
     let failed = 0
 
     for (const appt of appointments) {
-      const client = appt.clients as Record<string, string> | null
-      const service = appt.services as Record<string, string> | null
+      const client = appt.clients as unknown as { first_name: string; phone: string } | null
+      const service = appt.services as unknown as { name: string } | null
 
       if (!client?.phone || !client?.first_name || !service?.name) continue
 

@@ -18,5 +18,7 @@ export default withSentryConfig(nextConfig, {
   silent: true,
   org: process.env.SENTRY_ORG || '',
   project: process.env.SENTRY_PROJECT || '',
-  disableSourceMapUpload: true,
+  sourcemaps: {
+    disable: true,
+  },
 })

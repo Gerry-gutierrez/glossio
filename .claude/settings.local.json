@@ -53,7 +53,21 @@
       "Skill(design-consultation)",
       "Skill(design-consultation:*)",
       "Skill(qa)",
-      "Skill(qa:*)"
+      "Skill(qa:*)",
+      "Skill(review)",
+      "Skill(review:*)",
+      "Skill(retro)",
+      "Skill(retro:*)",
+      "Skill(document-release)",
+      "Skill(document-release:*)",
+      "Skill(gstack-upgrade)",
+      "Skill(gstack-upgrade:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(npm --version)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(npx vitest:*)"
     ]
   }
 }

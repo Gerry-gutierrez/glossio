@@ -1,0 +1,42 @@
+{
+  "date": "2026-03-18",
+  "window": "7d",
+  "metrics": {
+    "commits": 19,
+    "contributors": 1,
+    "prs_merged": 0,
+    "insertions": 22832,
+    "deletions": 413,
+    "net_loc": 22419,
+    "test_loc": 0,
+    "test_ratio": 0,
+    "active_days": 2,
+    "sessions": 3,
+    "deep_sessions": 3,
+    "avg_session_minutes": 95,
+    "loc_per_session_hour": 3600,
+    "feat_pct": 0.26,
+    "fix_pct": 0.47,
+    "peak_hour": 22,
+    "ai_assisted_commits": 5
+  },
+  "authors": {
+    "Gerardo": {
+      "commits": 19,
+      "insertions": 22832,
+      "deletions": 413,
+      "test_ratio": 0,
+      "top_area": "app/"
+    }
+  },
+  "version_range": ["0.0.0", "0.0.0"],
+  "streak_days": 2,
+  "tweetable": "Week of Mar 17: 19 commits (solo), 22.8k LOC, 0% tests, 0 PRs, peak: 10pm PT | Streak: 2d",
+  "backlog": {
+    "total_open": 21,
+    "p0_p1": 9,
+    "p2": 5,
+    "completed_this_period": 0,
+    "added_this_period": 21
+  }
+}
