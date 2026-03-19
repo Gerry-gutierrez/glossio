@@ -1,6 +1,9 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// 30-day persistent session
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 30 // 30 days in seconds
+
 // Routes that require authentication
 const PROTECTED_ROUTES = ['/dashboard', '/clients', '/services', '/appointments', '/profile', '/settings', '/link']
 
@@ -16,8 +19,8 @@ export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://jmsxedfjyyfjykudyuim.supabase.co',
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imptc3hlZGZqeXlmanlrdWR5dWltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MTk5OTksImV4cCI6MjA4ODk5NTk5OX0.LvyKyRdKqQQiMkw0P7Su08do3z4ZOLntOJ2SQ069txE',
     {
       cookies: {
         getAll() {
@@ -27,7 +30,14 @@ export async function middleware(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, {
+              ...options,
+              maxAge: COOKIE_MAX_AGE,
+              path: '/',
+              sameSite: 'lax',
+              secure: true,
+              httpOnly: true,
+            })
           )
         },
       },
