@@ -64,50 +64,53 @@ export default function PublicProfilePage() {
   const [loading, setLoading] = useState(true)
 
   const loadProfile = useCallback(async () => {
-    const supabase = createClient()
+    try {
+      // Look up profile by slug via server API (queries auth.users metadata)
+      const res = await fetch(`/api/public-profile?slug=${encodeURIComponent(slug)}`)
+      const { profile: prof } = await res.json()
 
-    // Load profile by slug
-    const { data: prof } = await supabase
-      .from('profiles')
-      .select('id, company_name, tagline, bio, is_pro, avatar_url')
-      .eq('slug', slug)
-      .single()
+      if (!prof) { setLoading(false); return }
 
-    if (!prof) { setLoading(false); return }
+      setProfile({
+        company_name: prof.company_name,
+        tagline: prof.tagline,
+        bio: prof.bio,
+        is_pro: prof.is_pro,
+        avatar_url: prof.avatar_url,
+      })
 
-    setProfile(prof)
+      // Try loading services from DB (may not exist yet)
+      const supabase = createClient()
+      const { data: svcs } = await supabase
+        .from('services')
+        .select('id, name, description, price, icon, color')
+        .eq('profile_id', prof.id)
+        .eq('is_active', true)
+        .order('sort_order')
 
-    // Load services
-    const { data: svcs } = await supabase
-      .from('services')
-      .select('id, name, description, price, icon, color')
-      .eq('profile_id', prof.id)
-      .eq('is_active', true)
-      .order('sort_order')
+      if (svcs && svcs.length > 0) {
+        setServices(svcs.map(s => ({ ...s, price: String(s.price) })))
+      }
 
-    if (svcs) setServices(svcs.map(s => ({ ...s, price: String(s.price) })))
+      // Try loading work photos
+      const { data: workPhotos } = await supabase
+        .from('work_photos')
+        .select('id, url, sort_order')
+        .eq('profile_id', prof.id)
+        .order('sort_order')
 
-    // Load work photos
-    const { data: workPhotos } = await supabase
-      .from('work_photos')
-      .select('id, url, sort_order')
-      .eq('profile_id', prof.id)
-      .order('sort_order')
+      if (workPhotos && workPhotos.length > 0) {
+        setPhotos(workPhotos.map(p => ({ id: p.id, color: '#111118', label: '', url: p.url })))
+      }
 
-    if (workPhotos) setPhotos(workPhotos.map(p => ({ id: p.id, color: '#111118', label: '', url: p.url })))
-
-    // Load stats (completed appointments count)
-    const { count: completedCount } = await supabase
-      .from('appointments')
-      .select('*', { count: 'exact', head: true })
-      .eq('profile_id', prof.id)
-      .eq('status', 'complete')
-
-    setStats([
-      { value: completedCount ? `${completedCount}+` : '0', label: 'Details' },
-      { value: '5.0', label: 'Rating' },
-      { value: 'New', label: 'Experience' },
-    ])
+      setStats([
+        { value: '0', label: 'Details' },
+        { value: '5.0', label: 'Rating' },
+        { value: 'New', label: 'Experience' },
+      ])
+    } catch (err) {
+      console.error('Failed to load profile:', err)
+    }
 
     setLoading(false)
   }, [slug])
@@ -202,31 +205,42 @@ export default function PublicProfilePage() {
 
         {/* Photo Grid */}
         <div className={styles.photoSection}>
-          <div className={styles.photoGrid}>
-            {MOCK_PHOTOS.map(photo => (
-              <div
-                key={photo.id}
-                onClick={() => setExpandedPhoto(photo)}
-                className={styles.photoCard}
-                style={{
-                  background: photo.url ? `url(${photo.url}) center / cover` : photo.color,
-                }}
-              >
-                <div className={styles.photoOverlay} />
-                {!photo.url && (
-                  <>
-                    <span className={styles.photoPlaceholder}>
-                      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
-                      </svg>
-                    </span>
-                    <span className={styles.photoLabel}>{photo.label}</span>
-                  </>
-                )}
+          {MOCK_PHOTOS.length > 0 ? (
+            <>
+              <div className={styles.photoGrid}>
+                {MOCK_PHOTOS.map(photo => (
+                  <div
+                    key={photo.id}
+                    onClick={() => setExpandedPhoto(photo)}
+                    className={styles.photoCard}
+                    style={{
+                      background: photo.url ? `url(${photo.url}) center / cover` : photo.color,
+                    }}
+                  >
+                    <div className={styles.photoOverlay} />
+                    {!photo.url && (
+                      <>
+                        <span className={styles.photoPlaceholder}>
+                          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
+                          </svg>
+                        </span>
+                        <span className={styles.photoLabel}>{photo.label}</span>
+                      </>
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <p className={styles.photoHint}>Tap any photo to view</p>
+              <p className={styles.photoHint}>Tap any photo to view</p>
+            </>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 12, opacity: 0.5 }}>
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
+              </svg>
+              <p style={{ fontSize: 14, margin: 0 }}>Work photos coming soon</p>
+            </div>
+          )}
         </div>
 
         {/* Bio */}
@@ -284,20 +298,27 @@ export default function PublicProfilePage() {
             <p className={styles.sheetSub}>Select a service to start your booking.</p>
 
             <div className={styles.servicesList}>
-              {MOCK_SERVICES.map(svc => (
-                <div
-                  key={svc.id}
-                  className={styles.serviceItem}
-                  style={{ borderLeft: `3px solid ${svc.color}` }}
-                >
-                  <span className={styles.serviceItemIcon}>{svc.icon}</span>
-                  <div className={styles.serviceItemInfo}>
-                    <p className={styles.serviceItemName}>{svc.name}</p>
-                    <p className={styles.serviceItemDesc}>{svc.description}</p>
+              {MOCK_SERVICES.length > 0 ? (
+                MOCK_SERVICES.map(svc => (
+                  <div
+                    key={svc.id}
+                    className={styles.serviceItem}
+                    style={{ borderLeft: `3px solid ${svc.color}` }}
+                  >
+                    <span className={styles.serviceItemIcon}>{svc.icon}</span>
+                    <div className={styles.serviceItemInfo}>
+                      <p className={styles.serviceItemName}>{svc.name}</p>
+                      <p className={styles.serviceItemDesc}>{svc.description}</p>
+                    </div>
+                    <p className={styles.serviceItemPrice} style={{ color: svc.color }}>${svc.price}</p>
                   </div>
-                  <p className={styles.serviceItemPrice} style={{ color: svc.color }}>${svc.price}</p>
+                ))
+              ) : (
+                <div style={{ textAlign: 'center', padding: '30px 20px', color: 'var(--text-muted)' }}>
+                  <p style={{ fontSize: 14, margin: '0 0 4px' }}>No services listed yet</p>
+                  <p style={{ fontSize: 12, margin: 0, color: 'var(--text-faint)' }}>Check back soon!</p>
                 </div>
-              ))}
+              )}
             </div>
 
             <div className={styles.sheetInfo}>

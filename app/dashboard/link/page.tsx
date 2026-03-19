@@ -118,8 +118,19 @@ export default function MyLinkPage() {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { setLoading(false); return }
+
+      // Try profiles table first
       const { data } = await supabase.from('profiles').select('slug').eq('id', user.id).single()
-      if (data?.slug) setSlug(data.slug)
+      if (data?.slug) {
+        setSlug(data.slug)
+      } else {
+        // Fallback: generate slug from user metadata (company name)
+        const meta = user.user_metadata || {}
+        const name = meta.company_name || `${meta.first_name || ''} ${meta.last_name || ''}`.trim()
+        if (name) {
+          setSlug(name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''))
+        }
+      }
       setLoading(false)
     }
     load()
@@ -146,7 +157,12 @@ export default function MyLinkPage() {
   }
 
   const handlePreview = () => {
-    if (slug) window.open(`/${slug}`, '_blank')
+    if (slug) {
+      window.open(`/${slug}`, '_blank')
+    } else {
+      // No slug yet — open preview with user ID as fallback
+      window.open(`/preview`, '_blank')
+    }
   }
 
   return (
