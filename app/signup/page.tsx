@@ -9,13 +9,11 @@ import Link from 'next/link'
 
 interface FormState {
   companyName: string
-  companyPhone: string
   firstName: string
   lastName: string
-  phone: string
+  cell: string
   email: string
   address: string
-  emailCode: string
   phoneCode: string
   password: string
   confirmPassword: string
@@ -102,14 +100,13 @@ function GhostBtn({ children, onClick }: { children: React.ReactNode; onClick: (
 // ─── Progress Bar ─────────────────────────────────────────────────────────────
 
 const STEPS = [
-  { id: 1, label: 'Business Info' },
-  { id: 2, label: 'Personal Info' },
-  { id: 3, label: 'Verify' },
-  { id: 4, label: 'Create Login' },
+  { id: 1, label: 'Your Info' },
+  { id: 2, label: 'Verify Phone' },
+  { id: 3, label: 'Create Login' },
 ]
 
 function ProgressBar({ step }: { step: number }) {
-  if (step >= 5) return null
+  if (step >= 4) return null
   return (
     <div style={{ width: '100%', maxWidth: 520, marginBottom: 36 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
@@ -124,7 +121,7 @@ function ProgressBar({ step }: { step: number }) {
               color: step > s.id ? '#fff' : step === s.id ? '#00C2FF' : '#444',
               transition: 'all 0.3s',
             }}>
-              {step > s.id ? '✓' : s.id}
+              {step > s.id ? '\u2713' : s.id}
             </div>
             <span style={{ fontSize: 10, color: step >= s.id ? '#888' : '#444', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
               {s.label}
@@ -135,7 +132,7 @@ function ProgressBar({ step }: { step: number }) {
       <div style={{ height: 2, background: '#1E1E2E', borderRadius: 2, marginTop: 4 }}>
         <div style={{
           height: '100%',
-          width: `${((step - 1) / 3) * 100}%`,
+          width: `${((step - 1) / 2) * 100}%`,
           background: 'linear-gradient(90deg, #00C2FF, #A259FF)',
           borderRadius: 2, transition: 'width 0.4s ease',
         }} />
@@ -147,7 +144,7 @@ function ProgressBar({ step }: { step: number }) {
 // ─── Password Strength ────────────────────────────────────────────────────────
 
 function passwordStrength(pw: string): { label: string; width: string; color: string } {
-  if (pw.length >= 12) return { label: 'Strong password ✓', width: '100%', color: '#00E5A0' }
+  if (pw.length >= 12) return { label: 'Strong password', width: '100%', color: '#00E5A0' }
   if (pw.length >= 8) return { label: 'Good — could be stronger', width: '60%', color: '#FFD60A' }
   return { label: 'Too short', width: '30%', color: '#FF3366' }
 }
@@ -169,9 +166,9 @@ function SignupPage() {
 
   const [step, setStep] = useState(1)
   const [form, setForm] = useState<FormState>({
-    companyName: '', companyPhone: '',
-    firstName: '', lastName: '', phone: '', email: '', address: '',
-    emailCode: '', phoneCode: '',
+    companyName: '',
+    firstName: '', lastName: '', cell: '', email: '', address: '',
+    phoneCode: '',
     password: '', confirmPassword: '',
   })
 
@@ -182,12 +179,12 @@ function SignupPage() {
       setForm(f => ({ ...f, email: emailParam }))
     }
   }, [searchParams])
+
   const [showPass, setShowPass] = useState(false)
   const [showConfirmPass, setShowConfirmPass] = useState(false)
-  const [emailVerified, setEmailVerified] = useState(false)
   const [phoneVerified, setPhoneVerified] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [verifyingEmail, setVerifyingEmail] = useState(false)
+  const [sendingCode, setSendingCode] = useState(false)
   const [verifyingPhone, setVerifyingPhone] = useState(false)
   const [error, setError] = useState('')
 
@@ -195,69 +192,66 @@ function SignupPage() {
     setForm(f => ({ ...f, [field]: val }))
 
   const canProceed = () => {
-    if (step === 1) return true // all optional
-    if (step === 2) return !!(form.firstName && form.lastName && form.phone && form.email && form.address)
-    if (step === 3) return emailVerified && phoneVerified
-    if (step === 4) return !!(form.password && form.password === form.confirmPassword && form.password.length >= 8)
+    if (step === 1) return !!(form.firstName && form.lastName && form.cell && form.email)
+    if (step === 2) return phoneVerified
+    if (step === 3) return !!(form.password && form.password === form.confirmPassword && form.password.length >= 8)
     return true
   }
 
-  // Send verification codes when moving to step 3
-  const sendCodes = async () => {
-    try {
-      // Send email OTP via Supabase (shouldCreateUser: true for signup flow)
-      await supabase.auth.signInWithOtp({ email: form.email, options: { shouldCreateUser: true } })
-
-      // Send phone code via Twilio
-      await fetch('/api/send-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier: form.phone, type: 'phone_signup' }),
-      })
-    } catch (err) {
-      console.error('Failed to send codes:', err)
-    }
-  }
-
-  const next = async () => {
+  // Check if email already exists + send SMS code
+  const handleStep1Continue = async () => {
     if (!canProceed()) return
     setError('')
+    setSendingCode(true)
 
-    if (step === 2) {
-      // Trigger code sending before showing step 3
-      await sendCodes()
+    try {
+      // Check if email already exists via a lightweight API call
+      const checkRes = await fetch('/api/check-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: form.email }),
+      })
+      const checkData = await checkRes.json()
+      if (checkData.exists) {
+        setError('This email is already associated with an account. Please sign in instead.')
+        setSendingCode(false)
+        return
+      }
+
+      // Send SMS verification code via Twilio
+      const res = await fetch('/api/send-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier: form.cell, type: 'phone_signup' }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to send code')
+      }
+
+      setStep(2)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Something went wrong'
+      setError(message)
+    } finally {
+      setSendingCode(false)
     }
-
-    if (step === 4) {
-      // Create the account
-      await createAccount()
-      return
-    }
-
-    setStep(s => Math.min(s + 1, 5))
   }
 
-  const back = () => {
-    setError('')
-    setStep(s => Math.max(s - 1, 1))
-  }
-
-  const verifyEmail = async () => {
-    if (!form.emailCode || form.emailCode.length !== 6) return
-    setVerifyingEmail(true)
+  const resendCode = async () => {
+    setSendingCode(true)
     setError('')
     try {
-      const { error } = await supabase.auth.verifyOtp({
-        email: form.email,
-        token: form.emailCode,
-        type: 'email',
+      const res = await fetch('/api/send-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier: form.cell, type: 'phone_signup' }),
       })
-      if (error) throw error
-      setEmailVerified(true)
+      if (!res.ok) throw new Error('Failed to resend code')
     } catch {
-      setError('Invalid email code. Please try again.')
+      setError('Failed to resend code. Please try again.')
     } finally {
-      setVerifyingEmail(false)
+      setSendingCode(false)
     }
   }
 
@@ -270,7 +264,7 @@ function SignupPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          identifier: form.phone,
+          identifier: form.cell,
           code: form.phoneCode,
           type: 'phone_signup',
         }),
@@ -278,17 +272,33 @@ function SignupPage() {
       if (!res.ok) throw new Error('Invalid code')
       setPhoneVerified(true)
     } catch {
-      setError('Invalid phone code. Please try again.')
+      setError('Invalid code. Please check and try again.')
     } finally {
       setVerifyingPhone(false)
     }
+  }
+
+  const next = async () => {
+    if (!canProceed()) return
+    setError('')
+
+    if (step === 3) {
+      await createAccount()
+      return
+    }
+
+    setStep(s => Math.min(s + 1, 4))
+  }
+
+  const back = () => {
+    setError('')
+    setStep(s => Math.max(s - 1, 1))
   }
 
   const createAccount = async () => {
     setLoading(true)
     setError('')
     try {
-      // Sign up with Supabase auth
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: form.email,
         password: form.password,
@@ -296,9 +306,9 @@ function SignupPage() {
           data: {
             first_name: form.firstName,
             last_name: form.lastName,
-            phone: form.phone,
+            phone: form.cell,
             company_name: form.companyName || null,
-            address: form.address,
+            address: form.address || null,
           },
         },
       })
@@ -306,23 +316,20 @@ function SignupPage() {
       if (signUpError) throw signUpError
 
       if (data.user) {
-        // Update profile with all collected info
         await supabase.from('profiles').upsert({
           id: data.user.id,
           first_name: form.firstName,
           last_name: form.lastName,
           email: form.email,
-          phone: form.phone,
+          phone: form.cell,
           company_name: form.companyName || null,
-          location: form.address,
-          // Generate a URL-friendly slug from company name or full name
+          location: form.address || null,
           slug: (form.companyName || `${form.firstName} ${form.lastName}`)
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/(^-|-$)/g, ''),
         })
 
-        // Seed default business hours, notification settings, availability settings
         await fetch('/api/seed-profile', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -330,9 +337,10 @@ function SignupPage() {
         })
       }
 
-      setStep(5)
-    } catch (err: any) {
-      setError(err.message ?? 'Something went wrong. Please try again.')
+      setStep(4)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Something went wrong. Please try again.'
+      setError(message)
     } finally {
       setLoading(false)
     }
@@ -379,38 +387,15 @@ function SignupPage() {
           }}>{error}</div>
         )}
 
-        {/* ── STEP 1: Business Info ── */}
+        {/* ── STEP 1: Your Info ── */}
         {step === 1 && (
           <div>
-            <StepTag>Step 1 of 4</StepTag>
-            <h2 style={headingStyle}>Tell us about your business</h2>
-            <p style={subStyle}>Company name and number are optional — add them if you have one, skip if you&apos;re just getting started.</p>
+            <StepTag>Step 1 of 3</StepTag>
+            <h2 style={headingStyle}>Let&apos;s get you set up</h2>
+            <p style={subStyle}>Tell us a bit about yourself. You can add your business phone and address later in your profile.</p>
 
             <FieldLabel>Company Name <span style={{ fontSize: 10, color: '#444', marginLeft: 6 }}>(optional)</span></FieldLabel>
             <InputField placeholder="e.g. Carlos Detail Co." value={form.companyName} onChange={e => update('companyName', e.target.value)} />
-
-            <FieldLabel>Company Phone Number <span style={{ fontSize: 10, color: '#444', marginLeft: 6 }}>(optional)</span></FieldLabel>
-            <InputField placeholder="e.g. (239) 555-0199" value={form.companyPhone} onChange={e => update('companyPhone', e.target.value)} />
-
-            <div style={{
-              background: '#00C2FF0D', border: '1px solid #00C2FF22',
-              borderRadius: 10, padding: '14px 16px', margin: '24px 0 28px',
-            }}>
-              <p style={{ margin: 0, fontSize: 13, color: '#00C2FF', lineHeight: 1.6 }}>
-                🎉 <strong>No credit card needed.</strong> Try GlossIO free for 14 days — if you love it, pick a plan that works for you.
-              </p>
-            </div>
-
-            <PrimaryBtn onClick={next}>Continue →</PrimaryBtn>
-          </div>
-        )}
-
-        {/* ── STEP 2: Personal Info ── */}
-        {step === 2 && (
-          <div>
-            <StepTag>Step 2 of 4</StepTag>
-            <h2 style={headingStyle}>Your personal info</h2>
-            <p style={subStyle}>This is how we&apos;ll identify your account and keep you in the loop.</p>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               <div>
@@ -423,80 +408,49 @@ function SignupPage() {
               </div>
             </div>
 
-            <FieldLabel>Phone Number</FieldLabel>
-            <InputField type="tel" placeholder="(239) 555-0100" value={form.phone} onChange={e => update('phone', e.target.value)} />
+            <FieldLabel>Cell Phone Number</FieldLabel>
+            <InputField type="tel" placeholder="(239) 555-0100" value={form.cell} onChange={e => update('cell', e.target.value)} />
+            <p style={{ margin: '-10px 0 16px', fontSize: 11, color: '#555' }}>
+              We&apos;ll send a 6-digit code to this number to verify your account.
+            </p>
 
             <FieldLabel>Email Address</FieldLabel>
             <InputField type="email" placeholder="carlos@gmail.com" value={form.email} onChange={e => update('email', e.target.value)} />
 
-            <FieldLabel>Address</FieldLabel>
+            <FieldLabel>Address <span style={{ fontSize: 10, color: '#444', marginLeft: 6 }}>(optional)</span></FieldLabel>
             <InputField placeholder="123 Main St, Naples, FL 34102" value={form.address} onChange={e => update('address', e.target.value)} />
 
-            <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
-              <GhostBtn onClick={back}>← Back</GhostBtn>
-              <PrimaryBtn onClick={next} disabled={!canProceed()}>Continue →</PrimaryBtn>
+            <div style={{
+              background: '#00C2FF0D', border: '1px solid #00C2FF22',
+              borderRadius: 10, padding: '14px 16px', margin: '24px 0 28px',
+            }}>
+              <p style={{ margin: 0, fontSize: 13, color: '#00C2FF', lineHeight: 1.6 }}>
+                No credit card needed. Try GlossIO free for 14 days.
+              </p>
             </div>
+
+            <PrimaryBtn onClick={handleStep1Continue} disabled={!canProceed() || sendingCode}>
+              {sendingCode ? 'Sending code...' : 'Continue \u2192'}
+            </PrimaryBtn>
           </div>
         )}
 
-        {/* ── STEP 3: Verify ── */}
-        {step === 3 && (
+        {/* ── STEP 2: Verify Phone ── */}
+        {step === 2 && (
           <div>
-            <StepTag>Step 3 of 4</StepTag>
-            <h2 style={headingStyle}>Verify your info</h2>
-            <p style={subStyle}>We sent a 6-digit code to your email and phone. Enter both below to confirm it&apos;s really you.</p>
+            <StepTag>Step 2 of 3</StepTag>
+            <h2 style={headingStyle}>Verify your phone</h2>
+            <p style={subStyle}>We sent a 6-digit code to <strong style={{ color: '#F0EDE8' }}>{form.cell}</strong>. Enter it below.</p>
 
-            {/* Email verify */}
-            <div style={{
-              background: '#0A0A0F',
-              border: `1px solid ${emailVerified ? '#00E5A044' : '#1E1E2E'}`,
-              borderRadius: 12, padding: '20px 22px', marginBottom: 16,
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <FieldLabel>Email Code</FieldLabel>
-                {emailVerified && <span style={{ fontSize: 11, color: '#00E5A0', fontWeight: 700 }}>✓ Verified</span>}
-              </div>
-              <p style={{ margin: '0 0 10px', fontSize: 12, color: '#555' }}>
-                Sent to {form.email}
-              </p>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <input
-                  placeholder="Enter 6-digit code"
-                  value={form.emailCode}
-                  onChange={e => update('emailCode', e.target.value)}
-                  maxLength={6}
-                  disabled={emailVerified}
-                  style={{ ...inputBase, marginBottom: 0, flex: 1 }}
-                />
-                <button
-                  onClick={verifyEmail}
-                  disabled={emailVerified || verifyingEmail || form.emailCode.length !== 6}
-                  style={{
-                    background: emailVerified ? '#00E5A022' : 'linear-gradient(135deg, #00C2FF, #A259FF)',
-                    border: emailVerified ? '1px solid #00E5A044' : 'none',
-                    borderRadius: 8, color: emailVerified ? '#00E5A0' : '#fff',
-                    fontSize: 12, fontWeight: 700, padding: '0 16px',
-                    cursor: emailVerified ? 'default' : 'pointer', whiteSpace: 'nowrap',
-                  }}
-                >
-                  {verifyingEmail ? '...' : emailVerified ? '✓ Done' : 'Verify'}
-                </button>
-              </div>
-            </div>
-
-            {/* Phone verify */}
             <div style={{
               background: '#0A0A0F',
               border: `1px solid ${phoneVerified ? '#00E5A044' : '#1E1E2E'}`,
               borderRadius: 12, padding: '20px 22px', marginBottom: 28,
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <FieldLabel>Phone Code</FieldLabel>
-                {phoneVerified && <span style={{ fontSize: 11, color: '#00E5A0', fontWeight: 700 }}>✓ Verified</span>}
+                <FieldLabel>Verification Code</FieldLabel>
+                {phoneVerified && <span style={{ fontSize: 11, color: '#00E5A0', fontWeight: 700 }}>Verified</span>}
               </div>
-              <p style={{ margin: '0 0 10px', fontSize: 12, color: '#555' }}>
-                Sent to {form.phone}
-              </p>
               <div style={{ display: 'flex', gap: 10 }}>
                 <input
                   placeholder="Enter 6-digit code"
@@ -517,24 +471,36 @@ function SignupPage() {
                     cursor: phoneVerified ? 'default' : 'pointer', whiteSpace: 'nowrap',
                   }}
                 >
-                  {verifyingPhone ? '...' : phoneVerified ? '✓ Done' : 'Verify'}
+                  {verifyingPhone ? '...' : phoneVerified ? 'Done' : 'Verify'}
                 </button>
               </div>
+              {!phoneVerified && (
+                <button
+                  onClick={resendCode}
+                  disabled={sendingCode}
+                  style={{
+                    background: 'none', border: 'none', color: '#00C2FF',
+                    fontSize: 12, cursor: 'pointer', marginTop: 12, padding: 0,
+                  }}
+                >
+                  {sendingCode ? 'Sending...' : 'Didn\u0027t get a code? Resend'}
+                </button>
+              )}
             </div>
 
             <div style={{ display: 'flex', gap: 10 }}>
-              <GhostBtn onClick={back}>← Back</GhostBtn>
-              <PrimaryBtn onClick={next} disabled={!canProceed()}>Continue →</PrimaryBtn>
+              <GhostBtn onClick={back}>&larr; Back</GhostBtn>
+              <PrimaryBtn onClick={next} disabled={!canProceed()}>Continue &rarr;</PrimaryBtn>
             </div>
           </div>
         )}
 
-        {/* ── STEP 4: Create Login ── */}
-        {step === 4 && (
+        {/* ── STEP 3: Create Login ── */}
+        {step === 3 && (
           <div>
-            <StepTag>Step 4 of 4</StepTag>
-            <h2 style={headingStyle}>Create your login</h2>
-            <p style={subStyle}>You can sign in with your email or phone number plus this password.</p>
+            <StepTag>Step 3 of 3</StepTag>
+            <h2 style={headingStyle}>Create your password</h2>
+            <p style={subStyle}>You&apos;ll sign in with your email and this password.</p>
 
             <FieldLabel>Password</FieldLabel>
             <div style={{ position: 'relative', marginBottom: 16 }}>
@@ -549,7 +515,7 @@ function SignupPage() {
                 type="button"
                 onClick={() => setShowPass(v => !v)}
                 style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: 16 }}
-              >{showPass ? '🙈' : '👁'}</button>
+              >{showPass ? '\uD83D\uDE48' : '\uD83D\uDC41'}</button>
             </div>
 
             <FieldLabel>Confirm Password</FieldLabel>
@@ -565,7 +531,7 @@ function SignupPage() {
                 type="button"
                 onClick={() => setShowConfirmPass(v => !v)}
                 style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: 16 }}
-              >{showConfirmPass ? '🙈' : '👁'}</button>
+              >{showConfirmPass ? '\uD83D\uDE48' : '\uD83D\uDC41'}</button>
             </div>
 
             {form.confirmPassword && form.password !== form.confirmPassword && (
@@ -584,36 +550,27 @@ function SignupPage() {
               )
             })()}
 
-            <div style={{
-              background: '#A259FF0D', border: '1px solid #A259FF22',
-              borderRadius: 10, padding: '12px 16px', marginBottom: 28,
-            }}>
-              <p style={{ margin: 0, fontSize: 12, color: '#A259FF', lineHeight: 1.6 }}>
-                🔐 You can sign in using your <strong>email</strong> or <strong>phone number</strong> + your password.
-              </p>
-            </div>
-
-            <div style={{ display: 'flex', gap: 10 }}>
-              <GhostBtn onClick={back}>← Back</GhostBtn>
+            <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+              <GhostBtn onClick={back}>&larr; Back</GhostBtn>
               <PrimaryBtn onClick={next} disabled={!canProceed() || loading}>
-                {loading ? 'Creating account...' : 'Create My Account →'}
+                {loading ? 'Creating account...' : 'Create My Account \u2192'}
               </PrimaryBtn>
             </div>
           </div>
         )}
 
-        {/* ── STEP 5: Welcome ── */}
-        {step === 5 && (
+        {/* ── STEP 4: Welcome ── */}
+        {step === 4 && (
           <div style={{ textAlign: 'center', padding: '20px 0' }}>
             <div style={{
               width: 72, height: 72, borderRadius: '50%',
               background: 'linear-gradient(135deg, #00C2FF, #A259FF)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 32, margin: '0 auto 24px',
-            }}>✓</div>
+            }}>{'\u2713'}</div>
 
             <h2 style={{ ...headingStyle, textAlign: 'center' }}>
-              You&apos;re in{form.companyName ? `, ${form.companyName}` : form.firstName ? `, ${form.firstName}` : ''}! 🎉
+              You&apos;re in{form.companyName ? `, ${form.companyName}` : form.firstName ? `, ${form.firstName}` : ''}!
             </h2>
             <p style={{ ...subStyle, textAlign: 'center' }}>
               Your 14-day free trial has started. Head to your dashboard to set up your profile, add your services, and grab your booking link.
@@ -624,10 +581,10 @@ function SignupPage() {
               borderRadius: 12, padding: '18px 22px', margin: '24px 0 32px', textAlign: 'left',
             }}>
               {[
-                { icon: '🎨', text: 'Customize your public profile' },
-                { icon: '🛠', text: 'Add your services & prices' },
-                { icon: '🔗', text: 'Copy & share your booking link' },
-                { icon: '📅', text: 'Watch appointments roll in' },
+                { icon: '\uD83C\uDFA8', text: 'Customize your public profile' },
+                { icon: '\uD83D\uDEE0', text: 'Add your services & prices' },
+                { icon: '\uD83D\uDD17', text: 'Copy & share your booking link' },
+                { icon: '\uD83D\uDCC5', text: 'Watch appointments roll in' },
               ].map(item => (
                 <div key={item.text} style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 12 }}>
                   <span style={{ fontSize: 18 }}>{item.icon}</span>
@@ -637,13 +594,13 @@ function SignupPage() {
             </div>
 
             <PrimaryBtn onClick={() => router.push('/dashboard')}>
-              Go to My Dashboard →
+              Go to My Dashboard &rarr;
             </PrimaryBtn>
           </div>
         )}
       </div>
 
-      {step < 5 && (
+      {step < 4 && (
         <p style={{ marginTop: 20, fontSize: 13, color: '#555' }}>
           Already have an account?{' '}
           <Link href="/login" style={{ color: '#00C2FF', textDecoration: 'none', fontWeight: 600 }}>
