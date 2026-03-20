@@ -93,22 +93,14 @@
   <!-- Supabase SDK (CDN) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
-  {% if env.sentryDsn %}
-  <script src="https://browser.sentry-cdn.com/7.100.0/bundle.tracing.replay.min.js" crossorigin="anonymous"></script>
-  {% endif %}
-
-  <script>
-    window.__GLOSSIO_SUPABASE_URL = "{{ env.supabaseUrl or '' }}";
-    window.__GLOSSIO_SUPABASE_ANON_KEY = "{{ env.supabaseAnonKey or '' }}";
-    window.__GLOSSIO_STRIPE_KEY = "{{ env.stripePublishableKey or '' }}";
-    window.__GLOSSIO_SENTRY_DSN = "{{ env.sentryDsn or '' }}";
-  </script>
+  <!-- Runtime config (injected by server.js from env vars) -->
+  <script src="/config.js"></script>
 
   <script src="/js/supabase-client.js"></script>
   <script src="/js/supabase-data.js"></script>
   <script src="/js/api.js"></script>
   <script src="/js/auth-guard.js"></script>
-  {% if env.sentryDsn %}<script src="/js/sentry-init.js"></script>{% endif %}
+  <script src="/js/sentry-init.js"></script>
 
   <script src="/js/dashboard.js"></script>
   {% if extraJs %}<script src="/js/{{ extraJs }}"></script>{% endif %}
