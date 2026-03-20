@@ -1,9 +1,9 @@
 /* ─── /api/send-booking-notification — SMS notify detailer of new booking ─── */
 
-const twilio = require("twilio");
-const { createClient } = require("@supabase/supabase-js");
+import twilio from "twilio";
+import { createClient } from "@supabase/supabase-js";
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
   }
@@ -17,18 +17,31 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: "profileId required" }) };
   }
 
-  /* ── Rate limit: max 5 booking notifications per IP per hour ── */
+  /* ── Persistent rate limit: max 5 booking notifications per IP per hour ── */
   const clientIp = (event.headers["x-forwarded-for"] || event.headers["client-ip"] || "unknown").split(",")[0].trim();
-  const rateLimitKey = `booking:${clientIp}`;
-  const now = Date.now();
 
-  /* Simple in-memory rate limit (resets on cold start, but good enough for spam) */
-  if (!global._rateLimits) global._rateLimits = {};
-  const rl = global._rateLimits[rateLimitKey] || { count: 0, reset: now + 3600000 };
-  if (now > rl.reset) { rl.count = 0; rl.reset = now + 3600000; }
-  rl.count++;
-  global._rateLimits[rateLimitKey] = rl;
-  if (rl.count > 5) {
+  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+
+  const rlAllowed = await (async () => {
+    const key = `booking:${clientIp}`;
+    const { data: existing } = await supabase
+      .from("rate_limits").select("id, count, window_start, window_seconds").eq("key", key).single();
+    const now = new Date();
+    if (existing) {
+      const windowEnd = new Date(new Date(existing.window_start).getTime() + existing.window_seconds * 1000);
+      if (now > windowEnd) {
+        await supabase.from("rate_limits").update({ count: 1, window_start: now.toISOString(), window_seconds: 3600 }).eq("id", existing.id);
+        return true;
+      }
+      if (existing.count >= 5) return false;
+      await supabase.from("rate_limits").update({ count: existing.count + 1 }).eq("id", existing.id);
+      return true;
+    }
+    await supabase.from("rate_limits").upsert({ key, count: 1, window_start: now.toISOString(), window_seconds: 3600 }, { onConflict: "key" });
+    return true;
+  })();
+
+  if (!rlAllowed) {
     return { statusCode: 429, body: JSON.stringify({ error: "Too many booking requests. Please try again later." }) };
   }
 
@@ -39,11 +52,6 @@ exports.handler = async (event) => {
   if (!accountSid || !authToken || !fromNumber) {
     return { statusCode: 500, body: JSON.stringify({ error: "Twilio not configured" }) };
   }
-
-  const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
 
   try {
     /* Get detailer's phone and notification prefs */

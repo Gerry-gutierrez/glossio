@@ -1,8 +1,8 @@
 /* ─── /api/public-profile — Get public profile data by slug ───────────────── */
 
-const { createClient } = require("@supabase/supabase-js");
+import { createClient } from "@supabase/supabase-js";
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   if (event.httpMethod !== "GET") {
     return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
   }

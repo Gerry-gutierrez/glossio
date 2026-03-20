@@ -5,6 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>{{ pageTitle or site.title }} — {{ site.title }}</title>
   <meta name="description" content="{{ pageDescription or site.description }}">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="{{ ogTitle or pageTitle or site.title }}">
+  <meta property="og:description" content="{{ ogDescription or pageDescription or site.description }}">
+  <meta property="og:type" content="{{ ogType or 'website' }}">
+  <meta property="og:site_name" content="GlossIO">
+  <meta property="og:url" content="https://www.glossio.org">
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="{{ ogTitle or pageTitle or site.title }}">
+  <meta name="twitter:description" content="{{ ogDescription or pageDescription or site.description }}">
+
   <link rel="stylesheet" href="/css/globals.css">
   {% if extraCss %}<link rel="stylesheet" href="/css/{{ extraCss }}">{% endif %}
 </head>

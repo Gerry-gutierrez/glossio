@@ -1,8 +1,36 @@
 /* ─── /api/send-code — Send Twilio SMS OTP ────────────────────────────────── */
 
-const twilio = require("twilio");
+import twilio from "twilio";
+import { createClient } from "@supabase/supabase-js";
 
-exports.handler = async (event) => {
+/** Check/increment rate limit in Supabase. Returns true if allowed, false if blocked. */
+async function checkRateLimit(supabase, key, maxCount, windowSeconds) {
+  const { data: existing } = await supabase
+    .from("rate_limits")
+    .select("id, count, window_start, window_seconds")
+    .eq("key", key)
+    .single();
+
+  const now = new Date();
+
+  if (existing) {
+    const windowEnd = new Date(new Date(existing.window_start).getTime() + existing.window_seconds * 1000);
+    if (now > windowEnd) {
+      /* Window expired — reset */
+      await supabase.from("rate_limits").update({ count: 1, window_start: now.toISOString(), window_seconds: windowSeconds }).eq("id", existing.id);
+      return true;
+    }
+    if (existing.count >= maxCount) return false;
+    await supabase.from("rate_limits").update({ count: existing.count + 1 }).eq("id", existing.id);
+    return true;
+  }
+
+  /* First request — create entry */
+  await supabase.from("rate_limits").upsert({ key, count: 1, window_start: now.toISOString(), window_seconds: windowSeconds }, { onConflict: "key" });
+  return true;
+}
+
+export const handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
   }
@@ -16,14 +44,10 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: "Phone number required" }) };
   }
 
-  /* ── Rate limit: max 3 OTP requests per phone per 10 minutes ── */
-  const now = Date.now();
-  if (!global._otpLimits) global._otpLimits = {};
-  const rl = global._otpLimits[phone] || { count: 0, reset: now + 600000 };
-  if (now > rl.reset) { rl.count = 0; rl.reset = now + 600000; }
-  rl.count++;
-  global._otpLimits[phone] = rl;
-  if (rl.count > 3) {
+  /* ── Persistent rate limit: max 3 OTP requests per phone per 10 minutes ── */
+  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+  const allowed = await checkRateLimit(supabase, `otp:${phone}`, 3, 600);
+  if (!allowed) {
     return { statusCode: 429, body: JSON.stringify({ error: "Too many code requests. Please wait a few minutes." }) };
   }
 
@@ -46,12 +70,6 @@ exports.handler = async (event) => {
     });
 
     /* Store code in Supabase */
-    const { createClient } = require("@supabase/supabase-js");
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    );
-
     await supabase.from("verification_codes").insert({
       identifier: phone,
       code: code,

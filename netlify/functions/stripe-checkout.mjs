@@ -1,8 +1,8 @@
 /* ─── /api/stripe-checkout — Create Stripe Checkout session ───────────────── */
 
-const stripe = require("stripe");
+import stripe from "stripe";
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
   }

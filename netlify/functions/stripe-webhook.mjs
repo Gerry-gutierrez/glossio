@@ -1,9 +1,9 @@
 /* ─── /api/webhooks/stripe — Stripe webhook handler ───────────────────────── */
 
-const { createClient } = require("@supabase/supabase-js");
-const stripe = require("stripe");
+import { createClient } from "@supabase/supabase-js";
+import stripe from "stripe";
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method not allowed" };
   }

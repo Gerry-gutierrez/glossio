@@ -1,18 +1,15 @@
-// Mock for https://esm.sh/@supabase/supabase-js@2
+// Mock for @supabase/supabase-js (used via vitest alias)
 import { vi } from 'vitest'
 
 // Chainable mock that tracks calls
 export function createMockChain() {
   const results: Record<string, any> = {}
-  const calls: Array<{ method: string; args: any[] }> = []
 
   const chain: any = {}
   const methods = ['select', 'insert', 'update', 'delete', 'eq', 'neq', 'in', 'is', 'gte', 'lte', 'order', 'limit', 'single', 'rpc', 'upsert', 'not', 'like', 'ilike', 'textSearch']
 
   for (const method of methods) {
-    chain[method] = vi.fn((...args: any[]) => {
-      calls.push({ method, args })
-      // If single() is called, return the result promise
+    chain[method] = vi.fn((..._args: any[]) => {
       if (method === 'single') {
         return Promise.resolve(results._next || { data: null, error: null })
       }
@@ -26,7 +23,7 @@ export function createMockChain() {
     resolve(result)
   }
 
-  return { chain, calls, setResult: (r: any) => { results._next = r } }
+  return { chain, setResult: (r: any) => { results._next = r } }
 }
 
 // Per-table mock chains
@@ -49,22 +46,19 @@ export function resetMocks() {
 }
 
 // Auth admin mock
-const authAdminMock = {
+export const authAdminMock = {
   updateUserById: vi.fn().mockResolvedValue({ error: null }),
 }
 
 export const createClient = vi.fn(() => ({
   from: vi.fn((table: string) => {
     if (tables[table]) return tables[table].chain
-    // Return a default no-op chain
     return createMockChain().chain
   }),
-  rpc: vi.fn((name: string, params: any) => {
+  rpc: vi.fn((name: string, _params: any) => {
     return Promise.resolve(rpcResults[name] || { data: null, error: null })
   }),
   auth: {
     admin: authAdminMock,
   },
 }))
-
-export { authAdminMock }

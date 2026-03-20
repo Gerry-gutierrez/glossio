@@ -1,10 +1,10 @@
 /* ─── /api/send-reminder — Send 24hr appointment reminders ────────────────── */
 /* Designed to be called by a scheduled Netlify Function or cron job          */
 
-const twilio = require("twilio");
-const { createClient } = require("@supabase/supabase-js");
+import twilio from "twilio";
+import { createClient } from "@supabase/supabase-js";
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
   const authToken = process.env.TWILIO_AUTH_TOKEN;
   const fromNumber = process.env.TWILIO_PHONE_NUMBER;
