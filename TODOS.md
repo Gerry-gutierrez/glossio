@@ -5,121 +5,102 @@
 - **P2** — Should complete before launch
 - **P3** — Post-launch improvement
 
+---
+
 ## P1 — Must Complete
 
-### Wire dashboard/services to Supabase
-- **Why:** Services page shows mock data. Detailers can't add/edit/delete services.
-- **Files:** `app/dashboard/services/page.tsx`
-- **Effort:** M
-- **Blocked by:** Nothing
+### Deploy & Go Live ✓
+- [x] Supabase project URL + anon key
+- [x] Stripe publishable key + secret key + webhook secret
+- [x] Twilio account SID + auth token + phone number
+- [ ] Sentry DSN (optional — skipped for now)
+- [x] Railway deployment (Docker + server.js)
+- [x] Custom domain `glossio.org` + SSL via Railway
 
-### Wire dashboard/settings to Supabase
-- **Why:** Settings page shows mock data. Can't update business hours, notifications, availability.
-- **Files:** `app/dashboard/settings/page.tsx`
-- **Effort:** M
-- **Blocked by:** Nothing
-
-### Wire dashboard/layout to real user data
-- **Why:** Sidebar shows hardcoded user name/company.
-- **Files:** `app/dashboard/layout.tsx`
-- **Effort:** S
-- **Blocked by:** Nothing
-
-### Wire dashboard/link to real profile data
-- **Why:** "My Link" page shows mock data.
-- **Files:** `app/dashboard/link/page.tsx`
-- **Effort:** S
-- **Blocked by:** Nothing
-
-### Build booking appointment save
-- **Why:** Booking flow collects all data but doesn't write to Supabase. Core value loop broken.
-- **Files:** `app/[slug]/book/page.tsx`, new API route needed
-- **Effort:** M
-- **Blocked by:** Nothing
-
-### Wire booking flow to fetch real services by slug
-- **Why:** Booking page uses MOCK_SERVICES instead of detailer's actual services.
-- **Files:** `app/[slug]/book/page.tsx`
-- **Effort:** S
-- **Blocked by:** Nothing
-
-### Wire dashboard/clients to Supabase
-- **Why:** CRM page needs real client data.
-- **Files:** `app/dashboard/clients/page.tsx`
-- **Effort:** M
-- **Blocked by:** Nothing
-
-### Wire dashboard/appointments to Supabase
-- **Why:** Appointment management needs real data + status transitions.
-- **Files:** `app/dashboard/appointments/page.tsx`
-- **Effort:** M
-- **Blocked by:** Booking save must work first
-
-### Wire dashboard/profile to Supabase
-- **Why:** Profile edit page needs to read/write real profile data.
-- **Files:** `app/dashboard/profile/page.tsx`
-- **Effort:** M
-- **Blocked by:** Nothing
+---
 
 ## P2 — Should Complete Before Launch
 
-### Add error handling to API routes
-- **Why:** Twilio/Stripe errors bubble as raw 500s. Users see generic error pages.
-- **Files:** All `app/api/*/route.ts`
+### Persistent Rate Limiting (Supabase)
+- **Status:** In-memory rate limiting in `netlify/functions/send-code.js` resets on every cold start — effectively no rate limiting in serverless
+- **Action:** Create a `rate_limits` table in Supabase. Check/increment counters there instead of `global._otpLimits`. Also applies to `send-booking-notification.js`.
 - **Effort:** S
-- **Blocked by:** Nothing
+- **Why:** Without this, someone can spam OTP requests by triggering new function instances
 
-### Add file validation to upload-photo
-- **Why:** No file size or type validation. Potential abuse vector.
-- **Files:** `app/api/upload-photo/route.ts`
-- **Effort:** S
-- **Blocked by:** Nothing
-
-### Create shared loading/error pattern for dashboard pages
-- **Why:** 7 dashboard pages all need loading spinners and error messages. A shared useSupabaseQuery hook or wrapper component prevents 7 different implementations.
-- **Files:** New shared hook/component + all dashboard pages
-- **Effort:** M
-- **Blocked by:** Pages must be wired first (can be retrofitted)
-- **Context:** Identified during eng review. Without this, each page will implement loading/error differently, creating inconsistency.
-
-### Add booking spam prevention
-- **Why:** Public booking flow has no rate limiting or CAPTCHA.
-- **Files:** Booking save API route (when built)
-- **Effort:** S
-- **Blocked by:** Booking save implementation
-
-### Add double-submit prevention on booking form
-- **Why:** Double-click on submit could create duplicate appointments.
-- **Files:** `app/[slug]/book/page.tsx`
-- **Effort:** S
-- **Blocked by:** Nothing
+---
 
 ## P3 — Post-Launch
 
-### Add test suite
-- **Why:** Zero tests exist. At minimum need API route tests and RLS verification.
-- **Effort:** L
+### Open Graph Meta Tags for Public Profile
+- **Status:** Public profile page has no og:title, og:description, og:image tags
+- **Action:** Add OG meta tags to `src/public-profile.njk` template (dynamically populated via JS or with sensible defaults)
+- **Effort:** XS
+- **Why:** Shared links on social media show as plain URLs with no preview — hurts virality
 
-### Add error tracking (Sentry or similar)
-- **Why:** No visibility into production errors.
+### Add SMS appointment reminders (cron)
+- **Status:** Edge function ready (`supabase/functions/send-reminder/index.ts`), needs Supabase pg_cron scheduling
+- **Action:** Run SQL in Supabase dashboard to enable daily cron (see below)
 - **Effort:** S
 
-### Add structured logging to API routes
-- **Why:** No logs for debugging production issues.
-- **Effort:** S
+---
 
-### Add Error Boundary component
-- **Why:** Unhandled React errors show blank pages.
-- **Effort:** S
+## Completed (Reference)
 
-### Add forgot password flow
-- **Why:** Users who forget passwords have no recovery path.
-- **Effort:** M
+### Front-End ✓
+All pages built in 11ty/Nunjucks with full responsive mobile support:
+- Landing page with mobile hamburger nav
+- Login, Signup, Forgot Password
+- Dashboard home (stats, recent appointments)
+- Services (tabbed view, add/edit/delete modals)
+- Appointments (list + calendar views, status filters)
+- Clients CRM (search, sort, detail view)
+- Profile (edit modal, photo grid, preview)
+- Link page (share actions, slug display)
+- Settings (Business Info, Availability, Notifications, Billing, Support, Account)
+- Public booking profile (services sheet, photo modal)
 
-### Add SMS appointment reminders
-- **Why:** Twilio is integrated but automated reminders aren't built.
-- **Effort:** L
+### Back-End ✓
+- Supabase client + full data layer with localStorage fallback
+- 12 Supabase Edge Functions (auth, billing, notifications, profiles)
+- Stripe checkout + billing portal + webhooks
+- Twilio SMS OTP + booking notifications
+- Sentry error monitoring (client-side)
+- Auth guard + sidebar hydration
 
-### Add calendar view to dashboard
-- **Why:** Dashboard has placeholder for calendar. Visual scheduling is a key feature.
-- **Effort:** L
+### Structured Logging ✓
+- `lib/logger.ts` with JSON output (logInfo, logWarn, logError)
+- Used in API routes for Railway log aggregation
+
+### Calendar View ✓
+- Dual-month calendar in `src/dashboard/appointments.njk` + `src/js/appointments.js`
+- Color-coded dots by status, appointment counts per day
+
+### Test Suite ✓
+- vitest configured with Deno Edge Function mocks
+- 12 test files covering all Supabase Edge Functions:
+  - `send-code`, `verify-code`, `check-email`, `confirm-email`
+  - `lookup-email`, `seed-profile`, `public-profile`
+  - `stripe-checkout`, `stripe-portal`, `stripe-webhook`
+  - `send-booking-notification`, `send-reminder`
+- Run: `npm test`
+
+### Hardening ✓
+- Error handling on all Edge Functions (safe JSON parse, user-friendly messages)
+- File upload validation (10 MB max, JPEG/PNG/WebP/HEIC only)
+- Rate limiting on booking notifications (5/hr per IP) and OTP sends (3/10min per phone)
+- Double-submit prevention on booking buttons
+
+### Mobile Responsiveness ✓
+- Viewport meta with `viewport-fit=cover`
+- 768px + 480px breakpoints across all CSS
+- Landing page hamburger menu + slide-in drawer
+- Dashboard sidebar drawer (existing)
+- 44px minimum touch targets on mobile
+- Safe-area / notch padding for iOS
+
+---
+
+## References
+- **Database schema:** `supabase/migrations/001_initial.sql`
+- **Design system:** `DESIGN.md` + `src/css/globals.css`
+- **Build status log:** `src/SUMMARY_LOG.md`

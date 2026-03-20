@@ -5,6 +5,14 @@ What this is: SaaS platform for auto detailers to manage bookings, services, and
 Project type: Web app (dashboard + public booking pages + marketing landing page)
 Audience: Solo auto detailers who currently manage their business via Instagram DMs and notes apps
 
+## Aesthetic Direction
+- **Direction:** Luxury/Refined — dark surfaces, warm serif typography, intentional accent colors
+- **Decoration level:** Intentional — subtle glows, gradient accents, no gratuitous ornamentation
+- **Mood:** Premium but approachable. The product should feel like a high-end tool built specifically for detailers, not a generic SaaS dashboard.
+- **Layout approach:** Grid-disciplined — consistent columns, predictable alignment. Single-column marketing, sidebar+content dashboard.
+- **Max content width:** 1200px
+- **Grid:** 1 column (mobile) → 2 columns (tablet) → sidebar + main content (desktop)
+
 ## Typography
 
 | Role | Font | Notes |
@@ -187,13 +195,17 @@ Audience: Solo auto detailers who currently manage their business via Instagram 
 
 These are specified correctly in DESIGN.md but NOT yet fixed in code:
 - [x] H3 in landing page cards is 17px — FIXED (22px) by /qa-design-review 2026-03-18
-- [ ] Nav links lack hover states — add per Interaction States section above
-- [ ] Nav doesn't collapse to hamburger on mobile — add per Responsive section above
+- [x] Nav links lack hover states — FIXED (opacity 0.6→1 transition) by /qa-design-review 2026-03-20
+- [x] Nav doesn't collapse to hamburger on mobile — FIXED (hamburger + drawer) by mobile responsiveness session 2026-03-20
 - [x] Some input heights at 39px — FIXED (48px) by /qa-design-review 2026-03-18
 - [ ] "How It Works" section uses AI-recognizable icon-in-circle grid pattern
-- [ ] No motion/transitions on any page — add per Motion section above
-- [ ] Login button appears disabled/faded — should match cyan CTA style
-- [ ] "Sign In" link on signup page has 15px touch target — needs 44px minimum
+- [x] No motion/transitions on any page — FIXED (scroll-reveal, button hover/active, focus-visible) by /qa-design-review 2026-03-20
+- [x] Login button height 42px/radius 10px — FIXED (48px/pill) by /qa 2026-03-20
+- [x] "Sign In" link on signup page has 15px touch target — FIXED (44px) by /qa 2026-03-20
+- [x] H4 "How It Works" titles at 15px/700 — FIXED (18px/600) by /qa 2026-03-20
+- [x] Pricing toggle buttons 31px height — FIXED (44px) by /qa 2026-03-20
+- [x] Hero input 41px height — FIXED (48px) by /qa 2026-03-20
+- [x] Footer Contact link 18px height — FIXED (44px) by /qa 2026-03-20
 
 ## Decisions Log
 
@@ -205,3 +217,6 @@ These are specified correctly in DESIGN.md but NOT yet fixed in code:
 | 2026-03-18 | Dark-only theme | Matches automotive/detailing aesthetic |
 | 2026-03-18 | Added interaction states, motion, responsive, accessibility specs | Design consultation update — fills gaps found in audit |
 | 2026-03-18 | Core palette LOCKED: do not change | bg, primary, secondary, highlight, text colors are final |
+| 2026-03-20 | Aesthetic direction formalized | Luxury/Refined with intentional decoration — by /design-consultation |
+| 2026-03-20 | Layout approach formalized | Grid-disciplined, max 1200px, sidebar+content on desktop — by /design-consultation |
+| 2026-03-20 | Design audit score: B (AI Slop: B-) | Primary gaps: missing motion, "How It Works" AI pattern, login button styling — by /plan-design-review |
