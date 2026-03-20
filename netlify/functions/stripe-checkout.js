@@ -12,7 +12,11 @@ exports.handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ error: "Stripe not configured" }) };
   }
 
-  const { priceId, profileId, email, successUrl, cancelUrl } = JSON.parse(event.body || "{}");
+  let body;
+  try { body = JSON.parse(event.body || "{}"); } catch (_) {
+    return { statusCode: 400, body: JSON.stringify({ error: "Invalid request body" }) };
+  }
+  const { priceId, profileId, email, successUrl, cancelUrl } = body;
   if (!priceId || !profileId) {
     return { statusCode: 400, body: JSON.stringify({ error: "priceId and profileId required" }) };
   }
@@ -40,9 +44,11 @@ exports.handler = async (event) => {
     };
   } catch (err) {
     console.error("stripe-checkout error:", err);
+    const msg = err.type === "StripeCardError" ? err.message
+      : "Failed to create checkout session. Please try again.";
     return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "Failed to create checkout session" }),
+      statusCode: err.statusCode || 500,
+      body: JSON.stringify({ error: msg }),
     };
   }
 };

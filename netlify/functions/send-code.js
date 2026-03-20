@@ -7,9 +7,24 @@ exports.handler = async (event) => {
     return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
   }
 
-  const { phone, type } = JSON.parse(event.body || "{}");
+  let body;
+  try { body = JSON.parse(event.body || "{}"); } catch (_) {
+    return { statusCode: 400, body: JSON.stringify({ error: "Invalid request body" }) };
+  }
+  const { phone, type } = body;
   if (!phone) {
     return { statusCode: 400, body: JSON.stringify({ error: "Phone number required" }) };
+  }
+
+  /* ── Rate limit: max 3 OTP requests per phone per 10 minutes ── */
+  const now = Date.now();
+  if (!global._otpLimits) global._otpLimits = {};
+  const rl = global._otpLimits[phone] || { count: 0, reset: now + 600000 };
+  if (now > rl.reset) { rl.count = 0; rl.reset = now + 600000; }
+  rl.count++;
+  global._otpLimits[phone] = rl;
+  if (rl.count > 3) {
+    return { statusCode: 429, body: JSON.stringify({ error: "Too many code requests. Please wait a few minutes." }) };
   }
 
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
@@ -49,9 +64,12 @@ exports.handler = async (event) => {
     };
   } catch (err) {
     console.error("send-code error:", err);
+    const msg = err.code === 21211 ? "Invalid phone number format"
+      : err.code === 21608 ? "SMS not supported for this number"
+      : "Failed to send verification code. Please try again.";
     return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "Failed to send code" }),
+      statusCode: err.status || 500,
+      body: JSON.stringify({ error: msg }),
     };
   }
 };

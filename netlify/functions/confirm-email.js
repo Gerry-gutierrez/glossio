@@ -7,7 +7,11 @@ exports.handler = async (event) => {
     return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
   }
 
-  const { userId } = JSON.parse(event.body || "{}");
+  let body;
+  try { body = JSON.parse(event.body || "{}"); } catch (_) {
+    return { statusCode: 400, body: JSON.stringify({ error: "Invalid request body" }) };
+  }
+  const { userId } = body;
   if (!userId) {
     return { statusCode: 400, body: JSON.stringify({ error: "userId required" }) };
   }

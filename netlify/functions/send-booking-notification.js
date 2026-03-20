@@ -8,9 +8,28 @@ exports.handler = async (event) => {
     return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
   }
 
-  const { profileId, clientName, serviceName, date, time } = JSON.parse(event.body || "{}");
+  let body;
+  try { body = JSON.parse(event.body || "{}"); } catch (_) {
+    return { statusCode: 400, body: JSON.stringify({ error: "Invalid request body" }) };
+  }
+  const { profileId, clientName, serviceName, date, time, clientEmail } = body;
   if (!profileId) {
     return { statusCode: 400, body: JSON.stringify({ error: "profileId required" }) };
+  }
+
+  /* ── Rate limit: max 5 booking notifications per IP per hour ── */
+  const clientIp = (event.headers["x-forwarded-for"] || event.headers["client-ip"] || "unknown").split(",")[0].trim();
+  const rateLimitKey = `booking:${clientIp}`;
+  const now = Date.now();
+
+  /* Simple in-memory rate limit (resets on cold start, but good enough for spam) */
+  if (!global._rateLimits) global._rateLimits = {};
+  const rl = global._rateLimits[rateLimitKey] || { count: 0, reset: now + 3600000 };
+  if (now > rl.reset) { rl.count = 0; rl.reset = now + 3600000; }
+  rl.count++;
+  global._rateLimits[rateLimitKey] = rl;
+  if (rl.count > 5) {
+    return { statusCode: 429, body: JSON.stringify({ error: "Too many booking requests. Please try again later." }) };
   }
 
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
@@ -65,9 +84,10 @@ exports.handler = async (event) => {
     };
   } catch (err) {
     console.error("send-booking-notification error:", err);
+    /* Don't fail the booking if notification fails — just log it */
     return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "Notification failed" }),
+      statusCode: 200,
+      body: JSON.stringify({ success: false, warning: "Booking saved but notification failed to send" }),
     };
   }
 };

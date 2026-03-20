@@ -12,7 +12,11 @@ exports.handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ error: "Stripe not configured" }) };
   }
 
-  const { customerId } = JSON.parse(event.body || "{}");
+  let body;
+  try { body = JSON.parse(event.body || "{}"); } catch (_) {
+    return { statusCode: 400, body: JSON.stringify({ error: "Invalid request body" }) };
+  }
+  const { customerId } = body;
   if (!customerId) {
     return { statusCode: 400, body: JSON.stringify({ error: "customerId required" }) };
   }
@@ -31,9 +35,12 @@ exports.handler = async (event) => {
     };
   } catch (err) {
     console.error("stripe-portal error:", err);
+    const msg = err.type === "StripeInvalidRequestError"
+      ? "Billing account not found. Please contact support."
+      : "Failed to open billing portal. Please try again.";
     return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "Failed to create portal session" }),
+      statusCode: err.statusCode || 500,
+      body: JSON.stringify({ error: msg }),
     };
   }
 };
