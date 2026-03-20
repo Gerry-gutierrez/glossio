@@ -29,8 +29,8 @@ Then edit `.env.local` with your actual keys:
 ### Supabase
 1. Go to https://supabase.com → New Project
 2. After it creates, go to Project Settings → API
-3. Copy the `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
-4. Copy the `anon public` key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+3. Copy the `Project URL` → `SUPABASE_URL`
+4. Copy the `anon public` key → `SUPABASE_ANON_KEY`
 5. Copy the `service_role secret` key → `SUPABASE_SERVICE_ROLE_KEY`
 
 ### Run the Database Migration
@@ -42,10 +42,10 @@ Then click Run.
 1. Go to https://stripe.com → Create account
 2. Dashboard → Developers → API keys
 3. Copy Secret key → `STRIPE_SECRET_KEY`
-4. Copy Publishable key → `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+4. Copy Publishable key → `STRIPE_PUBLISHABLE_KEY`
 5. Create two Products in Stripe (Monthly $25/mo and Annual $250/yr)
 6. Copy each Price ID → `STRIPE_MONTHLY_PRICE_ID` and `STRIPE_ANNUAL_PRICE_ID`
-7. For the webhook: `stripe listen --forward-to localhost:3000/api/webhooks/stripe`
+7. For the webhook: `stripe listen --forward-to localhost:8888/.netlify/functions/stripe-webhook`
 8. Copy the webhook signing secret → `STRIPE_WEBHOOK_SECRET`
 
 ### Twilio
@@ -57,34 +57,40 @@ Then click Run.
 ## 4. Start the Dev Server
 
 ```
-npm run dev
+npx @11ty/eleventy --serve
 ```
 
-Open http://localhost:3000
+Open http://localhost:8080
 
 ## 5. Current Routes
 
+### Pages (11ty static)
 | Route | Description |
 |-------|-------------|
 | `/` | Landing page |
-| `/login` | Sign in |
-| `/signup` | 4-step onboarding with OTP verification |
-| `/dashboard` | Main detailer dashboard |
-| `/dashboard/appointments` | Appointment management |
-| `/dashboard/clients` | Client CRM |
-| `/dashboard/services` | Service menu editor |
-| `/dashboard/profile` | Profile editor |
-| `/dashboard/link` | Booking link management |
-| `/dashboard/settings` | Account settings |
-| `/[slug]` | Public detailer profile |
-| `/[slug]/book` | Client booking flow |
-| `/api/stripe/checkout` | Create Stripe checkout session |
-| `/api/stripe/portal` | Stripe billing portal |
-| `/api/webhooks/stripe` | Stripe webhook endpoint |
-| `/api/send-code` | Send Twilio OTP verification code |
-| `/api/verify-code` | Verify OTP code |
-| `/api/seed-profile` | Seed defaults after signup |
-| `/api/upload-photo` | Upload work photos to Supabase Storage |
+| `/login/` | Sign in |
+| `/signup/` | Onboarding with OTP verification |
+| `/dashboard/` | Main detailer dashboard |
+| `/dashboard/appointments/` | Appointment management |
+| `/dashboard/clients/` | Client CRM |
+| `/dashboard/services/` | Service menu editor |
+| `/dashboard/profile/` | Profile editor |
+| `/dashboard/link/` | Booking link management |
+| `/dashboard/settings/` | Account settings |
+| `/p/{slug}/` | Public detailer profile |
+
+### API (Netlify Functions)
+| Function | Description |
+|----------|-------------|
+| `check-email` | Check if email exists |
+| `confirm-email` | Confirm email address |
+| `lookup-email` | Look up profile by email |
+| `seed-profile` | Seed defaults after signup |
+| `send-code` | Send Twilio OTP code |
+| `verify-code` | Verify OTP code |
+| `send-booking-notification` | SMS notification for new bookings |
+| `stripe-checkout` | Create Stripe checkout session |
+| `stripe-portal` | Stripe billing portal redirect |
 
 ## 6. Live Site
 
