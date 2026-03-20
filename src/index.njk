@@ -10,7 +10,7 @@ extraJs: landing.js
   <!-- NAV -->
   <nav class="nav">
     <a href="/" class="gradient-text" style="font-size:22px;font-weight:700">GlossIO</a>
-    <div class="nav-links">
+    <div class="nav-links" id="navLinks">
       <a href="#how-it-works" class="nav-link">How it Works</a>
       <a href="#pricing" class="nav-link">Pricing</a>
       <a href="#why" class="nav-link">For Detailers</a>
@@ -18,8 +18,26 @@ extraJs: landing.js
     <div class="nav-actions">
       <a href="/login/" class="nav-login">Log In</a>
       <a href="/signup/" class="nav-cta">Start Free Trial</a>
+      <button class="nav-hamburger" id="navHamburger" aria-label="Toggle menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
     </div>
   </nav>
+
+  <!-- Mobile nav overlay -->
+  <div class="nav-mobile-overlay" id="navOverlay"></div>
+  <div class="nav-mobile-drawer" id="navDrawer">
+    <a href="#how-it-works" class="nav-mobile-link" onclick="closeNavDrawer()">How it Works</a>
+    <a href="#pricing" class="nav-mobile-link" onclick="closeNavDrawer()">Pricing</a>
+    <a href="#why" class="nav-mobile-link" onclick="closeNavDrawer()">For Detailers</a>
+    <div class="divider" style="margin:12px 0"></div>
+    <a href="/login/" class="nav-mobile-link">Log In</a>
+    <a href="/signup/" class="nav-mobile-link" style="color:var(--primary);font-weight:700">Start Free Trial</a>
+  </div>
 
   <!-- HERO -->
   <section class="hero">
@@ -43,7 +61,7 @@ extraJs: landing.js
   </section>
 
   <!-- PAIN POINTS -->
-  <section class="pain-strip">
+  <section class="pain-strip reveal">
     <div class="pain-item"><span class="pain-dot"></span><span class="pain-text">Appointments buried in Instagram DMs</span></div>
     <div class="pain-item"><span class="pain-dot"></span><span class="pain-text">Clients ghosting after you quote them</span></div>
     <div class="pain-item"><span class="pain-dot"></span><span class="pain-text">No-shows with zero heads up</span></div>
@@ -51,7 +69,7 @@ extraJs: landing.js
   </section>
 
   <!-- GOLDEN CIRCLE -->
-  <section id="why" class="golden-circle">
+  <section id="why" class="golden-circle reveal">
     <div style="text-align:center;margin-bottom:64px">
       <p class="section-label">Our Purpose</p>
       <h2 class="section-title">Why GlossIO Exists</h2>
@@ -76,7 +94,7 @@ extraJs: landing.js
   </section>
 
   <!-- HOW IT WORKS -->
-  <section id="how-it-works" class="how-section">
+  <section id="how-it-works" class="how-section reveal">
     <div class="how-inner">
       <div style="text-align:center;margin-bottom:64px">
         <p class="section-label">Simple by Design</p>
@@ -120,7 +138,7 @@ extraJs: landing.js
   </section>
 
   <!-- PRICING -->
-  <section id="pricing" class="pricing">
+  <section id="pricing" class="pricing reveal">
     <div style="text-align:center;margin-bottom:48px">
       <p class="section-label">Simple Pricing</p>
       <h2 class="section-title" style="margin-bottom:16px">One price. Everything included.</h2>
@@ -166,7 +184,7 @@ extraJs: landing.js
   </section>
 
   <!-- FINAL CTA -->
-  <section class="final-cta">
+  <section class="final-cta reveal">
     <h2 class="final-title">Your next client is already looking for you.</h2>
     <p class="final-sub">Give them a professional place to land. Set up your GlossIO profile today — free for 14 days.</p>
     <a href="/signup/" class="final-btn">Get Started Free →</a>

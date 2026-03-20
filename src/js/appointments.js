@@ -57,9 +57,9 @@ function updateApptStats() {
   document.getElementById("rev-mtd").textContent = fmt(revMtd);
   document.getElementById("rev-projected").textContent = fmt(revProj);
   document.getElementById("rev-next").textContent = fmt(revNext);
-  document.getElementById("rev-mtd-detail").textContent = completedThisMonth.length + " jobs completed";
-  document.getElementById("rev-proj-detail").textContent = projThisMonth.length + " jobs remaining";
-  document.getElementById("rev-next-detail").textContent = projNextMonth.length + " jobs booked ahead";
+  document.getElementById("rev-mtd-detail").textContent = completedThisMonth.length + (completedThisMonth.length === 1 ? " job" : " jobs") + " completed";
+  document.getElementById("rev-proj-detail").textContent = projThisMonth.length + (projThisMonth.length === 1 ? " job" : " jobs") + " remaining";
+  document.getElementById("rev-next-detail").textContent = projNextMonth.length + (projNextMonth.length === 1 ? " job" : " jobs") + " booked ahead";
 
   const pending = appointments.filter(a => a.status === "pending").length;
   const confirmed = appointments.filter(a => a.status === "confirmed").length;

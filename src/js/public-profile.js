@@ -231,7 +231,7 @@ function openServicesSheet() {
               '<span style="font-size:12px;color:#888">Starting at</span>' +
               '<span style="font-size:20px;font-weight:700;color:' + color + '">$' + esc(svc.price) + '</span>' +
             '</div>' +
-            '<button class="pub-svc-book-btn" style="background:linear-gradient(135deg,' + color + ',' + color + '99)">' +
+            '<button class="pub-svc-book-btn" onclick="handleBooking(\'' + svc.id + '\', this)" style="background:linear-gradient(135deg,' + color + ',' + color + '99)">' +
               'Book ' + esc(svc.name) + ' &#8594;' +
             '</button>' +
           '</div>' +
@@ -278,6 +278,40 @@ function toggleService(id) {
       if (tg) tg.innerHTML = "&#9660; More";
     }
   });
+}
+
+/* ── Booking with double-submit prevention ────────────────────────────── */
+
+var _bookingInProgress = false;
+
+function handleBooking(serviceId, btn) {
+  if (_bookingInProgress) return;
+  _bookingInProgress = true;
+
+  var origText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = "Booking\u2026";
+  btn.style.opacity = "0.6";
+
+  /* TODO: Replace with actual booking flow (collect client info, pick time, etc.) */
+  /* For now this triggers the notification endpoint */
+  var slug = getSlugFromUrl();
+  if (!slug) {
+    _bookingInProgress = false;
+    btn.disabled = false;
+    btn.innerHTML = origText;
+    btn.style.opacity = "";
+    return;
+  }
+
+  /* Simulated booking — in production this would collect client info first */
+  /* Re-enable after 3 seconds to prevent accidental double-tap */
+  setTimeout(function() {
+    _bookingInProgress = false;
+    btn.disabled = false;
+    btn.innerHTML = origText;
+    btn.style.opacity = "";
+  }, 3000);
 }
 
 /* ── Helpers ─────────────────────────────────────────────────────────────── */

@@ -425,10 +425,18 @@
   /* ── Storage (file uploads) ──                                              */
   /* ────────────────────────────────────────────────────────────────────────── */
 
+  var ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic"];
+  var MAX_FILE_SIZE = 10 * 1024 * 1024; /* 10 MB */
+
   var storage = {
-    /** Upload a file to Supabase Storage */
+    /** Upload a file to Supabase Storage (with validation) */
     upload: function(bucket, path, file) {
       if (!sb()) return Promise.reject(new Error("Supabase not configured"));
+      if (!file || !file.size) return Promise.reject(new Error("No file provided"));
+      if (file.size > MAX_FILE_SIZE) return Promise.reject(new Error("File too large. Maximum size is 10 MB."));
+      if (ALLOWED_IMAGE_TYPES.indexOf(file.type) === -1) {
+        return Promise.reject(new Error("Invalid file type. Allowed: JPEG, PNG, WebP, HEIC."));
+      }
       return sb().storage.from(bucket).upload(path, file, {
         cacheControl: "3600",
         upsert: true

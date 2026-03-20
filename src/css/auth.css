@@ -51,9 +51,10 @@
 
 .auth-btn {
   width: 100%; background: var(--primary);
-  border: none; border-radius: 10px; color: #fff;
+  border: none; border-radius: 9999px; color: #fff;
   font-size: 14px; font-weight: 700; padding: 13px;
-  cursor: pointer; letter-spacing: 0.05em; transition: opacity 0.2s;
+  min-height: 48px; cursor: pointer; letter-spacing: 0.05em;
+  transition: opacity 0.2s;
 }
 
 .auth-btn:hover { opacity: 0.9; }
@@ -72,6 +73,7 @@
 
 .auth-link {
   color: var(--primary); text-decoration: none; font-weight: 600;
+  display: inline-block; min-height: 44px; line-height: 44px;
 }
 
 .auth-link:hover { opacity: 0.8; }

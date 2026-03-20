@@ -673,6 +673,15 @@
   .info-cards { grid-template-columns: 1fr; }
   .clients-stats { grid-template-columns: 1fr; }
   .status-grid { grid-template-columns: 1fr; }
+  .page-title { font-size: 20px; }
+  .svc-view-name { font-size: 18px; }
+  .svc-price-big { font-size: 28px; }
+  .modal-box { padding: 20px 16px; }
+  .mini-stat-value { font-size: 20px; }
+  .status-card-value { font-size: 22px; }
+  .link-card { padding: 20px 16px; }
+  .detail-card { padding: 20px 16px; }
+  .settings-sub-title { font-size: 22px; }
 }
 
 /* ─── Settings Sub-Pages ──────────────────────────────────────────────────── */
@@ -928,7 +937,11 @@
   .stg-section-body { padding: 0 16px 20px; }
   .stg-nav-card { padding: 16px 18px; }
   .stg-card { padding: 18px; }
-  .channel-pick { padding: 8px 10px; }
+  .channel-pick { padding: 8px 10px; min-height: 44px; }
   .max-grid { gap: 6px; }
   .max-pill { width: 44px; height: 44px; font-size: 14px; }
+  .picker-btn { width: 44px; height: 44px; }
+  .color-dot { width: 44px; height: 44px; }
+  .block-delete-btn { width: 44px; height: 44px; }
+  .action-btn { padding: 8px 14px; min-height: 44px; font-size: 12px; }
 }

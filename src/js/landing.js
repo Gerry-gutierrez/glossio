@@ -27,6 +27,22 @@ function setPricing(cycle) {
   }
 }
 
+// Mobile nav drawer
+function openNavDrawer() {
+  document.getElementById('navDrawer').classList.add('nav-drawer-open');
+  document.getElementById('navOverlay').classList.add('nav-overlay-visible');
+}
+function closeNavDrawer() {
+  document.getElementById('navDrawer').classList.remove('nav-drawer-open');
+  document.getElementById('navOverlay').classList.remove('nav-overlay-visible');
+}
+document.addEventListener('DOMContentLoaded', function() {
+  var hamburger = document.getElementById('navHamburger');
+  var overlay = document.getElementById('navOverlay');
+  if (hamburger) hamburger.addEventListener('click', openNavDrawer);
+  if (overlay) overlay.addEventListener('click', closeNavDrawer);
+});
+
 // Hero email pre-fill
 document.addEventListener('DOMContentLoaded', function() {
   var emailInput = document.getElementById('heroEmail');
@@ -42,4 +58,19 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   }
+});
+
+// Scroll reveal
+document.addEventListener('DOMContentLoaded', function() {
+  var reveals = document.querySelectorAll('.reveal');
+  if (!reveals.length) return;
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('revealed');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15 });
+  reveals.forEach(function(el) { observer.observe(el); });
 });

@@ -257,4 +257,9 @@
 @media (max-width: 480px) {
   .pub-photo-grid { grid-template-columns: repeat(2, 1fr); gap: 4px; }
   .pub-hero-full { padding: 0 16px; }
+  .pub-name { font-size: 20px; }
+  .pub-avatar-ring { width: 80px; height: 80px; font-size: 32px; }
+  .pub-modal { padding: 12px; }
+  .pub-sheet { padding: 20px 16px 32px; }
+  .pub-book-btn { font-size: 14px; padding: 15px 18px; border-radius: 12px; }
 }

@@ -27,8 +27,8 @@ function loadDashStats() {
   if (statValues[0]) statValues[0].textContent = fmt(revMtd);
   if (statValues[1]) statValues[1].textContent = fmt(revProj);
   if (statValues[2]) statValues[2].textContent = appts.length;
-  if (statDetails[0]) statDetails[0].textContent = completedThisMonth.length + " jobs completed";
-  if (statDetails[1]) statDetails[1].textContent = projThisMonth.length + " jobs remaining";
+  if (statDetails[0]) statDetails[0].textContent = completedThisMonth.length + (completedThisMonth.length === 1 ? " job" : " jobs") + " completed";
+  if (statDetails[1]) statDetails[1].textContent = projThisMonth.length + (projThisMonth.length === 1 ? " job" : " jobs") + " remaining";
   if (statDetails[2]) statDetails[2].textContent = pending.length + " awaiting confirmation";
 
   /* Pending banner */
