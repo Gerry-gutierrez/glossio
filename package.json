@@ -11,12 +11,12 @@
   },
   "dependencies": {
     "@11ty/eleventy": "^3.0.0",
-    "dotenv": "^17.3.1"
+    "@supabase/supabase-js": "^2.99.3",
+    "dotenv": "^17.3.1",
+    "stripe": "^20.4.1",
+    "twilio": "^5.13.0"
   },
   "devDependencies": {
-    "@supabase/supabase-js": "^2.99.3",
-    "stripe": "^20.4.1",
-    "twilio": "^5.13.0",
     "vitest": "^3.0.0"
   }
 }
