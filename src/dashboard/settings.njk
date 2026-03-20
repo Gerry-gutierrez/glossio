@@ -1,0 +1,141 @@
+---
+layout: layouts/dashboard.njk
+pageTitle: Settings
+activePage: settings
+extraCss: dashboard-pages.css
+extraJs: settings.js
+---
+
+<!-- Settings Hub (shown by default) -->
+<div id="settings-hub">
+
+<div class="page-header">
+  <h1 class="page-title">Settings</h1>
+  <p class="page-subtitle">Manage your account, business info, and preferences.</p>
+</div>
+
+<!-- Quick Info Bar -->
+<div class="settings-bar">
+  <div class="settings-bar-item"><p class="settings-bar-label">Plan</p><p class="settings-bar-value" style="color:#00C2FF">Free Trial</p></div>
+  <div class="settings-bar-item"><p class="settings-bar-label">Trial Ends</p><p class="settings-bar-value" style="color:#FFD60A">14 days</p></div>
+  <div class="settings-bar-item"><p class="settings-bar-label">Member Since</p><p class="settings-bar-value" style="color:#A259FF">Today</p></div>
+  <div class="settings-bar-item"><p class="settings-bar-label">Account</p><p class="settings-bar-value">Active</p></div>
+</div>
+
+<!-- Settings Sections -->
+<div class="settings-grid">
+  <div class="settings-section" style="border-left-color:#00C2FF">
+    <div class="settings-section-header">
+      <div class="settings-section-icon" style="background:#00C2FF15">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00C2FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <div>
+        <p class="settings-section-title">Account &amp; Security</p>
+        <p class="settings-section-desc">Manage your login and security settings</p>
+      </div>
+    </div>
+    <div class="settings-chips">
+      <span class="settings-chip">Change Password</span>
+      <span class="settings-chip">Email</span>
+      <span class="settings-chip">Phone</span>
+      <span class="settings-chip">Two-Factor</span>
+    </div>
+  </div>
+
+  <div class="settings-section" style="border-left-color:#A259FF">
+    <div class="settings-section-header">
+      <div class="settings-section-icon" style="background:#A259FF15">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A259FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </div>
+      <div>
+        <p class="settings-section-title">Business Info</p>
+        <p class="settings-section-desc">Your business details and branding</p>
+      </div>
+    </div>
+    <div class="settings-chips">
+      <span class="settings-chip">Business Name</span>
+      <span class="settings-chip">Location</span>
+      <span class="settings-chip">Hours</span>
+      <span class="settings-chip">Tagline</span>
+    </div>
+  </div>
+
+  <div class="settings-section" style="border-left-color:#FF6B35">
+    <div class="settings-section-header">
+      <div class="settings-section-icon" style="background:#FF6B3515">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF6B35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      </div>
+      <div>
+        <p class="settings-section-title">Availability &amp; Blocking</p>
+        <p class="settings-section-desc">Control when clients can book</p>
+      </div>
+    </div>
+    <div class="settings-chips">
+      <span class="settings-chip">Vacation Blocks</span>
+      <span class="settings-chip">Max Per Day</span>
+      <span class="settings-chip">Advance Window</span>
+    </div>
+  </div>
+
+  <div class="settings-section" style="border-left-color:#FFD60A">
+    <div class="settings-section-header">
+      <div class="settings-section-icon" style="background:#FFD60A15">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFD60A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      </div>
+      <div>
+        <p class="settings-section-title">Notifications</p>
+        <p class="settings-section-desc">How you get notified about bookings</p>
+      </div>
+    </div>
+    <div class="settings-chips">
+      <span class="settings-chip">New Booking</span>
+      <span class="settings-chip">Cancellations</span>
+      <span class="settings-chip">Reminders</span>
+      <span class="settings-chip">Weekly Email</span>
+    </div>
+  </div>
+
+  <div class="settings-section" style="border-left-color:#00E5A0">
+    <div class="settings-section-header">
+      <div class="settings-section-icon" style="background:#00E5A015">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00E5A0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      </div>
+      <div>
+        <p class="settings-section-title">Subscription &amp; Billing</p>
+        <p class="settings-section-desc">Manage your plan and payment</p>
+      </div>
+    </div>
+    <div class="settings-chips">
+      <span class="settings-chip">Current Plan</span>
+      <span class="settings-chip">Payment</span>
+      <span class="settings-chip">Billing History</span>
+      <span class="settings-chip">Cancel</span>
+    </div>
+  </div>
+
+  <div class="settings-section" style="border-left-color:#FF3366">
+    <div class="settings-section-header">
+      <div class="settings-section-icon" style="background:#FF336615">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF3366" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <div>
+        <p class="settings-section-title">Support</p>
+        <p class="settings-section-desc">Get help from our team</p>
+      </div>
+    </div>
+    <div class="settings-chips">
+      <span class="settings-chip">Contact Support</span>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom Note -->
+<div class="settings-note">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+  <span>Your data is encrypted and never shared. For urgent account issues contact us at support@glossio.app</span>
+</div>
+
+</div><!-- /settings-hub -->
+
+<!-- Settings Sub-Pages (rendered by JS) -->
+<div id="settings-sub" style="display:none"></div>

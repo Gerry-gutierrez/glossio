@@ -1,0 +1,81 @@
+---
+layout: layouts/dashboard.njk
+pageTitle: My Link
+activePage: link
+extraCss: dashboard-pages.css
+extraJs: link-page.js
+---
+
+<div class="page-header">
+  <h1 class="page-title">My Link</h1>
+</div>
+
+<!-- Link Card -->
+<div class="link-card">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+    <h2 style="font-size:18px;font-weight:700;margin:0">Your Public Profile Link</h2>
+  </div>
+  <p style="font-size:13px;color:var(--text-dim);margin:0">Share this link anywhere — social media, messages, business cards.</p>
+
+  <div class="link-url-box">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+    <span class="link-url" id="link-url-display">glossio.org/your-business</span>
+    <button class="btn btn-primary" style="font-size:12px;padding:8px 16px;white-space:nowrap" id="copyLinkBtn2" onclick="copyProfileLink()">Copy Link</button>
+  </div>
+</div>
+
+<!-- Share Options -->
+<div class="share-grid">
+  <div class="share-card" onclick="shareViaSms()" style="cursor:pointer">
+    <div class="share-card-icon" style="color:#00C2FF">💬</div>
+    <p class="share-card-title">Text It</p>
+    <p class="share-card-desc">Send via SMS to clients</p>
+  </div>
+  <div class="share-card" onclick="shareViaInstagram()" style="cursor:pointer">
+    <div class="share-card-icon" style="color:#A259FF">📷</div>
+    <p class="share-card-title">Instagram</p>
+    <p class="share-card-desc">Copy link for your bio</p>
+  </div>
+  <div class="share-card" onclick="shareViaCard()" style="cursor:pointer">
+    <div class="share-card-icon" style="color:#FF6B35">🃏</div>
+    <p class="share-card-title">Business Card</p>
+    <p class="share-card-desc">Print your link on cards</p>
+  </div>
+  <div class="share-card" onclick="shareGeneral()" style="cursor:pointer">
+    <div class="share-card-icon" style="color:#FFD60A">🌐</div>
+    <p class="share-card-title">Share Anywhere</p>
+    <p class="share-card-desc">Copy to paste everywhere</p>
+  </div>
+</div>
+
+<!-- Share Tips (shown when a share card is clicked) -->
+<div id="share-tip" style="display:none"></div>
+
+<!-- Preview Button -->
+<div style="text-align:center;margin-bottom:24px">
+  <a href="/dashboard/profile/" class="btn btn-secondary" style="font-size:13px;padding:10px 20px" onclick="this.href='/dashboard/profile/'">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+    See What Your Clients See
+  </a>
+</div>
+
+<!-- Info Cards -->
+<div class="info-cards">
+  <div class="info-card">
+    <div class="info-card-icon">🔒</div>
+    <p class="info-card-text">Clients can't edit anything</p>
+  </div>
+  <div class="info-card">
+    <div class="info-card-icon">🔄</div>
+    <p class="info-card-text">Always up to date</p>
+  </div>
+  <div class="info-card">
+    <div class="info-card-icon">📈</div>
+    <p class="info-card-text">Every booking gets tracked</p>
+  </div>
+  <div class="info-card">
+    <div class="info-card-icon">🌍</div>
+    <p class="info-card-text">Works everywhere</p>
+  </div>
+</div>

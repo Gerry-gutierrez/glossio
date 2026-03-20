@@ -1,0 +1,12 @@
+{
+  "title": "GlossIO",
+  "description": "GlossIO gives your detail business a professional home — so clients can browse your services, book appointments, and you never miss a job again.",
+  "url": "https://glossio.org",
+  "pricing": {
+    "monthly": 25,
+    "annual": 250,
+    "savings": "$50"
+  },
+  "trialDays": 14,
+  "supportEmail": "support@glossio.app"
+}

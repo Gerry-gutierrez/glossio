@@ -1,0 +1,87 @@
+---
+layout: layouts/base.njk
+pageTitle: "Sign In"
+extraCss: auth.css
+extraJs: login.js
+---
+
+<div class="auth-page">
+  <h1 class="auth-logo">GlossIO</h1>
+
+  <div class="auth-card">
+    <p class="auth-tag">Welcome Back</p>
+    <h2 class="auth-title">Sign in to GlossIO</h2>
+    <p class="auth-sub">Use your email address or phone number to sign in.</p>
+
+    <!-- Static placeholder - auth requires backend -->
+    <div class="auth-error" id="loginError" style="display:none"></div>
+
+    <form id="loginForm" onsubmit="return false">
+      <label class="field-label">Email or Phone Number</label>
+      <input type="text" placeholder="carlos@gmail.com or (239) 555-0100" class="auth-input" id="loginIdentifier" required>
+
+      <label class="field-label">Password</label>
+      <div class="password-wrap">
+        <input type="password" placeholder="Your password" class="auth-input" id="loginPassword" required>
+        <button type="button" class="password-toggle" onclick="togglePassword('loginPassword', this)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </button>
+      </div>
+
+      <div style="text-align:right;margin-bottom:28px">
+        <a href="/forgot-password/" class="auth-link" style="font-size:12px">Forgot password?</a>
+      </div>
+
+      <button type="submit" class="auth-btn auth-btn-disabled" id="loginBtn" disabled>Sign In</button>
+    </form>
+  </div>
+
+  <p class="auth-footer">
+    Don't have an account? <a href="/signup/" class="auth-link">Start Free Trial</a>
+  </p>
+</div>
+
+<script>
+function togglePassword(inputId, btn) {
+  var input = document.getElementById(inputId);
+  if (input.type === 'password') {
+    input.type = 'text';
+  } else {
+    input.type = 'password';
+  }
+}
+
+// Enable/disable button based on fields
+document.addEventListener('DOMContentLoaded', function() {
+  var identifier = document.getElementById('loginIdentifier');
+  var password = document.getElementById('loginPassword');
+  var btn = document.getElementById('loginBtn');
+
+  function checkFields() {
+    if (identifier.value && password.value) {
+      btn.disabled = false;
+      btn.className = 'auth-btn';
+    } else {
+      btn.disabled = true;
+      btn.className = 'auth-btn auth-btn-disabled';
+    }
+  }
+
+  identifier.addEventListener('input', checkFields);
+  password.addEventListener('input', checkFields);
+
+  // Phone formatting
+  identifier.addEventListener('input', function() {
+    var v = identifier.value;
+    if (!v.includes('@') && /^[\d(]/.test(v)) {
+      var digits = v.replace(/\D/g, '').slice(0, 10);
+      if (digits.length <= 3) identifier.value = digits;
+      else if (digits.length <= 6) identifier.value = '(' + digits.slice(0,3) + ') ' + digits.slice(3);
+      else identifier.value = '(' + digits.slice(0,3) + ') ' + digits.slice(3,6) + '-' + digits.slice(6);
+    }
+  });
+});
+</script>

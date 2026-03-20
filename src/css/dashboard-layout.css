@@ -1,0 +1,128 @@
+/* ─── Dashboard Layout ─────────────────────────────────────────────────────── */
+
+.shell { display: flex; min-height: 100vh; }
+
+/* Sidebar */
+.sidebar {
+  width: 220px; background: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  padding: 28px 0; flex-shrink: 0;
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+}
+
+.sidebar-header { padding: 0 24px 28px; }
+
+.sidebar-label {
+  font-size: 10px; letter-spacing: 0.3em; color: #444;
+  text-transform: uppercase; margin: 0 0 4px;
+}
+
+/* User card */
+.user-card {
+  margin: 0 12px 24px; background: var(--bg-card);
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  padding: 12px 14px; display: flex; align-items: center; gap: 10px;
+}
+
+.user-avatar {
+  width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+  background: var(--primary); display: flex; align-items: center;
+  justify-content: center; font-size: 14px; font-weight: 700; color: #fff;
+}
+
+.user-name {
+  margin: 0; font-size: 12px; font-weight: 700;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.user-plan { margin: 0; font-size: 10px; color: var(--text-faint); }
+
+/* Nav */
+.dash-nav { flex: 1; padding: 0 12px; }
+
+.nav-btn {
+  width: 100%; background: transparent; border: none;
+  border-radius: 10px; border-left: 2px solid transparent;
+  color: var(--text-dim); font-size: 13px; font-weight: 400;
+  padding: 10px 14px; min-height: 44px;
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 2px; text-align: left; text-decoration: none;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.nav-btn:hover {
+  background: var(--bg-hover); color: var(--text-muted);
+}
+
+.nav-btn-active {
+  background: #1A1A2E; border-left-color: var(--primary);
+  color: var(--primary); font-weight: 700;
+}
+
+/* Copy Link */
+.sidebar-footer { padding: 16px 12px 0; }
+
+.copy-link-btn {
+  width: 100%; background: rgba(0, 194, 255, 0.08);
+  border: 1px solid rgba(0, 194, 255, 0.2); border-radius: 10px;
+  color: var(--primary); font-size: 12px; font-weight: 700;
+  padding: 10px 14px; min-height: 44px; transition: background-color 0.2s;
+}
+
+.copy-link-btn:hover { background: rgba(0, 194, 255, 0.12); }
+
+/* Sign Out */
+.sign-out-btn {
+  width: 100%; background: transparent;
+  border: 1px solid rgba(255, 51, 102, 0.15);
+  border-radius: 10px; color: var(--text-dim);
+  font-size: 12px; font-weight: 500;
+  padding: 10px 14px; min-height: 40px; margin-top: 8px;
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px; transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.sign-out-btn:hover {
+  background: rgba(255, 51, 102, 0.08);
+  border-color: rgba(255, 51, 102, 0.3); color: var(--danger);
+}
+
+/* Main content */
+.main-content {
+  flex: 1; padding: 36px 40px; overflow-y: auto; min-width: 0;
+}
+
+/* Hamburger */
+.hamburger {
+  display: none; position: fixed; top: 14px; left: 14px; z-index: 200;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text);
+  width: 44px; height: 44px; align-items: center; justify-content: center;
+}
+
+/* Overlay */
+.overlay { display: none; }
+
+/* ─── Responsive ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .hamburger { display: flex; }
+
+  .sidebar {
+    position: fixed; top: 0; left: -240px; z-index: 150;
+    width: 240px; height: 100vh; transition: left 0.25s ease;
+  }
+
+  .sidebar.sidebar-open { left: 0; }
+
+  .overlay {
+    display: block; position: fixed; inset: 0;
+    background: rgba(0, 0, 0, 0.6); z-index: 140;
+    opacity: 0; pointer-events: none; transition: opacity 0.25s;
+  }
+
+  .overlay.overlay-visible { opacity: 1; pointer-events: auto; }
+
+  .main-content { padding: 70px 20px 36px; }
+}

@@ -1,0 +1,225 @@
+/* ─── Auth Pages (Login / Signup / Forgot Password) ───────────────────────── */
+
+.auth-page {
+  min-height: 100vh; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; padding: 40px 20px;
+}
+
+.auth-logo {
+  margin: 0 0 40px; font-size: 26px; font-weight: 700;
+  background: linear-gradient(90deg, #00C2FF, #A259FF);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+
+.auth-card {
+  width: 100%; max-width: 480px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 20px; padding: 40px 44px;
+}
+
+.auth-tag {
+  font-size: 10px; letter-spacing: 0.3em; color: var(--text-faint);
+  text-transform: uppercase; margin: 0 0 10px;
+}
+
+.auth-title { font-size: 24px; font-weight: 700; margin: 0 0 10px; }
+
+.auth-sub {
+  font-size: 14px; color: #777; line-height: 1.7; margin: 0 0 28px;
+}
+
+.auth-error {
+  background: rgba(255,51,102,0.08); border: 1px solid rgba(255,51,102,0.2);
+  border-radius: 10px; padding: 12px 16px; margin-bottom: 20px;
+  font-size: 13px; color: var(--danger);
+}
+
+.field-label {
+  display: block; font-size: 11px; letter-spacing: 0.2em;
+  color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px;
+}
+
+.auth-input {
+  width: 100%; background: var(--bg);
+  border: 1px solid var(--border-light); border-radius: 8px;
+  color: var(--text); font-size: 14px; padding: 14px;
+  font-family: var(--font-serif); margin-bottom: 16px;
+}
+
+.auth-input:focus { border-color: var(--primary); outline: none; }
+.auth-input::placeholder { color: var(--text-faint); }
+
+.auth-btn {
+  width: 100%; background: var(--primary);
+  border: none; border-radius: 10px; color: #fff;
+  font-size: 14px; font-weight: 700; padding: 13px;
+  cursor: pointer; letter-spacing: 0.05em; transition: opacity 0.2s;
+}
+
+.auth-btn:hover { opacity: 0.9; }
+
+.auth-btn-disabled {
+  background: #1A1A2E; color: #444; cursor: not-allowed;
+}
+
+.auth-btn-gradient {
+  background: linear-gradient(135deg, #00C2FF, #A259FF);
+}
+
+.auth-footer {
+  margin-top: 20px; font-size: 13px; color: var(--text-faint);
+}
+
+.auth-link {
+  color: var(--primary); text-decoration: none; font-weight: 600;
+}
+
+.auth-link:hover { opacity: 0.8; }
+
+/* Password field wrapper */
+.password-wrap { position: relative; margin-bottom: 8px; }
+.password-wrap .auth-input { margin-bottom: 0; padding-right: 44px; }
+
+.password-toggle {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; color: var(--text-faint);
+  cursor: pointer; font-size: 14px; width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Progress bar (signup) */
+.progress-bar { width: 100%; max-width: 520px; margin-bottom: 36px; }
+
+.progress-steps {
+  display: flex; justify-content: space-between; margin-bottom: 10px;
+}
+
+.progress-step {
+  display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1;
+}
+
+.progress-dot {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; transition: all 0.3s;
+}
+
+.progress-dot-done {
+  background: linear-gradient(135deg, #00C2FF, #A259FF);
+  border: 2px solid #00C2FF; color: #fff;
+}
+
+.progress-dot-current {
+  background: var(--bg-card); border: 2px solid #00C2FF; color: #00C2FF;
+}
+
+.progress-dot-pending {
+  background: var(--bg-card); border: 2px solid var(--border-light); color: #444;
+}
+
+.progress-step-label {
+  font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+}
+
+.progress-track {
+  height: 2px; background: var(--border); border-radius: 2px; margin-top: 4px;
+}
+
+.progress-fill {
+  height: 100%; background: linear-gradient(90deg, #00C2FF, #A259FF);
+  border-radius: 2px; transition: width 0.4s ease;
+}
+
+/* Info box */
+.info-box {
+  background: rgba(0,194,255,0.05); border: 1px solid rgba(0,194,255,0.13);
+  border-radius: 10px; padding: 14px 16px; margin: 24px 0 28px;
+}
+
+.info-box p {
+  margin: 0; font-size: 13px; color: var(--primary); line-height: 1.6;
+}
+
+/* Grid */
+.form-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+}
+
+/* Success state */
+.success-circle {
+  width: 72px; height: 72px; border-radius: 50%;
+  background: linear-gradient(135deg, #00C2FF, #A259FF);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px; margin: 0 auto 24px;
+}
+
+.checklist {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 12px; padding: 18px 22px; margin: 24px 0 32px;
+  text-align: left;
+}
+
+.checklist-item {
+  display: flex; gap: 12px; align-items: center; margin-bottom: 12px;
+}
+
+.checklist-item:last-child { margin-bottom: 0; }
+.checklist-icon { font-size: 18px; }
+.checklist-text { font-size: 13px; color: #C8C4BC; }
+
+/* Ghost button */
+.ghost-btn {
+  background: transparent; border: 1px solid var(--border-light);
+  border-radius: 10px; color: var(--text-muted); font-size: 14px;
+  font-weight: 600; padding: 13px 20px; cursor: pointer;
+}
+
+.btn-row { display: flex; gap: 10px; margin-top: 16px; }
+.btn-row .auth-btn-gradient { flex: 1; }
+
+/* Strength bar */
+.strength-bar {
+  height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 20px;
+}
+
+.strength-fill {
+  height: 100%; border-radius: 2px; transition: all 0.3s;
+}
+
+.strength-label { margin: 6px 0 0; font-size: 11px; color: var(--text-faint); }
+
+/* Optional label */
+.optional-label {
+  font-size: 10px; color: #444; margin-left: 6px;
+}
+
+/* Verification box */
+.verify-box {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 12px; padding: 20px 22px; margin-bottom: 28px;
+}
+
+.verify-row { display: flex; gap: 10px; }
+
+.verify-btn {
+  background: linear-gradient(135deg, #00C2FF, #A259FF);
+  border: none; border-radius: 8px; color: #fff;
+  font-size: 12px; font-weight: 700; padding: 0 16px;
+  cursor: pointer; white-space: nowrap;
+}
+
+.verify-btn-done {
+  background: rgba(0,229,160,0.08); border: 1px solid rgba(0,229,160,0.25);
+  color: var(--success); cursor: default;
+}
+
+.resend-btn {
+  background: none; border: none; color: var(--primary);
+  font-size: 12px; cursor: pointer; margin-top: 12px; padding: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .auth-card { padding: 32px 24px; }
+  .form-grid { grid-template-columns: 1fr; }
+}

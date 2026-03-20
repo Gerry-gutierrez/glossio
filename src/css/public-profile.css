@@ -1,0 +1,260 @@
+/* ─── Public Profile Page ──────────────────────────────────────────────────── */
+
+.pub-topbar {
+  background: rgba(10,10,15,0.97);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 13px 24px;
+  display: flex; justify-content: space-between; align-items: center;
+  position: sticky; top: 0; z-index: 40;
+  height: 53px; box-sizing: border-box;
+}
+
+.pub-verified {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 11px; color: #555; letter-spacing: 0.12em; text-transform: uppercase;
+}
+
+.pub-verified-dot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--success);
+}
+
+/* ── Hero (full viewport) ── */
+
+.pub-hero-full {
+  height: calc(100vh - 53px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 0 24px; text-align: center;
+  position: relative; overflow: hidden;
+}
+
+.pub-glow {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -60%);
+  width: 320px; height: 320px;
+  background: radial-gradient(circle, #00C2FF0F, transparent 70%);
+  pointer-events: none;
+}
+
+.pub-avatar-ring {
+  width: 118px; height: 118px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 52px; color: #fff; font-weight: 700;
+  margin-bottom: 18px;
+  box-shadow: 0 0 0 4px #0A0A0F, 0 0 0 7px #00C2FF55, 0 0 48px #00C2FF18;
+  position: relative; z-index: 1; flex-shrink: 0;
+}
+
+.pub-name { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 8px; }
+
+.pub-pro-badge {
+  background: #00C2FF22; border: 1px solid #00C2FF55;
+  border-radius: 20px; font-size: 10px; color: var(--primary);
+  font-weight: 700; padding: 2px 9px; letter-spacing: 0.08em;
+}
+
+.pub-tagline {
+  margin: 0 0 20px; font-size: 14px; color: #777; line-height: 1.5;
+}
+
+/* Stats pill */
+.pub-stats-pill {
+  display: flex;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 14px; overflow: hidden; margin-bottom: 26px;
+}
+
+.pub-stat-item { text-align: center; padding: 13px 22px; }
+.pub-stat-mid { border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+.pub-stat-val { margin: 0 0 3px; font-size: 16px; font-weight: 700; }
+.pub-stat-lbl { margin: 0; font-size: 10px; color: #555; letter-spacing: 0.08em; text-transform: uppercase; }
+
+/* Book button */
+.pub-book-btn {
+  width: 100%; max-width: 420px;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  border: none; border-radius: 16px; color: #fff;
+  font-size: 17px; font-weight: 700; padding: 20px 24px;
+  cursor: pointer; letter-spacing: 0.02em;
+  box-shadow: 0 8px 48px #00C2FF44;
+  font-family: inherit;
+}
+
+.pub-book-btn:hover { opacity: 0.92; }
+
+.pub-book-btn-bottom {
+  max-width: 100%; border-radius: 14px;
+  font-size: 15px; padding: 17px;
+  box-shadow: 0 4px 32px #00C2FF22;
+  margin-bottom: 12px;
+}
+
+.pub-book-sub {
+  margin: 10px 0 28px; font-size: 11px; color: #555;
+}
+
+.pub-scroll-hint {
+  opacity: 0.3; display: flex; flex-direction: column; align-items: center; gap: 3px;
+}
+.pub-scroll-hint p { margin: 0; font-size: 10px; color: #888; letter-spacing: 0.15em; text-transform: uppercase; }
+.pub-scroll-hint span { font-size: 13px; color: #888; }
+
+/* ── Work Section ── */
+
+.pub-work-section {
+  max-width: 520px; margin: 0 auto; padding: 40px 24px 80px;
+}
+
+/* Divider */
+.pub-divider {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+}
+.pub-divider-line { flex: 1; height: 1px; background: var(--border); }
+.pub-divider-text { font-size: 10px; color: #444; letter-spacing: 0.25em; text-transform: uppercase; }
+
+/* Photo grid */
+.pub-photo-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px;
+}
+
+.pub-photo-cell {
+  aspect-ratio: 1;
+  background: var(--bg-card);
+  border-radius: 12px; border: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 6px; position: relative; overflow: hidden;
+}
+
+.pub-photo-shine {
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, #ffffff05, transparent 60%);
+  pointer-events: none;
+}
+
+/* About card */
+.pub-about-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 14px; padding: 22px 24px; margin-bottom: 28px;
+}
+.pub-about-label { margin: 0 0 10px; font-size: 10px; color: #555; letter-spacing: 0.2em; text-transform: uppercase; }
+.pub-about-text { margin: 0; font-size: 14px; color: #C8C4BC; line-height: 1.85; }
+
+/* ── Photo Modal ── */
+
+.pub-modal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.93);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100; padding: 24px; cursor: pointer;
+}
+
+.pub-photo-expanded {
+  border: 1px solid #2A2A3E; border-radius: 20px;
+  width: 100%; max-width: 380px; aspect-ratio: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 14px;
+}
+
+/* ── Services Bottom Sheet ── */
+
+.pub-sheet-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.88);
+  display: flex; align-items: flex-end; justify-content: center;
+  z-index: 100;
+}
+
+.pub-sheet {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 22px 22px 0 0;
+  width: 100%; max-width: 520px;
+  padding: 32px 28px 48px;
+  max-height: 88vh; overflow-y: auto;
+}
+
+.pub-sheet-handle {
+  width: 40px; height: 4px; border-radius: 2px;
+  background: #2A2A3E; margin: 0 auto 24px;
+}
+
+.pub-sheet-close {
+  background: #1A1A2E; border: 1px solid #2A2A3E;
+  border-radius: 8px; color: #888; font-size: 18px;
+  width: 36px; height: 36px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.pub-sheet-info {
+  background: #00C2FF08; border: 1px solid #00C2FF1A;
+  border-radius: 12px; padding: 13px 16px; margin-top: 24px;
+}
+.pub-sheet-info p { margin: 0; font-size: 12px; color: var(--primary); line-height: 1.7; }
+
+/* Service cards */
+.pub-service-list { display: flex; flex-direction: column; gap: 10px; }
+
+.pub-svc-card {
+  background: #0A0A0F;
+  border: 1px solid var(--border);
+  border-radius: 13px; overflow: hidden;
+  transition: all 0.2s;
+}
+
+.pub-svc-row {
+  padding: 15px 16px;
+  display: flex; align-items: center; gap: 13px;
+  cursor: pointer;
+}
+
+.pub-svc-icon {
+  width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0;
+  border: 1px solid; display: flex; align-items: center;
+  justify-content: center; font-size: 20px;
+}
+
+.pub-svc-name { margin: 0 0 3px; font-size: 14px; font-weight: 700; }
+.pub-svc-desc-short { margin: 0; font-size: 12px; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pub-svc-price { margin: 0; font-size: 16px; font-weight: 700; }
+.pub-svc-toggle { font-size: 11px; color: #555; }
+
+/* Expanded service */
+.pub-svc-expanded { padding: 0 16px 18px; }
+.pub-svc-inc-label { margin: 14px 0 8px; font-size: 10px; letter-spacing: 0.2em; color: #555; text-transform: uppercase; }
+.pub-svc-inc-text { margin: 0 0 16px; font-size: 13px; color: #C8C4BC; line-height: 1.8; }
+
+.pub-svc-price-box {
+  border: 1px solid; border-radius: 10px;
+  padding: 12px 14px; display: flex;
+  justify-content: space-between; align-items: center;
+  margin-bottom: 14px;
+}
+
+.pub-svc-book-btn {
+  width: 100%; border: none; border-radius: 10px;
+  color: #0A0A0F; font-size: 13px; font-weight: 700;
+  padding: 13px; cursor: pointer; letter-spacing: 0.04em;
+  font-family: inherit;
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 768px) {
+  .pub-avatar-ring { width: 90px; height: 90px; font-size: 38px; }
+  .pub-name { font-size: 22px; }
+  .pub-stats-pill { flex-direction: column; }
+  .pub-stat-mid { border-left: none; border-right: none; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .pub-stat-item { padding: 10px 22px; }
+  .pub-photo-grid { grid-template-columns: repeat(2, 1fr); }
+  .pub-work-section { padding: 40px 16px 60px; }
+  .pub-sheet { padding: 24px 20px 40px; }
+  .pub-book-btn { font-size: 15px; padding: 17px 20px; }
+}
+
+@media (max-width: 480px) {
+  .pub-photo-grid { grid-template-columns: repeat(2, 1fr); gap: 4px; }
+  .pub-hero-full { padding: 0 16px; }
+}

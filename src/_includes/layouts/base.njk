@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ pageTitle or site.title }} — {{ site.title }}</title>
+  <meta name="description" content="{{ pageDescription or site.description }}">
+  <link rel="stylesheet" href="/css/globals.css">
+  {% if extraCss %}<link rel="stylesheet" href="/css/{{ extraCss }}">{% endif %}
+</head>
+<body>
+  {{ content | safe }}
+
+  <!-- Supabase SDK (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+  <!-- Sentry SDK (CDN) — only loads if DSN is configured -->
+  {% if env.sentryDsn %}
+  <script src="https://browser.sentry-cdn.com/7.100.0/bundle.tracing.replay.min.js" crossorigin="anonymous"></script>
+  {% endif %}
+
+  <!-- Config (set via _data/env.js from environment variables) -->
+  <script>
+    window.__GLOSSIO_SUPABASE_URL = "{{ env.supabaseUrl or '' }}";
+    window.__GLOSSIO_SUPABASE_ANON_KEY = "{{ env.supabaseAnonKey or '' }}";
+    window.__GLOSSIO_STRIPE_KEY = "{{ env.stripePublishableKey or '' }}";
+    window.__GLOSSIO_SENTRY_DSN = "{{ env.sentryDsn or '' }}";
+  </script>
+
+  <!-- Core scripts -->
+  <script src="/js/supabase-client.js"></script>
+  <script src="/js/supabase-data.js"></script>
+  <script src="/js/api.js"></script>
+  {% if env.sentryDsn %}<script src="/js/sentry-init.js"></script>{% endif %}
+
+  {% if extraJs %}<script src="/js/{{ extraJs }}"></script>{% endif %}
+</body>
+</html>

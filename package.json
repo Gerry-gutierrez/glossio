@@ -1,31 +1,14 @@
 {
   "name": "gloss-io",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "node server.js",
-    "lint": "next lint",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "dev": "npx @11ty/eleventy --serve",
+    "build": "npx @11ty/eleventy",
+    "start": "npx @11ty/eleventy --serve"
   },
   "dependencies": {
-    "@sentry/nextjs": "^10.44.0",
-    "@supabase/ssr": "^0.5.2",
-    "@supabase/supabase-js": "^2.49.1",
-    "next": "^15.5.13",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "stripe": "^17.7.0",
-    "twilio": "^5.4.5"
-  },
-  "devDependencies": {
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "@vitejs/plugin-react": "^6.0.1",
-    "typescript": "^5",
-    "vitest": "^4.1.0"
+    "@11ty/eleventy": "^3.0.0",
+    "dotenv": "^17.3.1"
   }
 }

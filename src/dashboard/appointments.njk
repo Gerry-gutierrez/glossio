@@ -1,0 +1,83 @@
+---
+layout: layouts/dashboard.njk
+pageTitle: Appointments
+activePage: appointments
+extraCss: dashboard-pages.css
+extraJs: appointments.js
+---
+
+<div class="page-header">
+  <h1 class="page-title">Appointments</h1>
+</div>
+
+<!-- Revenue Cards -->
+<div class="revenue-cards">
+  <div class="stat-card" style="border-top:2px solid var(--success)">
+    <div style="font-size:24px;margin-bottom:10px">💰</div>
+    <p class="stat-value" style="color:#00E5A0;font-size:28px" id="rev-mtd">$0.00</p>
+    <p class="stat-label">Revenue MTD</p>
+    <p class="stat-sub" id="rev-mtd-detail">From completed jobs</p>
+  </div>
+  <div class="stat-card" style="border-top:2px solid var(--primary)">
+    <div style="font-size:24px;margin-bottom:10px">📈</div>
+    <p class="stat-value" style="color:#00C2FF;font-size:28px" id="rev-projected">$0.00</p>
+    <p class="stat-label">Projected This Month</p>
+    <p class="stat-sub" id="rev-proj-detail">Confirmed + pending</p>
+  </div>
+  <div class="stat-card" style="border-top:2px solid var(--secondary)">
+    <div style="font-size:24px;margin-bottom:10px">🗓</div>
+    <p class="stat-value" style="color:#A259FF;font-size:28px" id="rev-next">$0.00</p>
+    <p class="stat-label">Projected Next Month</p>
+    <p class="stat-sub" id="rev-next-detail">Upcoming bookings</p>
+  </div>
+</div>
+
+<!-- Status Grid -->
+<div class="status-grid">
+  <div class="status-card" onclick="setApptFilter('pending')"><p class="status-card-value" style="color:#FFD60A" id="count-pending">0</p><p class="status-card-label">Awaiting Confirm</p></div>
+  <div class="status-card" onclick="setApptFilter('confirmed')"><p class="status-card-value" style="color:#00C2FF" id="count-confirmed">0</p><p class="status-card-label">Confirmed</p></div>
+  <div class="status-card" onclick="setApptFilter('complete')"><p class="status-card-value" style="color:#00E5A0" id="count-complete">0</p><p class="status-card-label">Complete</p></div>
+  <div class="status-card" onclick="setApptFilter('cancelled')"><p class="status-card-value" style="color:#FF3366" id="count-cancelled">0</p><p class="status-card-label">Cancelled</p></div>
+</div>
+
+<!-- View toggle + heading -->
+<div class="appt-toolbar">
+  <div>
+    <h2 style="margin:0 0 4px;font-size:16px;font-weight:700">Appointments</h2>
+    <p id="appt-summary" style="margin:0;font-size:11px;color:var(--text-faint)"></p>
+  </div>
+  <div class="view-toggle">
+    <button class="view-btn view-btn-active" data-view="list" onclick="setApptView('list')">≡ List</button>
+    <button class="view-btn" data-view="calendar" onclick="setApptView('calendar')">▦ Calendar</button>
+  </div>
+</div>
+
+<!-- Status legend -->
+<div class="appt-legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#FFD60A"></div><span>Pending (<span id="leg-pending">0</span>)</span></div>
+  <div class="legend-item"><div class="legend-dot" style="background:#00C2FF"></div><span>Confirmed (<span id="leg-confirmed">0</span>)</span></div>
+  <div class="legend-item"><div class="legend-dot" style="background:#00E5A0"></div><span>Complete (<span id="leg-complete">0</span>)</span></div>
+</div>
+
+<!-- Filter Tabs -->
+<div class="filter-tabs" id="filter-tabs">
+  <button class="filter-tab filter-tab-active" data-filter="all" onclick="setApptFilter('all')">All (0)</button>
+  <button class="filter-tab" data-filter="pending" onclick="setApptFilter('pending')">Pending (0)</button>
+  <button class="filter-tab" data-filter="confirmed" onclick="setApptFilter('confirmed')">Confirmed (0)</button>
+  <button class="filter-tab" data-filter="complete" onclick="setApptFilter('complete')">Complete (0)</button>
+</div>
+
+<!-- List View -->
+<div id="appt-list-view"></div>
+
+<!-- Calendar View -->
+<div id="appt-calendar-view" style="display:none"></div>
+
+<!-- Empty State -->
+<div id="appt-empty" class="empty-state" style="padding:80px 20px;display:none">
+  <div class="empty-icon" style="background:#00C2FF15">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00C2FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+  </div>
+  <p class="empty-title">No appointments yet</p>
+  <p class="empty-sub">When clients book through your link, they'll show up here.</p>
+</div>

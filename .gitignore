@@ -6,7 +6,10 @@
 # testing
 /coverage
 
-# next.js
+# 11ty output
+/_site/
+
+# next.js (legacy)
 /.next/
 /out/
 
