@@ -2,10 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "next-dev",
+      "name": "eleventy-dev",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["node_modules/next/dist/bin/next", "dev"],
-      "port": 3000
+      "runtimeArgs": ["node_modules/@11ty/eleventy/cmd.cjs", "--serve", "--port", "8080"],
+      "port": 8080
     }
   ]
 }
