@@ -148,6 +148,7 @@ export const handler = async (event) => {
         profile_id: profile.id,
         client_id: clientId,
         service_id: service.id,
+        detailer_username: profile.company_name || slug,
         status: "pending",
         scheduled_date: scheduledDate,
         scheduled_time: scheduledTime,
