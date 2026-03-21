@@ -12,11 +12,11 @@ function loadProfile() {
   try { return JSON.parse(localStorage.getItem(PROFILE_KEY) || "{}"); } catch(e) { return {}; }
 }
 function loadPhotos() {
-  if (_apiPhotos) return _apiPhotos;
+  if (_apiPhotos && _apiPhotos.length > 0) return _apiPhotos;
   try { return JSON.parse(localStorage.getItem(PHOTOS_KEY) || "[]"); } catch(e) { return []; }
 }
 function loadServices() {
-  if (_apiServices) return _apiServices;
+  if (_apiServices && _apiServices.length > 0) return _apiServices;
   try { return JSON.parse(localStorage.getItem(SERVICES_KEY) || "[]"); } catch(e) { return []; }
 }
 
