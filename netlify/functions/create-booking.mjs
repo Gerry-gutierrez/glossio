@@ -136,7 +136,7 @@ export const handler = async (event) => {
 
       if (clientErr || !newClient) {
         console.error("Client create error:", clientErr);
-        return { statusCode: 500, body: JSON.stringify({ error: "Failed to create client record" }) };
+        return { statusCode: 500, body: JSON.stringify({ error: "Failed to create client record: " + (clientErr ? clientErr.message || clientErr.details || clientErr.code || JSON.stringify(clientErr) : "no data returned") }) };
       }
       clientId = newClient.id;
     }
@@ -159,7 +159,7 @@ export const handler = async (event) => {
 
     if (apptErr || !appointment) {
       console.error("Appointment create error:", apptErr);
-      return { statusCode: 500, body: JSON.stringify({ error: "Failed to create appointment" }) };
+      return { statusCode: 500, body: JSON.stringify({ error: "Failed to create appointment: " + (apptErr ? apptErr.message || apptErr.details || apptErr.code || JSON.stringify(apptErr) : "no data returned") }) };
     }
 
     /* ── Send notification to detailer (fire and forget) ── */

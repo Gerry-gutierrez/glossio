@@ -1,4 +1,7 @@
 /* ─── Services Page ─────────────────────────────────────────────────────────── */
+/* All CRUD operations go through window.db (Supabase when online,             */
+/* localStorage fallback when offline). This ensures services exist in         */
+/* Supabase for the public booking flow.                                       */
 
 const ICON_OPTIONS = ["🚗","💧","✨","🔧","🪑","🧼","💎","🏆","⚡","🌟","🛞","🪣","🎯","🔥","🌊"];
 const COLOR_OPTIONS = ["#00C2FF","#FF6B35","#A259FF","#FFD60A","#00E5A0","#FF3366","#FF9F1C","#2EC4B6"];
@@ -9,7 +12,6 @@ let services = [];
 let activeTab = null;
 let editingId = null;
 let deleteTargetId = null;
-let nextId = 1;
 
 // Modal state
 let modalMode = "add"; // "add" or "edit"
@@ -18,17 +20,98 @@ let modalColor = "#00C2FF";
 
 /* ── Persistence ─────────────────────────────────────────────────────────── */
 
+/** Load services: try Supabase first, fall back to localStorage */
 function loadServices() {
+  /* Load localStorage immediately so UI renders fast */
   try {
     const data = localStorage.getItem(STORAGE_KEY);
-    if (data) {
-      services = JSON.parse(data);
-      nextId = services.reduce((max, s) => Math.max(max, s.id + 1), 1);
-    }
+    if (data) services = JSON.parse(data);
   } catch (e) { services = []; }
+
+  /* Then sync with Supabase once auth is ready */
+  waitForAuth(function() {
+    if (!window.db || !window.db.isOnline()) return;
+
+    window.db.services.list().then(function(sbServices) {
+      if (sbServices && sbServices.length > 0) {
+        /* Supabase has data — use it as source of truth */
+        services = sbServices.map(normalizeSvc);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(services));
+        render();
+      } else if (services.length > 0) {
+        /* Supabase is empty but localStorage has data — migrate */
+        migrateToSupabase();
+      }
+    }).catch(function(err) {
+      console.warn("Failed to load services from Supabase:", err);
+    });
+  });
 }
 
-function saveServices() {
+/** Wait for window.db.isOnline() to become true (auth ready), then call fn */
+function waitForAuth(fn) {
+  var attempts = 0;
+  var check = function() {
+    attempts++;
+    if (window.db && window.db.isOnline()) {
+      fn();
+    } else if (attempts < 25) {
+      setTimeout(check, 200); /* retry for up to 5 seconds */
+    }
+  };
+  setTimeout(check, 100);
+}
+
+/** Normalize a service object from Supabase format */
+function normalizeSvc(s) {
+  return {
+    id: s.id,
+    name: s.name,
+    price: String(s.price || "0.00"),
+    description: s.description || "",
+    icon: s.icon || "🚗",
+    color: s.color || "#00C2FF",
+    is_active: s.is_active !== false,
+    sort_order: s.sort_order || 0
+  };
+}
+
+/** Migrate localStorage services to Supabase (one-time) */
+function migrateToSupabase() {
+  if (!window.db || !window.db.isOnline()) return;
+
+  var migrated = 0;
+  var total = services.length;
+
+  services.forEach(function(svc, idx) {
+    window.db.services.create({
+      name: svc.name,
+      price: parseFloat(svc.price) || 0,
+      description: svc.description || "",
+      icon: svc.icon || "🚗",
+      color: svc.color || "#00C2FF",
+      is_active: true,
+      sort_order: idx
+    }).then(function(created) {
+      if (created && created.id) {
+        /* Update local service with Supabase UUID */
+        svc.id = created.id;
+        svc.is_active = true;
+        migrated++;
+        if (migrated === total) {
+          /* All migrated — save updated IDs to localStorage */
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(services));
+          render();
+          console.log("Migrated " + total + " services to Supabase");
+        }
+      }
+    }).catch(function(err) {
+      console.error("Failed to migrate service:", svc.name, err);
+    });
+  });
+}
+
+function saveServicesToLocalStorage() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(services));
 }
 
@@ -72,7 +155,7 @@ function render() {
         ${services.map(svc => `
           <button class="svc-tab ${svc.id === activeTab ? 'svc-tab-active' : ''}"
                   style="${svc.id === activeTab ? 'border-bottom-color:' + svc.color : ''}"
-                  onclick="switchTab(${svc.id})">
+                  onclick="switchTab('${svc.id}')">
             <span>${svc.icon}</span>
             <span>${svc.name}</span>
           </button>
@@ -99,8 +182,8 @@ function renderServiceView(svc) {
           </div>
         </div>
         <div class="svc-view-actions">
-          <button class="btn-edit" onclick="openEditModal(${svc.id})">✏️ Edit</button>
-          <button class="btn-remove" onclick="openDeleteModal(${svc.id})">🗑 Remove</button>
+          <button class="btn-edit" onclick="openEditModal('${svc.id}')">✏️ Edit</button>
+          <button class="btn-remove" onclick="openDeleteModal('${svc.id}')">🗑 Remove</button>
         </div>
       </div>
 
@@ -147,7 +230,7 @@ function openAddModal() {
 /* ── Edit Modal ──────────────────────────────────────────────────────────── */
 
 function openEditModal(id) {
-  const svc = services.find(s => s.id === id);
+  const svc = services.find(s => s.id === id || String(s.id) === String(id));
   if (!svc) return;
   modalMode = "edit";
   editingId = id;
@@ -223,24 +306,74 @@ function submitService() {
   if (!name) return;
 
   if (modalMode === "add") {
-    const svc = { id: nextId++, name, price: price || "0.00", description: desc, icon: modalIcon, color: modalColor };
-    services.push(svc);
-    activeTab = svc.id;
+    var svcData = {
+      name: name,
+      price: parseFloat(price) || 0,
+      description: desc,
+      icon: modalIcon,
+      color: modalColor,
+      is_active: true,
+      sort_order: services.length
+    };
+
+    /* Write to Supabase via window.db (falls back to localStorage if offline) */
+    window.db.services.create(svcData).then(function(created) {
+      var svc = normalizeSvc(created || svcData);
+      services.push(svc);
+      activeTab = svc.id;
+      saveServicesToLocalStorage();
+      closeModal();
+      render();
+      showToast();
+    }).catch(function(err) {
+      console.error("Failed to create service:", err);
+      /* Still add locally so UI doesn't appear broken */
+      svcData.id = "local-" + Date.now();
+      svcData.price = price || "0.00";
+      services.push(svcData);
+      activeTab = svcData.id;
+      saveServicesToLocalStorage();
+      closeModal();
+      render();
+      showToast();
+    });
   } else {
-    const svc = services.find(s => s.id === editingId);
+    var svc = services.find(s => s.id === editingId || String(s.id) === String(editingId));
     if (svc) {
-      svc.name = name;
-      svc.price = price || "0.00";
-      svc.description = desc;
-      svc.icon = modalIcon;
-      svc.color = modalColor;
+      var updates = {
+        name: name,
+        price: parseFloat(price) || 0,
+        description: desc,
+        icon: modalIcon,
+        color: modalColor
+      };
+
+      /* Update in Supabase */
+      window.db.services.update(svc.id, updates).then(function() {
+        svc.name = name;
+        svc.price = price || "0.00";
+        svc.description = desc;
+        svc.icon = modalIcon;
+        svc.color = modalColor;
+        saveServicesToLocalStorage();
+        closeModal();
+        render();
+        showToast();
+      }).catch(function(err) {
+        console.error("Failed to update service:", err);
+        /* Update locally anyway */
+        svc.name = name;
+        svc.price = price || "0.00";
+        svc.description = desc;
+        svc.icon = modalIcon;
+        svc.color = modalColor;
+        saveServicesToLocalStorage();
+        closeModal();
+        render();
+        showToast();
+      });
     }
   }
-
-  saveServices();
-  closeModal();
-  render();
-  showToast();
 }
 
 function closeModal() {
@@ -260,14 +393,30 @@ function closeDeleteModal() {
 }
 
 function confirmDelete() {
-  services = services.filter(s => s.id !== deleteTargetId);
-  if (activeTab === deleteTargetId && services.length > 0) {
-    activeTab = services[0].id;
-  }
-  saveServices();
-  closeDeleteModal();
-  render();
-  showToast();
+  var targetId = deleteTargetId;
+
+  /* Delete from Supabase */
+  window.db.services.remove(targetId).then(function() {
+    services = services.filter(s => s.id !== targetId && String(s.id) !== String(targetId));
+    if (activeTab === targetId && services.length > 0) {
+      activeTab = services[0].id;
+    }
+    saveServicesToLocalStorage();
+    closeDeleteModal();
+    render();
+    showToast();
+  }).catch(function(err) {
+    console.error("Failed to delete service:", err);
+    /* Delete locally anyway */
+    services = services.filter(s => s.id !== targetId && String(s.id) !== String(targetId));
+    if (activeTab === targetId && services.length > 0) {
+      activeTab = services[0].id;
+    }
+    saveServicesToLocalStorage();
+    closeDeleteModal();
+    render();
+    showToast();
+  });
 }
 
 /* ── Toast ────────────────────────────────────────────────────────────────── */

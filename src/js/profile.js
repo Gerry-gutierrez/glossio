@@ -1,4 +1,6 @@
 /* ─── Profile Management ─────────────────────────────────────────────────── */
+/* All saves go through window.db (Supabase when online, localStorage         */
+/* fallback when offline). Photos upload to Supabase Storage.                 */
 
 const PROFILE_KEY = "glossio_profile";
 const PHOTOS_KEY = "glossio_work_photos";
@@ -11,8 +13,6 @@ const DEFAULT_PROFILE = {
   state: "",
   bio: "",
 };
-
-const SAMPLE_PHOTOS = [];
 
 let profile = {};
 let photos = [];
@@ -29,6 +29,7 @@ function escHtml(str) {
 /* ── Persistence ─────────────────────────────────────────────────────────── */
 
 function loadProfile() {
+  /* Load from localStorage first for instant UI */
   try {
     const d = localStorage.getItem(PROFILE_KEY);
     profile = d ? { ...DEFAULT_PROFILE, ...JSON.parse(d) } : { ...DEFAULT_PROFILE };
@@ -36,12 +37,112 @@ function loadProfile() {
   try {
     const p = localStorage.getItem(PHOTOS_KEY);
     photos = p ? JSON.parse(p) : [];
-    nextPhotoId = photos.reduce((max, ph) => Math.max(max, ph.id + 1), 100);
+    nextPhotoId = photos.reduce((max, ph) => Math.max(max, (typeof ph.id === "number" ? ph.id + 1 : 100)), 100);
   } catch (e) { photos = []; }
+
+  /* Sync from Supabase once auth is ready */
+  waitForAuth(function() {
+    if (!window.db || !window.db.isOnline()) return;
+
+    /* Load profile from Supabase */
+    window.db.profile.get().then(function(sbProfile) {
+      if (sbProfile && sbProfile.company_name) {
+        /* Merge Supabase data into profile */
+        profile.displayName = sbProfile.company_name || profile.displayName;
+        profile.tagline = sbProfile.tagline || profile.tagline;
+        profile.instagram = sbProfile.instagram_handle || profile.instagram;
+        profile.city = sbProfile.city || profile.city;
+        profile.state = sbProfile.state || profile.state;
+        profile.bio = sbProfile.bio || profile.bio;
+        localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+        renderProfile();
+      } else if (profile.displayName && profile.displayName !== "Your Business") {
+        /* Supabase profile is bare, but localStorage has data — sync up */
+        syncProfileToSupabase();
+      }
+    });
+
+    /* Load photos from Supabase */
+    window.db.photos.list().then(function(sbPhotos) {
+      if (sbPhotos && sbPhotos.length > 0) {
+        photos = sbPhotos.map(function(ph) {
+          return {
+            id: ph.id,
+            label: ph.label || "",
+            image: ph.url || ph.image || "",
+            url: ph.url || ph.image || ""
+          };
+        });
+        localStorage.setItem(PHOTOS_KEY, JSON.stringify(photos));
+        renderProfile();
+      } else if (photos.length > 0) {
+        /* Migrate localStorage photos to Supabase */
+        migratePhotosToSupabase();
+      }
+    });
+  });
 }
 
-function saveProfile() { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); }
-function savePhotos() { localStorage.setItem(PHOTOS_KEY, JSON.stringify(photos)); }
+/** Wait for window.db.isOnline() to become true */
+function waitForAuth(fn) {
+  var attempts = 0;
+  var check = function() {
+    attempts++;
+    if (window.db && window.db.isOnline()) {
+      fn();
+    } else if (attempts < 25) {
+      setTimeout(check, 200);
+    }
+  };
+  setTimeout(check, 100);
+}
+
+/** Sync profile fields to Supabase */
+function syncProfileToSupabase() {
+  if (!window.db || !window.db.isOnline()) return;
+  window.db.profile.update({
+    company_name: profile.displayName,
+    tagline: profile.tagline || null,
+    bio: profile.bio || null,
+    instagram_handle: profile.instagram || null,
+    city: profile.city || null,
+    state: profile.state || null
+  }).catch(function(err) {
+    console.warn("Failed to sync profile to Supabase:", err);
+  });
+}
+
+/** Migrate localStorage photos to Supabase */
+function migratePhotosToSupabase() {
+  if (!window.db || !window.db.isOnline()) return;
+
+  photos.forEach(function(ph, idx) {
+    var url = ph.image || ph.url;
+    if (!url) return;
+
+    window.db.photos.create({
+      url: url,
+      sort_order: idx
+    }).then(function(created) {
+      if (created && created.id) {
+        ph.id = created.id;
+        localStorage.setItem(PHOTOS_KEY, JSON.stringify(photos));
+      }
+    }).catch(function(err) {
+      console.warn("Failed to migrate photo:", err);
+    });
+  });
+}
+
+function saveProfile() {
+  localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+  /* Also sync to Supabase */
+  syncProfileToSupabase();
+}
+
+function savePhotos() {
+  localStorage.setItem(PHOTOS_KEY, JSON.stringify(photos));
+}
 
 /* ── Toast ───────────────────────────────────────────────────────────────── */
 
@@ -123,9 +224,9 @@ function renderProfile() {
         '</div>' +
         '<div class="photo-grid">' +
           photos.map(ph =>
-            '<div class="photo-card photo-card-img" style="position:relative;cursor:pointer" onclick="' + (removeMode ? 'removePhoto(' + ph.id + ')' : 'expandPhoto(' + ph.id + ')') + '">' +
+            '<div class="photo-card photo-card-img" style="position:relative;cursor:pointer" onclick="' + (removeMode ? "removePhoto('" + ph.id + "')" : "expandPhoto('" + ph.id + "')") + '">' +
               (removeMode ? '<div class="photo-remove-badge">&#10005;</div>' : '') +
-              (ph.image ? '<img src="' + ph.image + '" alt="' + escHtml(ph.label) + '" class="photo-card-image" />' : '<span style="font-size:30px;color:var(--text-faint)">&#128247;</span>') +
+              ((ph.image || ph.url) ? '<img src="' + (ph.image || ph.url) + '" alt="' + escHtml(ph.label) + '" class="photo-card-image" />' : '<span style="font-size:30px;color:var(--text-faint)">&#128247;</span>') +
               (ph.label ? '<span class="photo-card-label">' + escHtml(ph.label) + '</span>' : '') +
             '</div>'
           ).join("") +
@@ -202,10 +303,12 @@ function saveEdit() {
 
 /* ── Add Photo ───────────────────────────────────────────────────────────── */
 
+let pendingPhotoFile = null;
 let pendingPhotoDataUrl = null;
 
 function openAddPhoto() {
   pendingPhotoDataUrl = null;
+  pendingPhotoFile = null;
   const modal = document.getElementById("profile-modal");
   modal.style.display = "flex";
   modal.innerHTML =
@@ -244,6 +347,9 @@ function handlePhotoFile(input) {
     showProfileToast("Image must be under 5 MB");
     return;
   }
+  /* Keep the file reference for Supabase upload */
+  pendingPhotoFile = file;
+
   const reader = new FileReader();
   reader.onload = function(e) {
     pendingPhotoDataUrl = e.target.result;
@@ -259,8 +365,51 @@ function handlePhotoFile(input) {
 
 function addPhoto() {
   if (!pendingPhotoDataUrl) return;
-  const label = document.getElementById("photo-label").value.trim() || "";
-  photos.push({ id: nextPhotoId++, label, image: pendingPhotoDataUrl });
+  var label = document.getElementById("photo-label").value.trim() || "";
+  var btn = document.getElementById("add-photo-btn");
+  if (btn) { btn.disabled = true; btn.textContent = "Uploading..."; }
+
+  /* Try to upload to Supabase Storage first */
+  if (window.db && window.db.isOnline() && pendingPhotoFile) {
+    var userId = window.__glossio_user_id;
+    var ext = pendingPhotoFile.name.split(".").pop() || "jpg";
+    var path = userId + "/work-photos/" + Date.now() + "." + ext;
+
+    window.db.storage.upload("work-photos", path, pendingPhotoFile)
+      .then(function() {
+        var publicUrl = window.db.storage.getPublicUrl("work-photos", path);
+
+        /* Save to work_photos table */
+        return window.db.photos.create({
+          url: publicUrl,
+          sort_order: photos.length
+        }).then(function(created) {
+          var photo = {
+            id: created ? created.id : ("local-" + Date.now()),
+            label: label,
+            image: publicUrl,
+            url: publicUrl
+          };
+          photos.push(photo);
+          savePhotos();
+          closeEditModal();
+          renderProfile();
+          showProfileToast("Photo added!");
+        });
+      })
+      .catch(function(err) {
+        console.warn("Supabase upload failed, saving locally:", err);
+        /* Fallback: save data URL locally */
+        savePhotoLocally(label);
+      });
+  } else {
+    /* Offline: save data URL locally */
+    savePhotoLocally(label);
+  }
+}
+
+function savePhotoLocally(label) {
+  photos.push({ id: nextPhotoId++, label: label, image: pendingPhotoDataUrl });
   savePhotos();
   closeEditModal();
   renderProfile();
@@ -275,7 +424,14 @@ function toggleRemoveMode() {
 }
 
 function removePhoto(id) {
-  photos = photos.filter(p => p.id !== id);
+  /* Remove from Supabase */
+  if (window.db && window.db.isOnline()) {
+    window.db.photos.remove(id).catch(function(err) {
+      console.warn("Failed to remove photo from Supabase:", err);
+    });
+  }
+
+  photos = photos.filter(p => p.id !== id && String(p.id) !== String(id));
   savePhotos();
   renderProfile();
   showProfileToast("Photo removed");
@@ -284,13 +440,13 @@ function removePhoto(id) {
 /* ── Expand Photo ────────────────────────────────────────────────────────── */
 
 function expandPhoto(id) {
-  const ph = photos.find(p => p.id === id);
+  const ph = photos.find(p => p.id === id || String(p.id) === String(id));
   if (!ph) return;
   const modal = document.getElementById("profile-modal");
   modal.style.display = "flex";
   modal.innerHTML =
     '<div class="photo-expanded-container" onclick="closeEditModal()">' +
-      (ph.image ? '<img src="' + ph.image + '" alt="' + escHtml(ph.label) + '" class="photo-expanded-img" />' : '') +
+      ((ph.image || ph.url) ? '<img src="' + (ph.image || ph.url) + '" alt="' + escHtml(ph.label) + '" class="photo-expanded-img" />' : '') +
       (ph.label ? '<p style="margin:10px 0 0;font-size:14px;color:#888">' + escHtml(ph.label) + '</p>' : '') +
       '<p style="margin:6px 0 0;font-size:11px;color:#444">Tap anywhere to close</p>' +
     '</div>';
@@ -351,7 +507,7 @@ function renderPreview() {
           '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">' +
             photos.map(ph =>
               '<div style="aspect-ratio:1;border-radius:12px;border:1px solid #1E1E2E;overflow:hidden;position:relative">' +
-                (ph.image ? '<img src="' + ph.image + '" alt="' + escHtml(ph.label) + '" style="width:100%;height:100%;object-fit:cover" />' : '<div style="width:100%;height:100%;background:#111118;display:flex;align-items:center;justify-content:center"><span style="font-size:30px;color:var(--text-faint)">&#128247;</span></div>') +
+                ((ph.image || ph.url) ? '<img src="' + (ph.image || ph.url) + '" alt="' + escHtml(ph.label) + '" style="width:100%;height:100%;object-fit:cover" />' : '<div style="width:100%;height:100%;background:#111118;display:flex;align-items:center;justify-content:center"><span style="font-size:30px;color:var(--text-faint)">&#128247;</span></div>') +
                 (ph.label ? '<span style="position:absolute;bottom:0;left:0;right:0;font-size:9px;color:#fff;text-align:center;padding:12px 6px 6px;background:linear-gradient(transparent,rgba(0,0,0,0.7))">' + escHtml(ph.label) + '</span>' : '') +
               '</div>'
             ).join("") +
