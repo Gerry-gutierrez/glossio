@@ -156,9 +156,10 @@ function renderPhotoGrid(photos) {
   }
   var html = '<div class="pub-photo-grid">';
   photos.forEach(function(ph) {
+    var imgSrc = ph.url || ph.image;
     html += '<div class="pub-photo-cell pub-photo-cell-img" onclick="expandPhoto(\'' + ph.id + '\')" style="cursor:pointer">' +
       '<div class="pub-photo-shine"></div>' +
-      (ph.image ? '<img src="' + ph.image + '" alt="' + esc(ph.label || '') + '" class="pub-photo-image" />' : '<span style="font-size:30px;color:var(--text-faint)">&#128247;</span>') +
+      (imgSrc ? '<img src="' + imgSrc + '" alt="' + esc(ph.label || '') + '" class="pub-photo-image" />' : '<span style="font-size:30px;color:var(--text-faint)">&#128247;</span>') +
       (ph.label ? '<span class="pub-photo-label">' + esc(ph.label) + '</span>' : '') +
     '</div>';
   });
@@ -178,7 +179,7 @@ function expandPhoto(id) {
   modal.style.display = "flex";
   modal.innerHTML =
     '<div class="pub-photo-expanded">' +
-      (photo.image ? '<img src="' + photo.image + '" alt="' + esc(photo.label || '') + '" style="max-width:100%;max-height:70vh;border-radius:12px;object-fit:contain" />' : '') +
+      ((photo.url || photo.image) ? '<img src="' + (photo.url || photo.image) + '" alt="' + esc(photo.label || '') + '" style="max-width:100%;max-height:70vh;border-radius:12px;object-fit:contain" />' : '') +
       (photo.label ? '<p style="margin:10px 0 0;font-size:14px;color:#888">' + esc(photo.label) + '</p>' : '') +
       '<p style="margin:6px 0 0;font-size:11px;color:#444">Tap anywhere to close</p>' +
     '</div>';

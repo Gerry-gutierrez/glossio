@@ -50,12 +50,12 @@ export const handler = async (event) => {
       return { statusCode: 404, body: JSON.stringify({ error: "Profile not found" }) };
     }
 
-    /* Get active services */
+    /* Get active services (is_active may be NULL for older services, treat as active) */
     const { data: services } = await supabase
       .from("services")
       .select("id, name, description, price, icon, color")
       .eq("profile_id", profile.id)
-      .eq("is_active", true)
+      .neq("is_active", false)
       .order("sort_order", { ascending: true });
 
     /* Get work photos */
