@@ -101,8 +101,12 @@ document.addEventListener("DOMContentLoaded", function() {
       if (profile && profile.slug) {
         _cachedSlug = profile.slug;
       } else if (profile && profile.company_name) {
-        /* Fallback: derive slug from company name (matches seed-profile.mjs logic) */
+        /* Derive slug from company name and persist it to Supabase */
         _cachedSlug = profile.company_name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
+        /* Save the slug so the public profile API can find it */
+        window.db.profile.update({ slug: _cachedSlug }).catch(function(err) {
+          console.warn("Failed to save slug:", err);
+        });
       }
       if (display && _cachedSlug) {
         display.textContent = window.location.host + "/profile/" + _cachedSlug;
