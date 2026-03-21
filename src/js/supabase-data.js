@@ -33,19 +33,47 @@
   function sb() { return window.sbClient; }
   function userId() {
     if (!sb()) return null;
-    /* sbClient.auth.getUser() is async; we cache the user id after first auth */
     return window.__glossio_user_id || null;
   }
 
-  /* Cache user ID on auth state change */
+  /* ── Auth readiness gate ── */
+  /* All db methods wait for this promise so userId() is always set before
+     we decide whether to use Supabase or fall back to localStorage.        */
+  var _authReady;
   if (window.sbAuth) {
-    window.sbAuth.onAuthStateChange(function(event, session) {
-      window.__glossio_user_id = session && session.user ? session.user.id : null;
+    _authReady = new Promise(function(resolve) {
+      /* onAuthStateChange fires once immediately with current session */
+      var resolved = false;
+      window.sbAuth.onAuthStateChange(function(event, session) {
+        window.__glossio_user_id = session && session.user ? session.user.id : null;
+        if (!resolved) { resolved = true; resolve(); }
+      });
+      /* Also try getSession (returns { data: { session } }) as backup */
+      window.sbAuth.getSession().then(function(result) {
+        var s = result && result.data ? result.data.session : null;
+        if (s && s.user) window.__glossio_user_id = s.user.id;
+        if (!resolved) { resolved = true; resolve(); }
+      }).catch(function() {
+        if (!resolved) { resolved = true; resolve(); }
+      });
+      /* Safety timeout — never block the UI for more than 2 seconds */
+      setTimeout(function() {
+        if (!resolved) { resolved = true; resolve(); }
+      }, 2000);
     });
-    /* Also try to get it immediately */
-    window.sbAuth.getSession().then(function(session) {
-      if (session && session.user) window.__glossio_user_id = session.user.id;
-    });
+  } else {
+    _authReady = Promise.resolve();
+  }
+
+  /* Helper: wrap a function so it waits for auth before running */
+  function afterAuth(fn) {
+    return function() {
+      var args = arguments;
+      var self = this;
+      return _authReady.then(function() {
+        return fn.apply(self, args);
+      });
+    };
   }
 
   /* ────────────────────────────────────────────────────────────────────────── */
@@ -54,16 +82,16 @@
 
   var profile = {
     /** Get current user's profile */
-    get: function() {
+    get: afterAuth(function() {
       if (sb() && userId()) {
         return sb().from("profiles").select("*").eq("id", userId()).single()
           .then(function(r) { return r.data; });
       }
       return Promise.resolve(lsGet(LS.profile) || {});
-    },
+    }),
 
     /** Update profile fields */
-    update: function(fields) {
+    update: afterAuth(function(fields) {
       if (sb() && userId()) {
         return sb().from("profiles").update(fields).eq("id", userId())
           .then(function(r) { return r.data; });
@@ -72,7 +100,7 @@
       Object.assign(p, fields);
       lsSet(LS.profile, p);
       return Promise.resolve(p);
-    },
+    }),
 
     /** Get public profile by slug */
     getBySlug: function(slug) {
@@ -80,7 +108,6 @@
         return sb().from("profiles").select("*").eq("slug", slug).single()
           .then(function(r) { return r.data; });
       }
-      /* Fallback: return stored profile if slug matches */
       var p = lsGet(LS.profile) || {};
       return Promise.resolve(p);
     }
@@ -92,7 +119,7 @@
 
   var services = {
     /** Get all services for current user */
-    list: function() {
+    list: afterAuth(function() {
       if (sb() && userId()) {
         return sb().from("services").select("*")
           .eq("profile_id", userId())
@@ -100,7 +127,7 @@
           .then(function(r) { return r.data || []; });
       }
       return Promise.resolve(lsGet(LS.services) || []);
-    },
+    }),
 
     /** Get active services for a profile (public) */
     listByProfile: function(profileId) {
@@ -115,7 +142,7 @@
     },
 
     /** Create a service */
-    create: function(data) {
+    create: afterAuth(function(data) {
       if (sb() && userId()) {
         data.profile_id = userId();
         return sb().from("services").insert(data).select().single()
@@ -126,10 +153,10 @@
       list.push(data);
       lsSet(LS.services, list);
       return Promise.resolve(data);
-    },
+    }),
 
     /** Update a service */
-    update: function(id, fields) {
+    update: afterAuth(function(id, fields) {
       if (sb() && userId()) {
         return sb().from("services").update(fields).eq("id", id).eq("profile_id", userId())
           .then(function(r) { return r.data; });
@@ -138,17 +165,17 @@
       list = list.map(function(s) { return s.id === id ? Object.assign(s, fields) : s; });
       lsSet(LS.services, list);
       return Promise.resolve(fields);
-    },
+    }),
 
     /** Delete a service */
-    remove: function(id) {
+    remove: afterAuth(function(id) {
       if (sb() && userId()) {
         return sb().from("services").delete().eq("id", id).eq("profile_id", userId());
       }
       var list = (lsGet(LS.services) || []).filter(function(s) { return s.id !== id; });
       lsSet(LS.services, list);
       return Promise.resolve();
-    }
+    })
   };
 
   /* ────────────────────────────────────────────────────────────────────────── */
@@ -156,7 +183,7 @@
   /* ────────────────────────────────────────────────────────────────────────── */
 
   var photos = {
-    list: function() {
+    list: afterAuth(function() {
       if (sb() && userId()) {
         return sb().from("work_photos").select("*")
           .eq("profile_id", userId())
@@ -164,7 +191,7 @@
           .then(function(r) { return r.data || []; });
       }
       return Promise.resolve(lsGet(LS.photos) || []);
-    },
+    }),
 
     listByProfile: function(profileId) {
       if (sb()) {
@@ -176,7 +203,7 @@
       return Promise.resolve(lsGet(LS.photos) || []);
     },
 
-    create: function(data) {
+    create: afterAuth(function(data) {
       if (sb() && userId()) {
         data.profile_id = userId();
         return sb().from("work_photos").insert(data).select().single()
@@ -187,16 +214,16 @@
       list.push(data);
       lsSet(LS.photos, list);
       return Promise.resolve(data);
-    },
+    }),
 
-    remove: function(id) {
+    remove: afterAuth(function(id) {
       if (sb() && userId()) {
         return sb().from("work_photos").delete().eq("id", id).eq("profile_id", userId());
       }
       var list = (lsGet(LS.photos) || []).filter(function(p) { return p.id !== id; });
       lsSet(LS.photos, list);
       return Promise.resolve();
-    }
+    })
   };
 
   /* ────────────────────────────────────────────────────────────────────────── */
@@ -204,16 +231,16 @@
   /* ────────────────────────────────────────────────────────────────────────── */
 
   var clients = {
-    list: function() {
+    list: afterAuth(function() {
       if (sb() && userId()) {
         return sb().from("client_stats").select("*")
           .eq("profile_id", userId())
           .then(function(r) { return r.data || []; });
       }
       return Promise.resolve(lsGet(LS.clients) || []);
-    },
+    }),
 
-    get: function(id) {
+    get: afterAuth(function(id) {
       if (sb() && userId()) {
         return sb().from("client_stats").select("*")
           .eq("id", id).eq("profile_id", userId()).single()
@@ -221,9 +248,9 @@
       }
       var list = lsGet(LS.clients) || [];
       return Promise.resolve(list.find(function(c) { return c.id === id; }) || null);
-    },
+    }),
 
-    create: function(data) {
+    create: afterAuth(function(data) {
       if (sb() && userId()) {
         data.profile_id = userId();
         return sb().from("clients").insert(data).select().single()
@@ -235,9 +262,9 @@
       list.push(data);
       lsSet(LS.clients, list);
       return Promise.resolve(data);
-    },
+    }),
 
-    update: function(id, fields) {
+    update: afterAuth(function(id, fields) {
       if (sb() && userId()) {
         return sb().from("clients").update(fields).eq("id", id).eq("profile_id", userId())
           .then(function(r) { return r.data; });
@@ -246,16 +273,16 @@
       list = list.map(function(c) { return c.id === id ? Object.assign(c, fields) : c; });
       lsSet(LS.clients, list);
       return Promise.resolve(fields);
-    },
+    }),
 
-    remove: function(id) {
+    remove: afterAuth(function(id) {
       if (sb() && userId()) {
         return sb().from("clients").delete().eq("id", id).eq("profile_id", userId());
       }
       var list = (lsGet(LS.clients) || []).filter(function(c) { return c.id !== id; });
       lsSet(LS.clients, list);
       return Promise.resolve();
-    }
+    })
   };
 
   /* ────────────────────────────────────────────────────────────────────────── */
@@ -263,27 +290,27 @@
   /* ────────────────────────────────────────────────────────────────────────── */
 
   var appointments = {
-    list: function() {
+    list: afterAuth(function() {
       if (sb() && userId()) {
-        return sb().from("appointments").select("*, client:clients(*), service:services(*)")
+        return sb().from("appointments").select("*")
           .eq("profile_id", userId())
           .order("scheduled_date", { ascending: true })
           .then(function(r) { return r.data || []; });
       }
       return Promise.resolve(lsGet(LS.appts) || []);
-    },
+    }),
 
-    get: function(id) {
+    get: afterAuth(function(id) {
       if (sb() && userId()) {
-        return sb().from("appointments").select("*, client:clients(*), service:services(*)")
+        return sb().from("appointments").select("*")
           .eq("id", id).eq("profile_id", userId()).single()
           .then(function(r) { return r.data; });
       }
       var list = lsGet(LS.appts) || [];
       return Promise.resolve(list.find(function(a) { return a.id === id; }) || null);
-    },
+    }),
 
-    create: function(data) {
+    create: afterAuth(function(data) {
       if (sb() && userId()) {
         data.profile_id = userId();
         return sb().from("appointments").insert(data).select().single()
@@ -295,10 +322,10 @@
       list.push(data);
       lsSet(LS.appts, list);
       return Promise.resolve(data);
-    },
+    }),
 
     /** Update appointment status or fields */
-    update: function(id, fields) {
+    update: afterAuth(function(id, fields) {
       if (sb() && userId()) {
         return sb().from("appointments").update(fields).eq("id", id).eq("profile_id", userId())
           .then(function(r) { return r.data; });
@@ -307,16 +334,16 @@
       list = list.map(function(a) { return a.id === id ? Object.assign(a, fields) : a; });
       lsSet(LS.appts, list);
       return Promise.resolve(fields);
-    },
+    }),
 
-    remove: function(id) {
+    remove: afterAuth(function(id) {
       if (sb() && userId()) {
         return sb().from("appointments").delete().eq("id", id).eq("profile_id", userId());
       }
       var list = (lsGet(LS.appts) || []).filter(function(a) { return a.id !== id; });
       lsSet(LS.appts, list);
       return Promise.resolve();
-    }
+    })
   };
 
   /* ────────────────────────────────────────────────────────────────────────── */
@@ -325,7 +352,7 @@
 
   var settings = {
     /** Get merged settings (business hours + availability + notifications) */
-    get: function() {
+    get: afterAuth(function() {
       if (sb() && userId()) {
         return Promise.all([
           sb().from("business_hours").select("*").eq("profile_id", userId()).order("day_of_week"),
@@ -342,10 +369,10 @@
         });
       }
       return Promise.resolve(lsGet(LS.settings) || {});
-    },
+    }),
 
     /** Update business hours for a day */
-    updateHours: function(dayOfWeek, fields) {
+    updateHours: afterAuth(function(dayOfWeek, fields) {
       if (sb() && userId()) {
         return sb().from("business_hours").update(fields)
           .eq("profile_id", userId())
@@ -356,10 +383,10 @@
       s.hours[dayOfWeek] = Object.assign(s.hours[dayOfWeek] || {}, fields);
       lsSet(LS.settings, s);
       return Promise.resolve();
-    },
+    }),
 
     /** Update availability settings */
-    updateAvailability: function(fields) {
+    updateAvailability: afterAuth(function(fields) {
       if (sb() && userId()) {
         return sb().from("availability_settings").upsert(
           Object.assign({ profile_id: userId() }, fields)
@@ -369,10 +396,10 @@
       Object.assign(s, fields);
       lsSet(LS.settings, s);
       return Promise.resolve();
-    },
+    }),
 
     /** Add availability block (vacation) */
-    addBlock: function(data) {
+    addBlock: afterAuth(function(data) {
       if (sb() && userId()) {
         data.profile_id = userId();
         return sb().from("availability_blocks").insert(data).select().single()
@@ -384,10 +411,10 @@
       s.blocks.push(data);
       lsSet(LS.settings, s);
       return Promise.resolve(data);
-    },
+    }),
 
     /** Remove availability block */
-    removeBlock: function(id) {
+    removeBlock: afterAuth(function(id) {
       if (sb() && userId()) {
         return sb().from("availability_blocks").delete().eq("id", id).eq("profile_id", userId());
       }
@@ -395,10 +422,10 @@
       s.blocks = (s.blocks || []).filter(function(b) { return b.id !== id; });
       lsSet(LS.settings, s);
       return Promise.resolve();
-    },
+    }),
 
     /** Update notification settings */
-    updateNotifications: function(fields) {
+    updateNotifications: afterAuth(function(fields) {
       if (sb() && userId()) {
         return sb().from("notification_settings").upsert(
           Object.assign({ profile_id: userId() }, fields)
@@ -408,17 +435,17 @@
       Object.assign(s, fields);
       lsSet(LS.settings, s);
       return Promise.resolve();
-    },
+    }),
 
     /** Save all settings at once (localStorage mode) */
-    saveAll: function(data) {
+    saveAll: afterAuth(function(data) {
       if (sb() && userId()) {
         /* For Supabase mode, use individual update methods */
         return Promise.resolve();
       }
       lsSet(LS.settings, data);
       return Promise.resolve();
-    }
+    })
   };
 
   /* ────────────────────────────────────────────────────────────────────────── */
@@ -465,7 +492,8 @@
     appointments: appointments,
     settings: settings,
     storage: storage,
-    isOnline: function() { return !!sb() && !!userId(); }
+    isOnline: function() { return !!sb() && !!userId(); },
+    ready: _authReady
   };
 
 })();
