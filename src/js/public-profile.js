@@ -457,7 +457,11 @@ function submitBooking(e) {
 
   window.api.call("create-booking", payload)
     .then(function(data) {
-      if (data.error) throw new Error(data.error);
+      if (data.error) {
+        var msg = data.error;
+        if (data.debug_slug) msg += " (slug: " + data.debug_slug + ")";
+        throw new Error(msg);
+      }
       showBookingConfirmation();
     })
     .catch(function(err) {

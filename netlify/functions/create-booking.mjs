@@ -57,7 +57,7 @@ export const handler = async (event) => {
     }
 
     if (!profile) {
-      return { statusCode: 404, body: JSON.stringify({ error: "Detailer not found" }) };
+      return { statusCode: 404, body: JSON.stringify({ error: "Detailer not found", debug_slug: slug }) };
     }
 
     /* ── Look up the service to get the price ── */
