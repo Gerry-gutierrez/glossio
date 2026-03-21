@@ -17,16 +17,9 @@ function goToStep(step) {
     if (!email) { showSignupError("Email is required."); return; }
     if (!phone || phone.replace(/\D/g, "").length < 10) { showSignupError("Valid phone number is required."); return; }
     hideSignupError();
-
-    /* Send verification code */
-    sendVerificationCode(phone);
   }
 
   if (step === 3 && currentStep === 2) {
-    if (!document.getElementById("step2Btn").disabled === false) return;
-  }
-
-  if (step === 4 && currentStep === 3) {
     var pw = document.getElementById("signupPassword").value;
     var confirm = document.getElementById("confirmPassword").value;
     if (pw.length < 8) { showSignupError("Password must be at least 8 characters."); return; }
@@ -35,7 +28,7 @@ function goToStep(step) {
 
     /* Create the account */
     createAccount();
-    return; /* Don't advance yet — createAccount will call goToStep(4) on success */
+    return; /* Don't advance yet — createAccount will call doGoToStep(3) on success */
   }
 
   doGoToStep(step);
@@ -44,7 +37,7 @@ function goToStep(step) {
 function doGoToStep(step) {
   currentStep = step;
 
-  for (var i = 1; i <= 4; i++) {
+  for (var i = 1; i <= 3; i++) {
     var el = document.getElementById("step" + i);
     if (el) el.style.display = "none";
   }
@@ -54,7 +47,7 @@ function doGoToStep(step) {
 
   var progressBar = document.getElementById("progressBar");
   var footer = document.getElementById("signupFooter");
-  if (step >= 4) {
+  if (step >= 3) {
     progressBar.style.display = "none";
     footer.style.display = "none";
   } else {
@@ -62,7 +55,7 @@ function doGoToStep(step) {
     footer.style.display = "block";
   }
 
-  for (var j = 1; j <= 3; j++) {
+  for (var j = 1; j <= 2; j++) {
     var dot = document.getElementById("dot" + j);
     if (step > j) {
       dot.className = "progress-dot progress-dot-done";
@@ -77,75 +70,15 @@ function doGoToStep(step) {
   }
 
   var fill = document.getElementById("progressFill");
-  fill.style.width = ((step - 1) / 2 * 100) + "%";
+  fill.style.width = ((step - 1) * 100) + "%";
 
-  if (step === 2) {
-    var phone = document.getElementById("cellPhone");
-    var display = document.getElementById("phoneDisplay");
-    if (phone && display) display.textContent = phone.value;
-  }
-
-  if (step === 4) {
+  if (step === 3) {
     var company = document.getElementById("companyName");
     var first = document.getElementById("firstName");
     var title = document.getElementById("welcomeTitle");
     var name = (company && company.value) || (first && first.value) || "";
     title.textContent = name ? "You're in, " + name + "!" : "You're in!";
   }
-}
-
-/* ── Verification ──────────────────────────────────────────────────────── */
-
-function sendVerificationCode(phone) {
-  var digits = phone.replace(/\D/g, "");
-  if (digits.length === 10) digits = "+1" + digits;
-
-  window.api.call("send-code", { phone: digits, type: "phone_signup" })
-  .then(function(data) {
-    if (!data.success) {
-      console.warn("Code send may have failed:", data);
-    }
-  }).catch(function(err) {
-    console.warn("Could not send code (API may not be configured):", err);
-  });
-}
-
-function verifyCode() {
-  var codeInput = document.getElementById("phoneCode");
-  var code = codeInput.value.trim();
-  if (code.length !== 6) return;
-
-  var phone = document.getElementById("cellPhone").value.trim();
-  var digits = phone.replace(/\D/g, "");
-  if (digits.length === 10) digits = "+1" + digits;
-
-  var verifyBtn = document.getElementById("verifyBtn");
-  verifyBtn.textContent = "Checking...";
-  verifyBtn.disabled = true;
-
-  window.api.call("verify-code", { phone: digits, code: code, type: "phone_signup" })
-  .then(function(data) {
-    if (data.verified || data.success) {
-      markVerified();
-    } else {
-      verifyBtn.textContent = "Verify";
-      verifyBtn.disabled = false;
-      showSignupError("Invalid code. Please try again.");
-    }
-  }).catch(function() {
-    /* API not available — accept any 6-digit code in demo mode */
-    markVerified();
-  });
-}
-
-function markVerified() {
-  document.getElementById("verifiedLabel").style.display = "inline";
-  document.getElementById("verifyBtn").textContent = "Done";
-  document.getElementById("verifyBtn").className = "verify-btn verify-btn-done";
-  document.getElementById("step2Btn").disabled = false;
-  document.getElementById("phoneCode").disabled = true;
-  document.getElementById("resendBtn").style.display = "none";
-  hideSignupError();
 }
 
 /* ── Account Creation ──────────────────────────────────────────────────── */
@@ -159,13 +92,13 @@ function createAccount() {
   var phone = document.getElementById("cellPhone").value.trim();
   var address = document.getElementById("address").value.trim();
 
-  var btn = document.getElementById("step3Btn");
+  var btn = document.getElementById("step2Btn");
   btn.textContent = "Creating account...";
   btn.disabled = true;
 
   if (!window.sbReady) {
     /* Demo mode — skip auth, just go to success */
-    doGoToStep(4);
+    doGoToStep(3);
     return;
   }
 
@@ -197,7 +130,7 @@ function createAccount() {
       /* Sign in failed but account was created — still show success */
       console.warn("Auto sign-in failed:", result.error);
     }
-    doGoToStep(4);
+    doGoToStep(3);
   }).catch(function(err) {
     btn.textContent = "Create My Account →";
     btn.disabled = false;
@@ -285,16 +218,5 @@ document.addEventListener("DOMContentLoaded", function() {
   if (emailParam) {
     var emailInput = document.getElementById("signupEmail");
     if (emailInput) emailInput.value = emailParam;
-  }
-
-  /* Resend button */
-  var resendBtn = document.getElementById("resendBtn");
-  if (resendBtn) {
-    resendBtn.addEventListener("click", function() {
-      var phone = document.getElementById("cellPhone").value.trim();
-      if (phone) sendVerificationCode(phone);
-      resendBtn.textContent = "Code resent!";
-      setTimeout(function() { resendBtn.textContent = "Didn't get a code? Resend"; }, 2000);
-    });
   }
 });
