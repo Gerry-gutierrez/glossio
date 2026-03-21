@@ -18,25 +18,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Copy booking link
-  var copyBtn = document.getElementById('copyLinkBtn');
-  if (copyBtn) {
-    copyBtn.addEventListener('click', function() {
-      var link = window.location.origin + '/your-business';
-      navigator.clipboard.writeText(link).then(function() {
-        copyBtn.textContent = '✓ Link Copied!';
-        copyBtn.style.background = 'rgba(0, 229, 160, 0.08)';
-        copyBtn.style.borderColor = 'rgba(0, 229, 160, 0.25)';
-        copyBtn.style.color = '#00E5A0';
-        setTimeout(function() {
-          copyBtn.textContent = 'Copy Booking Link';
-          copyBtn.style.background = '';
-          copyBtn.style.borderColor = '';
-          copyBtn.style.color = '';
-        }, 2000);
-      });
-    });
-  }
 
   // Close sidebar on nav click (mobile)
   var navBtns = document.querySelectorAll('.nav-btn');

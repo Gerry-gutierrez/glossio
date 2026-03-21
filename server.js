@@ -146,6 +146,22 @@ async function serve(req, res) {
     return;
   }
 
+  /* Public profile: /profile/:slug → serve public-profile page */
+  const profileMatch = pathname.match(/^\/profile\/[a-z0-9-]+\/?$/i);
+  if (profileMatch) {
+    const profilePage = path.join(SITE_DIR, "public-profile", "index.html");
+    fs.readFile(profilePage, function (err, content) {
+      if (err) {
+        res.writeHead(404);
+        res.end("Not found");
+      } else {
+        res.writeHead(200, { "Content-Type": "text/html" });
+        res.end(content);
+      }
+    });
+    return;
+  }
+
   /* Everything else is static */
   serveStatic(req, res);
 }
