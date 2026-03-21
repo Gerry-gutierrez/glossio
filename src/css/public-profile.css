@@ -275,20 +275,12 @@
 .booking-input[type="date"],
 .booking-input[type="time"] {
   cursor: pointer;
-  -webkit-appearance: none;
-  appearance: none;
 }
 
 .booking-input[type="date"]::-webkit-calendar-picker-indicator,
 .booking-input[type="time"]::-webkit-calendar-picker-indicator {
   filter: invert(1);
   cursor: pointer;
-  opacity: 0.7;
-}
-
-.booking-input[type="date"]::-webkit-calendar-picker-indicator:hover,
-.booking-input[type="time"]::-webkit-calendar-picker-indicator:hover {
-  opacity: 1;
 }
 
 .booking-input:focus {

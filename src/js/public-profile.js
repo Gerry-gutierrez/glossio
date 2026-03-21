@@ -393,6 +393,12 @@ function openBookingForm() {
   sheet.onclick = function(e) {
     if (e.target === sheet) closeServicesSheet();
   };
+
+  /* Make clicking anywhere on date/time inputs open the native picker */
+  var dateEl = document.getElementById("bf-date");
+  var timeEl = document.getElementById("bf-time");
+  if (dateEl) dateEl.addEventListener("click", function() { try { dateEl.showPicker(); } catch(e) {} });
+  if (timeEl) timeEl.addEventListener("click", function() { try { timeEl.showPicker(); } catch(e) {} });
 }
 
 function submitBooking(e) {
