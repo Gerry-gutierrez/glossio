@@ -287,6 +287,7 @@ function toggleService(id) {
 var _selectedServiceId = null;
 var _selectedServiceName = "";
 var _selectedServiceColor = "";
+var _selectedServicePrice = "";
 
 function handleBooking(serviceId, btn) {
   /* Find service info from the rendered cards */
@@ -294,6 +295,8 @@ function handleBooking(serviceId, btn) {
   _selectedServiceId = serviceId;
   _selectedServiceName = card ? card.querySelector('.pub-svc-name').textContent : "Service";
   _selectedServiceColor = card ? card.style.borderLeftColor || "#00C2FF" : "#00C2FF";
+  var priceEl = card ? card.querySelector('.pub-svc-price') : null;
+  _selectedServicePrice = priceEl ? priceEl.textContent.replace(/[^0-9.]/g, '') : "";
 
   /* Close services sheet and open booking form */
   closeServicesSheet();
@@ -453,6 +456,8 @@ function submitBooking(e) {
   var payload = {
     slug: slug,
     serviceId: _selectedServiceId,
+    serviceName: _selectedServiceName,
+    servicePrice: _selectedServicePrice,
     firstName: firstName,
     lastName: lastName,
     email: email,

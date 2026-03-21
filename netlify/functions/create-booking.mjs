@@ -13,7 +13,7 @@ export const handler = async (event) => {
   }
 
   const {
-    slug, serviceId,
+    slug, serviceId, serviceName, servicePrice,
     firstName, lastName, email, phone,
     vehicleYear, vehicleMake, vehicleModel,
     notes, scheduledDate, scheduledTime
@@ -61,14 +61,20 @@ export const handler = async (event) => {
     }
 
     /* ── Look up the service to get the price ── */
-    const { data: service, error: svcErr } = await supabase
+    let service = null;
+    const { data: svcData } = await supabase
       .from("services")
       .select("id, name, price")
       .eq("id", serviceId)
       .eq("profile_id", profile.id)
       .single();
 
-    if (svcErr || !service) {
+    if (svcData) {
+      service = svcData;
+    } else if (serviceName) {
+      /* Service exists in localStorage but not Supabase — use provided details */
+      service = { id: serviceId, name: serviceName, price: parseFloat(servicePrice) || 0 };
+    } else {
       return { statusCode: 404, body: JSON.stringify({ error: "Service not found" }) };
     }
 
@@ -120,12 +126,14 @@ export const handler = async (event) => {
     }
 
     /* ── Create the appointment ── */
+    const serviceExistsInDb = !!svcData;
     const { data: appointment, error: apptErr } = await supabase
       .from("appointments")
       .insert({
         profile_id: profile.id,
         client_id: clientId,
-        service_id: serviceId,
+        service_id: serviceExistsInDb ? serviceId : null,
+        service_name: service.name,
         status: "pending",
         scheduled_date: scheduledDate,
         scheduled_time: scheduledTime,
