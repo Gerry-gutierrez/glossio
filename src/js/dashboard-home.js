@@ -90,18 +90,6 @@ function loadDashStats() {
   }
 }
 
-/* ── Quick Actions ───────────────────────────────────────────────────────── */
-
-function copyBookingLink(e) {
-  if (e) e.preventDefault();
-  const slug = "yourbusiness";
-  const url = window.location.origin + "/" + slug + "/";
-  navigator.clipboard.writeText(url).then(() => {
-    showDashToast("Booking link copied!");
-  }).catch(() => {
-    showDashToast("Link: " + url);
-  });
-}
 
 function showDashToast(msg) {
   const existing = document.getElementById("dash-toast");
@@ -114,19 +102,135 @@ function showDashToast(msg) {
   setTimeout(() => t.remove(), 2500);
 }
 
+/* ─── Calendar View ──────────────────────────────────────────────────────── */
+
+let calYear, calMonth; // 0-indexed month
+
+function initCalendar() {
+  const now = new Date();
+  calYear = now.getFullYear();
+  calMonth = now.getMonth();
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const container = document.getElementById("dash-calendar-view");
+  if (!container) return;
+
+  let appts = [];
+  try { appts = JSON.parse(localStorage.getItem("glossio_appointments") || "[]"); } catch(e) {}
+
+  const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const dayNames = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const daysInPrev = new Date(calYear, calMonth, 0).getDate();
+  const today = new Date();
+
+  const statusColors = {
+    pending: "#FFD60A", confirmed: "#00C2FF", complete: "#00E5A0", cancelled: "#FF3366"
+  };
+
+  // Build appointment lookup by date string
+  const apptsByDate = {};
+  appts.forEach(function(a) {
+    if (!apptsByDate[a.date]) apptsByDate[a.date] = [];
+    apptsByDate[a.date].push(a);
+  });
+
+  let html = '<div class="cal-nav">' +
+    '<button class="cal-nav-btn" id="cal-prev">&larr;</button>' +
+    '<span class="cal-month-label">' + monthNames[calMonth] + ' ' + calYear + '</span>' +
+    '<button class="cal-nav-btn" id="cal-next">&rarr;</button>' +
+  '</div>';
+
+  html += '<div class="cal-grid">';
+
+  // Day headers
+  dayNames.forEach(function(d) {
+    html += '<div class="cal-day-header">' + d + '</div>';
+  });
+
+  // Previous month filler days
+  for (var i = firstDay - 1; i >= 0; i--) {
+    html += '<div class="cal-day other-month"><span class="cal-day-num">' + (daysInPrev - i) + '</span></div>';
+  }
+
+  // Current month days
+  for (var d = 1; d <= daysInMonth; d++) {
+    var dateStr = calYear + '-' + String(calMonth + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    var isToday = today.getFullYear() === calYear && today.getMonth() === calMonth && today.getDate() === d;
+    var dayAppts = apptsByDate[dateStr] || [];
+
+    html += '<div class="cal-day' + (isToday ? ' today' : '') + '">';
+    html += '<span class="cal-day-num">' + d + '</span>';
+    dayAppts.slice(0, 2).forEach(function(a) {
+      var c = statusColors[a.status] || "#FFD60A";
+      html += '<div class="cal-day-appt" style="background:' + c + '18;color:' + c + ';border-left:2px solid ' + c + '" title="' + a.client + ' - ' + a.service + '">' + a.client + '</div>';
+    });
+    if (dayAppts.length > 2) {
+      html += '<div style="font-size:10px;color:var(--text-faint);margin-top:1px">+' + (dayAppts.length - 2) + ' more</div>';
+    }
+    html += '</div>';
+  }
+
+  // Next month filler days
+  var totalCells = firstDay + daysInMonth;
+  var remaining = (7 - (totalCells % 7)) % 7;
+  for (var n = 1; n <= remaining; n++) {
+    html += '<div class="cal-day other-month"><span class="cal-day-num">' + n + '</span></div>';
+  }
+
+  html += '</div>';
+  container.innerHTML = html;
+
+  // Nav buttons
+  document.getElementById("cal-prev").addEventListener("click", function() {
+    calMonth--;
+    if (calMonth < 0) { calMonth = 11; calYear--; }
+    renderCalendar();
+  });
+  document.getElementById("cal-next").addEventListener("click", function() {
+    calMonth++;
+    if (calMonth > 11) { calMonth = 0; calYear++; }
+    renderCalendar();
+  });
+}
+
+/* ─── View Toggle ────────────────────────────────────────────────────────── */
+
+function initViewToggle() {
+  var btns = document.querySelectorAll(".view-btn");
+  var listView = document.querySelector(".list-view");
+  var calView = document.querySelector(".calendar-view");
+  if (!btns.length || !listView || !calView) return;
+
+  btns.forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      btns.forEach(function(b) {
+        b.classList.remove("view-btn-active");
+        b.classList.add("view-btn-inactive");
+      });
+      btn.classList.remove("view-btn-inactive");
+      btn.classList.add("view-btn-active");
+
+      if (btn.textContent.trim() === "Calendar") {
+        listView.classList.add("hidden");
+        calView.classList.add("active");
+        renderCalendar();
+      } else {
+        listView.classList.remove("hidden");
+        calView.classList.remove("active");
+      }
+    });
+  });
+}
+
 /* ── Init ─────────────────────────────────────────────────────────────────── */
 
 document.addEventListener("DOMContentLoaded", function() {
   loadDashStats();
-
-  /* Wire up "Copy Booking Link" quick action */
-  document.querySelectorAll(".quick-card").forEach(card => {
-    const label = card.querySelector(".quick-label");
-    if (label && label.textContent.includes("Copy Booking Link")) {
-      card.addEventListener("click", function(e) {
-        e.preventDefault();
-        copyBookingLink();
-      });
-    }
-  });
+  initCalendar();
+  initViewToggle();
 });

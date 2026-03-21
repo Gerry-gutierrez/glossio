@@ -431,6 +431,8 @@
   background: var(--bg-hover); color: var(--primary); font-weight: 700;
 }
 
+
+
 /* Legend */
 .appt-legend {
   display: flex; gap: 20px; padding: 12px 28px; margin-bottom: 12px;
@@ -507,6 +509,19 @@
   align-items: center; justify-content: center; gap: 6px;
   color: var(--text-faint); font-size: 13px; position: relative; overflow: hidden;
 }
+.photo-card-img {
+  padding: 0;
+}
+.photo-card-image {
+  width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0;
+  border-radius: var(--radius-md);
+}
+.photo-card-label {
+  position: absolute; bottom: 0; left: 0; right: 0; padding: 20px 8px 8px;
+  font-size: 10px; color: #fff; text-align: center;
+  background: linear-gradient(transparent, rgba(0,0,0,0.7));
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
 .photo-card-empty { cursor: default; }
 .photo-remove-badge {
   position: absolute; top: 6px; right: 6px; width: 22px; height: 22px;
@@ -515,18 +530,31 @@
   z-index: 2;
 }
 
-/* Profile stats bar */
-.profile-stats-bar {
-  display: inline-flex; background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: 14px; overflow: hidden; margin-bottom: 28px;
+/* Upload area */
+.photo-upload-area {
+  border: 2px dashed var(--border-light); border-radius: var(--radius-md);
+  padding: 24px; text-align: center; cursor: pointer; margin-bottom: 16px;
+  transition: border-color 0.15s; position: relative; overflow: hidden;
+  min-height: 160px; display: flex; align-items: center; justify-content: center;
 }
-.profile-stat {
-  text-align: center; padding: 13px 22px;
-  border-right: 1px solid var(--border);
+.photo-upload-area:hover { border-color: var(--primary); }
+.photo-upload-placeholder {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
 }
-.profile-stat:last-child { border-right: none; }
-.profile-stat-value { margin: 0 0 3px; font-size: 16px; font-weight: 700; }
-.profile-stat-label { margin: 0; font-size: 10px; color: #555; letter-spacing: 0.08em; text-transform: uppercase; }
+.photo-upload-preview {
+  width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0;
+  border-radius: var(--radius-md);
+}
+
+/* Expanded photo */
+.photo-expanded-container {
+  display: flex; flex-direction: column; align-items: center; gap: 0;
+  cursor: pointer; max-width: 90vw;
+}
+.photo-expanded-img {
+  max-width: 100%; max-height: 70vh; border-radius: 12px; object-fit: contain;
+}
+
 
 .btn-danger {
   background: #FF336615; border: 1px solid #FF336633; color: #FF3366;
