@@ -31,13 +31,32 @@ export const handler = async (event) => {
 
   try {
     /* ── Look up profile by slug ── */
-    const { data: profile, error: profileErr } = await supabase
+    let { data: profile, error: profileErr } = await supabase
       .from("profiles")
-      .select("id")
+      .select("id, company_name")
       .eq("slug", slug)
       .single();
 
+    /* Fallback: if slug column is empty, try matching by derived slug from company_name */
     if (profileErr || !profile) {
+      const { data: allProfiles } = await supabase
+        .from("profiles")
+        .select("id, company_name, slug");
+
+      if (allProfiles) {
+        profile = allProfiles.find(function(p) {
+          var derived = (p.company_name || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
+          return derived === slug;
+        });
+
+        /* If found, persist the slug so future lookups are direct */
+        if (profile && !profile.slug) {
+          await supabase.from("profiles").update({ slug: slug }).eq("id", profile.id);
+        }
+      }
+    }
+
+    if (!profile) {
       return { statusCode: 404, body: JSON.stringify({ error: "Detailer not found" }) };
     }
 

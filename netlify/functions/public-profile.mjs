@@ -19,14 +19,34 @@ export const handler = async (event) => {
   );
 
   try {
-    /* Get profile */
-    const { data: profile, error: profileError } = await supabase
+    /* Get profile by slug */
+    let { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("id, company_name, slug, tagline, bio, instagram_handle, location, avatar_url, is_pro")
       .eq("slug", slug)
       .single();
 
+    /* Fallback: if slug column is empty, match by derived slug from company_name */
     if (profileError || !profile) {
+      const { data: allProfiles } = await supabase
+        .from("profiles")
+        .select("id, company_name, slug, tagline, bio, instagram_handle, location, avatar_url, is_pro");
+
+      if (allProfiles) {
+        profile = allProfiles.find(function(p) {
+          var derived = (p.company_name || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
+          return derived === slug;
+        });
+
+        /* Persist the slug so future lookups are direct */
+        if (profile && !profile.slug) {
+          await supabase.from("profiles").update({ slug: slug }).eq("id", profile.id);
+          profile.slug = slug;
+        }
+      }
+    }
+
+    if (!profile) {
       return { statusCode: 404, body: JSON.stringify({ error: "Profile not found" }) };
     }
 
