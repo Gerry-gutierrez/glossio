@@ -22,10 +22,20 @@ export const handler = async (event) => {
   );
 
   try {
+    /* Strip phone to digits for comparison — DB may store formatted numbers */
+    const digits = phone.replace(/\D/g, "");
+    const variants = [
+      phone,                          /* as-is (e.g. +12398229268) */
+      digits,                         /* just digits (12398229268) */
+      digits.slice(-10),              /* last 10 digits (2398229268) */
+      "(" + digits.slice(-10,-7) + ") " + digits.slice(-7,-4) + "-" + digits.slice(-4), /* (239) 822-9268 */
+      "+1" + digits.slice(-10),       /* +1 prefix */
+    ];
+
     const { data } = await supabase
       .from("profiles")
       .select("email")
-      .eq("phone", phone)
+      .in("phone", variants)
       .limit(1)
       .single();
 
