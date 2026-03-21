@@ -64,6 +64,13 @@
       signOutBtn.addEventListener("click", function(e) {
         e.preventDefault();
         window.sbAuth.signOut().then(function() {
+          /* Clear cached user data so stale session can't bleed through */
+          window.__glossio_user_id = null;
+          var lsKeys = [
+            "glossio_profile", "glossio_services", "glossio_work_photos",
+            "glossio_clients", "glossio_appointments", "glossio_settings"
+          ];
+          lsKeys.forEach(function(k) { localStorage.removeItem(k); });
           window.location.replace("/login/");
         });
       });

@@ -4,8 +4,8 @@ var currentStep = 1;
 
 /* If already logged in, redirect to dashboard */
 if (window.sbReady) {
-  window.sbAuth.getSession().then(function(session) {
-    if (session) window.location.replace("/dashboard/");
+  window.sbAuth.getUser().then(function(user) {
+    if (user) window.location.replace("/dashboard/");
   });
 }
 

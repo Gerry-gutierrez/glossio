@@ -4,9 +4,11 @@
   "use strict";
 
   /* If already logged in, redirect to dashboard */
+  /* Use getUser() instead of getSession() — getUser() validates the token
+     with Supabase's server, so a stale/revoked session won't pass through */
   if (window.sbReady) {
-    window.sbAuth.getSession().then(function(session) {
-      if (session) window.location.replace("/dashboard/");
+    window.sbAuth.getUser().then(function(user) {
+      if (user) window.location.replace("/dashboard/");
     });
   }
 
