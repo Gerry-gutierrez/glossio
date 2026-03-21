@@ -2,17 +2,49 @@
 
 function fmt(n) { return "$" + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
 
+/* Normalize a Supabase appointment row to the shape the UI expects */
+function normalizeAppt(a) {
+  return {
+    id: a.id,
+    client: (a.client_first_name || "") + " " + (a.client_last_name || ""),
+    service: a.service_name || a.service || "",
+    date: a.appt_date || a.scheduled_date || a.date || "",
+    time: a.appt_time || a.scheduled_time || a.time || "",
+    price: parseFloat(a.price) || parseFloat(a.service_price) || 0,
+    status: a.status || "pending",
+    phone: a.client_phone || a.phone || "",
+    email: a.client_email || a.email || "",
+    vehicle: [a.vehicle_year, a.vehicle_make, a.vehicle_model].filter(Boolean).join(" ") || a.vehicle || "",
+    notes: a.notes || a.detailer_notes || ""
+  };
+}
+
 function loadDashStats() {
   const now = new Date();
   const thisMonth = now.getMonth() + 1;
   const thisYear = now.getFullYear();
 
-  const getMonth = (a) => parseInt(a.date.split("-")[1]);
-  const getYear = (a) => parseInt(a.date.split("-")[0]);
+  const getMonth = (a) => { var p = (a.date || "").split("-"); return parseInt(p[1]) || 0; };
+  const getYear = (a) => { var p = (a.date || "").split("-"); return parseInt(p[0]) || 0; };
 
-  /* Load appointments */
-  let appts = [];
-  try { appts = JSON.parse(localStorage.getItem("glossio_appointments") || "[]"); } catch(e) {}
+  /* Load appointments via data layer (waits for auth) */
+  _loadDashAppts().then(function(appts) {
+    _renderDashStats(appts, now, thisMonth, thisYear, getMonth, getYear);
+  });
+}
+
+function _loadDashAppts() {
+  if (window.db && window.db.appointments) {
+    return window.db.appointments.list().then(function(rows) {
+      return (rows || []).map(normalizeAppt);
+    }).catch(function() { return []; });
+  }
+  try {
+    return Promise.resolve(JSON.parse(localStorage.getItem("glossio_appointments") || "[]"));
+  } catch(e) { return Promise.resolve([]); }
+}
+
+function _renderDashStats(appts, now, thisMonth, thisYear, getMonth, getYear) {
 
   const completedThisMonth = appts.filter(a => a.status === "complete" && getMonth(a) === thisMonth && getYear(a) === thisYear);
   const projThisMonth = appts.filter(a => ["confirmed","pending"].includes(a.status) && getMonth(a) === thisMonth && getYear(a) === thisYear);
@@ -117,8 +149,10 @@ function renderCalendar() {
   const container = document.getElementById("dash-calendar-view");
   if (!container) return;
 
-  let appts = [];
-  try { appts = JSON.parse(localStorage.getItem("glossio_appointments") || "[]"); } catch(e) {}
+  _loadDashAppts().then(function(appts) { _renderCalendarWith(container, appts); });
+}
+
+function _renderCalendarWith(container, appts) {
 
   const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
   const dayNames = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];

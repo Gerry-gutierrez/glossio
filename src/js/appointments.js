@@ -20,14 +20,38 @@ function fmt(n) { return "$" + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ","
 
 /* ── Persistence ─────────────────────────────────────────────────────────── */
 
+/* Normalize a Supabase row to the shape the UI expects */
+function normalizeAppt(a) {
+  return {
+    id: a.id,
+    client: a.client || ((a.client_first_name || "") + " " + (a.client_last_name || "")).trim(),
+    service: a.service_name || a.service || "",
+    date: a.appt_date || a.scheduled_date || a.date || "",
+    time: a.appt_time || a.scheduled_time || a.time || "",
+    price: parseFloat(a.price) || parseFloat(a.service_price) || 0,
+    status: a.status || "pending",
+    phone: a.client_phone || a.phone || "",
+    email: a.client_email || a.email || "",
+    vehicle: a.vehicle || [a.vehicle_year, a.vehicle_make, a.vehicle_model].filter(Boolean).join(" ") || "",
+    notes: a.notes || a.detailer_notes || ""
+  };
+}
+
 function loadAppts() {
+  if (window.db && window.db.appointments) {
+    return window.db.appointments.list().then(function(rows) {
+      appointments = (rows || []).map(normalizeAppt);
+      renderAppts();
+    }).catch(function() { appointments = []; renderAppts(); });
+  }
+  /* Fallback to localStorage */
   try {
     const data = localStorage.getItem(APPTS_KEY);
     if (data) {
       appointments = JSON.parse(data);
-      nextApptId = appointments.reduce((max, a) => Math.max(max, a.id + 1), 1);
     }
   } catch (e) { appointments = []; }
+  return Promise.resolve();
 }
 
 function saveAppts() {
@@ -139,7 +163,7 @@ function renderAppts() {
     const isPending = a.status === "pending";
 
     return `
-      <div class="appt-item" style="border-left-color:${cfg.color}" onclick="toggleAppt(${a.id})">
+      <div class="appt-item" style="border-left-color:${cfg.color}" onclick="toggleAppt('${a.id}')">
         <div class="appt-row">
           <div class="appt-row-main">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
@@ -168,12 +192,12 @@ function renderAppts() {
             </div>
             <div class="appt-actions">
               ${a.status === "pending" ? `
-                <button class="action-btn" style="background:#00C2FF15;border-color:#00C2FF33;color:#00C2FF" onclick="confirmAppt(${a.id})">✓ Confirm</button>
-                <button class="action-btn" style="background:#FF336615;border-color:#FF336633;color:#FF3366" onclick="cancelAppt(${a.id})">✗ Cancel</button>
+                <button class="action-btn" style="background:#00C2FF15;border-color:#00C2FF33;color:#00C2FF" onclick="confirmAppt('${a.id}')">✓ Confirm</button>
+                <button class="action-btn" style="background:#FF336615;border-color:#FF336633;color:#FF3366" onclick="cancelAppt('${a.id}')">✗ Cancel</button>
               ` : ''}
               ${a.status === "confirmed" ? `
-                <button class="action-btn" style="background:#00E5A015;border-color:#00E5A033;color:#00E5A0" onclick="completeAppt(${a.id})">✅ Mark Complete</button>
-                <button class="action-btn" style="background:#FF336615;border-color:#FF336633;color:#FF3366" onclick="cancelAppt(${a.id})">✗ Cancel</button>
+                <button class="action-btn" style="background:#00E5A015;border-color:#00E5A033;color:#00E5A0" onclick="completeAppt('${a.id}')">✅ Mark Complete</button>
+                <button class="action-btn" style="background:#FF336615;border-color:#FF336633;color:#FF3366" onclick="cancelAppt('${a.id}')">✗ Cancel</button>
               ` : ''}
               ${a.status === "complete" ? '<span style="font-size:12px;color:var(--text-faint)">Done ✓</span>' : ''}
               ${a.status === "cancelled" ? '<span style="font-size:12px;color:var(--text-faint)">Cancelled</span>' : ''}
@@ -196,20 +220,21 @@ function toggleAppt(id) {
 
 /* ── Actions ─────────────────────────────────────────────────────────────── */
 
-function confirmAppt(id) {
+function updateApptStatus(id, newStatus) {
   const a = appointments.find(ap => ap.id === id);
-  if (a) { a.status = "confirmed"; saveAppts(); renderAppts(); }
+  if (!a) return;
+  a.status = newStatus;
+  renderAppts();
+  /* Persist to Supabase */
+  if (window.db && window.db.appointments) {
+    window.db.appointments.update(id, { status: newStatus });
+  }
+  saveAppts();
 }
 
-function completeAppt(id) {
-  const a = appointments.find(ap => ap.id === id);
-  if (a) { a.status = "complete"; saveAppts(); renderAppts(); }
-}
-
-function cancelAppt(id) {
-  const a = appointments.find(ap => ap.id === id);
-  if (a) { a.status = "cancelled"; saveAppts(); renderAppts(); }
-}
+function confirmAppt(id) { updateApptStatus(id, "confirmed"); }
+function completeAppt(id) { updateApptStatus(id, "complete"); }
+function cancelAppt(id) { updateApptStatus(id, "cancelled"); }
 
 /* ── Calendar ────────────────────────────────────────────────────────────── */
 
@@ -273,6 +298,7 @@ function renderCalendar() {
 /* ── Init ─────────────────────────────────────────────────────────────────── */
 
 document.addEventListener("DOMContentLoaded", function() {
-  loadAppts();
-  renderAppts();
+  loadAppts().then(function() {
+    renderAppts();
+  });
 });
