@@ -209,7 +209,7 @@ export default function ClientsPage() {
     // Load clients with their appointment history
     const { data: clientsData } = await supabase
       .from('clients')
-      .select('id, first_name, last_name, phone, email, vehicle_info, source, notes, created_at')
+      .select('id, first_name, last_name, phone, email, vehicle_year, vehicle_make, vehicle_model, vehicle_color, source, notes, created_at')
       .eq('profile_id', user.id)
       .order('created_at', { ascending: false })
 
@@ -236,7 +236,7 @@ export default function ClientsPage() {
           lastName: c.last_name || '',
           phone: c.phone || '',
           email: c.email || '',
-          vehicle: c.vehicle_info || '',
+          vehicle: [c.vehicle_year, c.vehicle_color, c.vehicle_make, c.vehicle_model].filter(Boolean).join(' ') || '',
           source: c.source || 'Direct',
           since: sinceStr,
           lastVisit: lastComplete ? (lastComplete.scheduled_date as string) : '\u2014',

@@ -51,7 +51,8 @@ export default function AppointmentsPage() {
 
     const { data } = await supabase
       .from('appointments')
-      .select('id, scheduled_date, scheduled_time, status, price, notes, clients(first_name, last_name, phone, email, vehicle_info), services(name, icon, color)')
+      .select('id, scheduled_date, scheduled_time, status, price, notes, clients(first_name, last_name, phone, email, vehicle_year, vehicle_make, vehicle_model, vehicle_color), services(name, icon, color)')
+      .in('status', ['pending', 'confirmed'])
       .eq('profile_id', user.id)
       .order('scheduled_date', { ascending: true })
 
@@ -64,7 +65,7 @@ export default function AppointmentsPage() {
           clientName: client ? `${client.first_name} ${client.last_name || ''}`.trim() : 'Unknown',
           phone: client?.phone || '',
           email: client?.email || '',
-          vehicle: client?.vehicle_info || '',
+          vehicle: client ? [client.vehicle_year, client.vehicle_color, client.vehicle_make, client.vehicle_model].filter(Boolean).join(' ') : '',
           service: service?.name || 'Service',
           serviceIcon: service?.icon || '🔧',
           serviceColor: service?.color || '#00C2FF',
@@ -82,9 +83,14 @@ export default function AppointmentsPage() {
   useEffect(() => { loadAppointments() }, [loadAppointments])
 
   const updateStatus = async (id: number, status: 'pending' | 'confirmed' | 'complete' | 'cancelled') => {
-    setAppointments(prev => prev.map(a =>
-      a.id === id ? { ...a, status, isNew: false } : a
-    ))
+    if (status === 'complete' || status === 'cancelled') {
+      // Remove from the active appointments list
+      setAppointments(prev => prev.filter(a => a.id !== id))
+    } else {
+      setAppointments(prev => prev.map(a =>
+        a.id === id ? { ...a, status, isNew: false } : a
+      ))
+    }
     const supabase = createClient()
     await supabase.from('appointments').update({ status }).eq('id', id)
   }
@@ -92,16 +98,13 @@ export default function AppointmentsPage() {
   const counts = {
     pending: appointments.filter(a => a.status === 'pending').length,
     confirmed: appointments.filter(a => a.status === 'confirmed').length,
-    complete: appointments.filter(a => a.status === 'complete').length,
-    cancelled: appointments.filter(a => a.status === 'cancelled').length,
   }
 
   const filtered = filter === 'all' ? appointments : appointments.filter(a => a.status === filter)
 
   // Revenue calculations
-  const revenueMtd = appointments.filter(a => a.status === 'complete').reduce((s, a) => s + parseFloat(a.price), 0)
   const projectedThis = appointments.filter(a => a.status === 'confirmed').reduce((s, a) => s + parseFloat(a.price), 0)
-  const projectedNext = 0 // Would come from next month's confirmed bookings
+  const projectedPending = appointments.filter(a => a.status === 'pending').reduce((s, a) => s + parseFloat(a.price), 0)
 
   return (
     <>
@@ -115,9 +118,8 @@ export default function AppointmentsPage() {
       {/* Revenue Cards */}
       <div className={styles.revenueGrid}>
         {[
-          { label: 'Revenue MTD', value: revenueMtd, color: 'var(--success)', note: 'Completed jobs this month', icon: <DollarSvg /> },
-          { label: 'Projected This Month', value: projectedThis, color: 'var(--primary)', note: 'Confirmed · not yet complete', icon: <TrendingSvg /> },
-          { label: 'Projected Next Month', value: projectedNext, color: 'var(--secondary)', note: 'Confirmed · next month', icon: <TrendingSvg /> },
+          { label: 'Confirmed Revenue', value: projectedThis, color: 'var(--primary)', note: 'Confirmed · not yet complete', icon: <DollarSvg /> },
+          { label: 'Pending Revenue', value: projectedPending, color: 'var(--secondary)', note: 'Awaiting confirmation', icon: <TrendingSvg /> },
         ].map(card => (
           <div key={card.label} className={styles.revenueCard} style={{ borderTop: `2px solid ${card.color}` }}>
             <p className={styles.revenueLabel}>{card.label}</p>
@@ -132,8 +134,6 @@ export default function AppointmentsPage() {
         {[
           { key: 'pending', label: 'Awaiting Confirm' },
           { key: 'confirmed', label: 'Confirmed' },
-          { key: 'complete', label: 'Complete' },
-          { key: 'cancelled', label: 'Cancelled' },
         ].map(s => {
           const st = STATUS_STYLES[s.key]
           const isActive = filter === s.key
@@ -157,7 +157,7 @@ export default function AppointmentsPage() {
 
       {/* Filter Tabs */}
       <div className={styles.filterRow}>
-        {['all', 'pending', 'confirmed', 'complete'].map(f => (
+        {['all', 'pending', 'confirmed'].map(f => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -254,16 +254,6 @@ export default function AppointmentsPage() {
                       Cancel
                     </button>
                   </>
-                )}
-                {appt.status === 'complete' && (
-                  <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>
-                    <CheckSvg /> Job completed
-                  </span>
-                )}
-                {appt.status === 'cancelled' && (
-                  <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>
-                    Appointment was cancelled
-                  </span>
                 )}
               </div>
             </div>

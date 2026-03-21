@@ -66,7 +66,7 @@ export default function DashboardPage() {
     // Load appointments with client and service info
     const { data: appts } = await supabase
       .from('appointments')
-      .select('id, scheduled_date, scheduled_time, status, price, notes, clients(first_name, last_name, phone, vehicle_info), services(name)')
+      .select('id, scheduled_date, scheduled_time, status, price, notes, clients(first_name, last_name, phone, vehicle_year, vehicle_make, vehicle_model, vehicle_color), services(name)')
       .eq('profile_id', user.id)
       .order('scheduled_date', { ascending: true })
 
@@ -82,7 +82,7 @@ export default function DashboardPage() {
           date: a.scheduled_date as string,
           time: a.scheduled_time as string || '',
           status: (a.status as 'pending' | 'confirmed' | 'complete') || 'pending',
-          vehicle: client?.vehicle_info || '',
+          vehicle: client ? [client.vehicle_year, client.vehicle_color, client.vehicle_make, client.vehicle_model].filter(Boolean).join(' ') : '',
           phone: client?.phone || '',
         }
       }))
