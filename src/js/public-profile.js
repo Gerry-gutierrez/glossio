@@ -4,13 +4,19 @@ var PROFILE_KEY = "glossio_profile";
 var PHOTOS_KEY = "glossio_work_photos";
 var SERVICES_KEY = "glossio_services";
 
+/* In-memory cache for API-fetched data (used by the booking flow) */
+var _apiServices = null;
+var _apiPhotos = null;
+
 function loadProfile() {
   try { return JSON.parse(localStorage.getItem(PROFILE_KEY) || "{}"); } catch(e) { return {}; }
 }
 function loadPhotos() {
+  if (_apiPhotos) return _apiPhotos;
   try { return JSON.parse(localStorage.getItem(PHOTOS_KEY) || "[]"); } catch(e) { return []; }
 }
 function loadServices() {
+  if (_apiServices) return _apiServices;
   try { return JSON.parse(localStorage.getItem(SERVICES_KEY) || "[]"); } catch(e) { return []; }
 }
 
@@ -29,10 +35,13 @@ function loadProfileData() {
     return window.api.get("public-profile", { slug: slug })
       .then(function(data) {
         if (data.error) throw new Error(data.error);
+        /* Cache API data so openServicesSheet() and booking flow use real IDs */
+        _apiServices = data.services || [];
+        _apiPhotos = data.photos || [];
         return {
           profile: data.profile || {},
-          photos: data.photos || [],
-          services: data.services || []
+          photos: _apiPhotos,
+          services: _apiServices
         };
       })
       .catch(function() {
