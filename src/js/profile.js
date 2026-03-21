@@ -10,17 +10,9 @@ const DEFAULT_PROFILE = {
   city: "",
   state: "",
   bio: "",
-  stats: { details: "0", rating: "5.0", experience: "New" },
 };
 
-const SAMPLE_PHOTOS = [
-  { id: 1, color: "#0f1a2e", label: "BMW M3 · Full Detail", emoji: "🚗" },
-  { id: 2, color: "#0d1117", label: "Porsche · Paint Correction", emoji: "🏎️" },
-  { id: 3, color: "#141420", label: "Tesla · Ceramic Coat", emoji: "⚡" },
-  { id: 4, color: "#0a0a1a", label: "F-150 · Interior Detail", emoji: "🛻" },
-  { id: 5, color: "#111118", label: "Charger · Full Detail", emoji: "💫" },
-  { id: 6, color: "#0d1a15", label: "Civic · Exterior Wash", emoji: "💧" },
-];
+const SAMPLE_PHOTOS = [];
 
 let profile = {};
 let photos = [];
@@ -104,12 +96,6 @@ function renderProfile() {
       '</div>' +
     '</div>' +
 
-    /* Stats */
-    '<div class="profile-stats-bar">' +
-      '<div class="profile-stat"><p class="profile-stat-value">' + escHtml(p.stats.details || "0") + '</p><p class="profile-stat-label">Details</p></div>' +
-      '<div class="profile-stat"><p class="profile-stat-value">' + escHtml(p.stats.rating || "5.0") + ' ⭐</p><p class="profile-stat-label">Rating</p></div>' +
-      '<div class="profile-stat"><p class="profile-stat-value">' + escHtml(p.stats.experience || "New") + '</p><p class="profile-stat-label">Experience</p></div>' +
-    '</div>' +
 
     /* Bio */
     '<div class="card" style="margin-bottom:28px">' +
@@ -133,14 +119,14 @@ function renderProfile() {
       (photos.length > 0 ?
         '<div style="display:flex;gap:8px;margin-bottom:16px">' +
           '<button class="btn btn-primary" style="font-size:12px;padding:8px 16px" onclick="openAddPhoto()">+ Add Photo</button>' +
-          '<button class="btn ' + (removeMode ? 'btn-danger' : 'btn-ghost') + '" style="font-size:12px;padding:8px 16px" onclick="toggleRemoveMode()">' + (removeMode ? '✕ Done Removing' : '🗑 Remove Photos') + '</button>' +
+          '<button class="btn ' + (removeMode ? 'btn-danger' : 'btn-ghost') + '" style="font-size:12px;padding:8px 16px" onclick="toggleRemoveMode()">' + (removeMode ? 'Done Removing' : 'Remove Photos') + '</button>' +
         '</div>' +
         '<div class="photo-grid">' +
           photos.map(ph =>
-            '<div class="photo-card" style="background:' + ph.color + ';position:relative;cursor:pointer" onclick="' + (removeMode ? 'removePhoto(' + ph.id + ')' : 'expandPhoto(' + ph.id + ')') + '">' +
-              (removeMode ? '<div class="photo-remove-badge">✕</div>' : '') +
-              '<span style="font-size:30px">' + ph.emoji + '</span>' +
-              '<span style="font-size:9px;color:#555;text-align:center;padding:0 6px">' + escHtml(ph.label) + '</span>' +
+            '<div class="photo-card photo-card-img" style="position:relative;cursor:pointer" onclick="' + (removeMode ? 'removePhoto(' + ph.id + ')' : 'expandPhoto(' + ph.id + ')') + '">' +
+              (removeMode ? '<div class="photo-remove-badge">&#10005;</div>' : '') +
+              (ph.image ? '<img src="' + ph.image + '" alt="' + escHtml(ph.label) + '" class="photo-card-image" />' : '<span style="font-size:30px;color:var(--text-faint)">&#128247;</span>') +
+              (ph.label ? '<span class="photo-card-label">' + escHtml(ph.label) + '</span>' : '') +
             '</div>'
           ).join("") +
         '</div>'
@@ -182,11 +168,6 @@ function openEditModal() {
       '<p class="field-label">Bio</p>' +
       '<textarea class="input" id="edit-bio" rows="4" maxlength="300" style="resize:vertical" placeholder="Tell clients about yourself...">' + escHtml(p.bio) + '</textarea>' +
       '<p style="margin:5px 0 16px;font-size:11px;color:#555"><span id="edit-bio-count">' + (p.bio || "").length + '</span>/300</p>' +
-      '<div class="form-row" style="margin-bottom:0">' +
-        '<div><p class="field-label">Details Completed</p><input class="input" id="edit-details" value="' + escHtml(p.stats.details) + '" placeholder="150+"></div>' +
-        '<div><p class="field-label">Rating</p><input class="input" id="edit-rating" value="' + escHtml(p.stats.rating) + '" placeholder="5.0"></div>' +
-        '<div><p class="field-label">Experience</p><input class="input" id="edit-exp" value="' + escHtml(p.stats.experience) + '" placeholder="3 yrs"></div>' +
-      '</div>' +
       '<div style="display:flex;gap:10px;margin-top:20px">' +
         '<button class="btn btn-ghost" onclick="closeEditModal()">Cancel</button>' +
         '<button class="btn btn-primary" style="flex:1" onclick="saveEdit()">Save Profile</button>' +
@@ -213,9 +194,6 @@ function saveEdit() {
   profile.city = document.getElementById("edit-city").value.trim();
   profile.state = document.getElementById("edit-state").value.trim();
   profile.bio = document.getElementById("edit-bio").value.trim();
-  profile.stats.details = document.getElementById("edit-details").value.trim();
-  profile.stats.rating = document.getElementById("edit-rating").value.trim();
-  profile.stats.experience = document.getElementById("edit-exp").value.trim();
   saveProfile();
   closeEditModal();
   renderProfile();
@@ -224,32 +202,33 @@ function saveEdit() {
 
 /* ── Add Photo ───────────────────────────────────────────────────────────── */
 
-const PHOTO_EMOJIS = ["🚗","🏎️","⚡","🛻","💫","💧","✨","🔥","🌟","🪩","💎","🏁"];
-const PHOTO_COLORS = ["#0f1a2e","#0d1117","#141420","#0a0a1a","#111118","#0d1a15","#1a1020","#0a1a1a","#1a0a0a"];
+let pendingPhotoDataUrl = null;
 
 function openAddPhoto() {
+  pendingPhotoDataUrl = null;
   const modal = document.getElementById("profile-modal");
   modal.style.display = "flex";
   modal.innerHTML =
     '<div class="modal-box" style="max-width:420px">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:28px">' +
         '<h2 style="margin:0;font-size:20px;font-weight:700">Add Work Photo</h2>' +
-        '<button class="modal-close" onclick="closeEditModal()">✕</button>' +
+        '<button class="modal-close" onclick="closeEditModal()">&#10005;</button>' +
+      '</div>' +
+      '<p class="field-label">Photo</p>' +
+      '<div id="photo-upload-area" class="photo-upload-area" onclick="document.getElementById(\'photo-file-input\').click()">' +
+        '<input type="file" id="photo-file-input" accept="image/*" style="display:none" onchange="handlePhotoFile(this)">' +
+        '<div id="photo-upload-placeholder" class="photo-upload-placeholder">' +
+          '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>' +
+          '<p style="margin:6px 0 0;font-size:13px;color:var(--text-faint)">Click to upload a photo</p>' +
+          '<p style="margin:2px 0 0;font-size:11px;color:#444">JPG, PNG, or WebP</p>' +
+        '</div>' +
+        '<img id="photo-upload-preview" class="photo-upload-preview" style="display:none" />' +
       '</div>' +
       '<p class="field-label">Label</p>' +
       '<input class="input" id="photo-label" placeholder="e.g. BMW M3 · Full Detail" maxlength="40">' +
-      '<p class="field-label">Choose an Icon</p>' +
-      '<div class="icon-picker" id="photo-emoji-picker">' +
-        PHOTO_EMOJIS.map((e, i) =>
-          '<button class="picker-btn' + (i === 0 ? ' picker-btn-active' : '') + '" onclick="pickPhotoEmoji(this,\'' + e + '\')">' + e + '</button>'
-        ).join("") +
-      '</div>' +
-      '<div style="background:#0A0A0F;border:1px solid #1E1E2E;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;gap:8px">' +
-        '<span>📸</span><p style="margin:0;font-size:12px;color:#555;line-height:1.6">In the full version, you\'ll upload real photos here. For now, choose an icon as a placeholder.</p>' +
-      '</div>' +
-      '<div style="display:flex;gap:10px">' +
+      '<div style="display:flex;gap:10px;margin-top:20px">' +
         '<button class="btn btn-ghost" onclick="closeEditModal()">Cancel</button>' +
-        '<button class="btn btn-primary" style="flex:1" onclick="addPhoto()">Add Photo</button>' +
+        '<button class="btn btn-primary" style="flex:1" id="add-photo-btn" onclick="addPhoto()" disabled>Add Photo</button>' +
       '</div>' +
     '</div>';
 
@@ -258,18 +237,30 @@ function openAddPhoto() {
   });
 }
 
-let selectedPhotoEmoji = PHOTO_EMOJIS[0];
-
-function pickPhotoEmoji(btn, emoji) {
-  selectedPhotoEmoji = emoji;
-  document.querySelectorAll("#photo-emoji-picker .picker-btn").forEach(b => b.classList.remove("picker-btn-active"));
-  btn.classList.add("picker-btn-active");
+function handlePhotoFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    showProfileToast("Image must be under 5 MB");
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    pendingPhotoDataUrl = e.target.result;
+    const preview = document.getElementById("photo-upload-preview");
+    const placeholder = document.getElementById("photo-upload-placeholder");
+    preview.src = pendingPhotoDataUrl;
+    preview.style.display = "block";
+    placeholder.style.display = "none";
+    document.getElementById("add-photo-btn").disabled = false;
+  };
+  reader.readAsDataURL(file);
 }
 
 function addPhoto() {
-  const label = document.getElementById("photo-label").value.trim() || "New Photo";
-  const color = PHOTO_COLORS[Math.floor(Math.random() * PHOTO_COLORS.length)];
-  photos.push({ id: nextPhotoId++, label, emoji: selectedPhotoEmoji, color });
+  if (!pendingPhotoDataUrl) return;
+  const label = document.getElementById("photo-label").value.trim() || "";
+  photos.push({ id: nextPhotoId++, label, image: pendingPhotoDataUrl });
   savePhotos();
   closeEditModal();
   renderProfile();
@@ -298,10 +289,10 @@ function expandPhoto(id) {
   const modal = document.getElementById("profile-modal");
   modal.style.display = "flex";
   modal.innerHTML =
-    '<div style="background:' + ph.color + ';border:1px solid #2A2A3E;border-radius:20px;width:100%;max-width:380px;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;cursor:pointer" onclick="closeEditModal()">' +
-      '<span style="font-size:72px">' + ph.emoji + '</span>' +
-      '<p style="margin:0;font-size:14px;color:#888">' + escHtml(ph.label) + '</p>' +
-      '<p style="margin:0;font-size:11px;color:#444">Tap anywhere to close</p>' +
+    '<div class="photo-expanded-container" onclick="closeEditModal()">' +
+      (ph.image ? '<img src="' + ph.image + '" alt="' + escHtml(ph.label) + '" class="photo-expanded-img" />' : '') +
+      (ph.label ? '<p style="margin:10px 0 0;font-size:14px;color:#888">' + escHtml(ph.label) + '</p>' : '') +
+      '<p style="margin:6px 0 0;font-size:11px;color:#444">Tap anywhere to close</p>' +
     '</div>';
   modal.addEventListener("click", function handler(e) {
     if (e.target === modal) { closeEditModal(); modal.removeEventListener("click", handler); }
@@ -347,16 +338,6 @@ function renderPreview() {
         '</div>' +
         '<p style="margin:0 0 20px;font-size:14px;color:#777">' + escHtml(p.tagline || "Professional Auto Detailing") + ' · ' + escHtml(locationStr) + '</p>' +
 
-        /* Stats */
-        '<div style="display:inline-flex;background:#111118;border:1px solid #1E1E2E;border-radius:14px;overflow:hidden;margin-bottom:26px">' +
-          [
-            { value: p.stats.details || "0", label: "Details" },
-            { value: (p.stats.rating || "5.0") + " ⭐", label: "Rating" },
-            { value: p.stats.experience || "New", label: "Experience" },
-          ].map((s, i) =>
-            '<div style="text-align:center;padding:13px 22px;' + (i < 2 ? 'border-right:1px solid #1E1E2E' : '') + '"><p style="margin:0 0 3px;font-size:16px;font-weight:700">' + escHtml(s.value) + '</p><p style="margin:0;font-size:10px;color:#555;letter-spacing:0.08em;text-transform:uppercase">' + s.label + '</p></div>'
-          ).join("") +
-        '</div>' +
 
         /* Book button */
         '<div><button style="width:100%;max-width:420px;background:linear-gradient(135deg,#00C2FF,#A259FF);border:none;border-radius:16px;color:#fff;font-size:17px;font-weight:700;padding:20px 24px;cursor:default;box-shadow:0 8px 48px #00C2FF44;font-family:Georgia,serif">🛠 See Services & Book an Appointment</button></div>' +
@@ -369,9 +350,9 @@ function renderPreview() {
           '<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px"><div style="flex:1;height:1px;background:#1E1E2E"></div><span style="font-size:10px;color:#444;letter-spacing:0.25em;text-transform:uppercase">Our Work</span><div style="flex:1;height:1px;background:#1E1E2E"></div></div>' +
           '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">' +
             photos.map(ph =>
-              '<div style="aspect-ratio:1;background:' + ph.color + ';border-radius:12px;border:1px solid #1E1E2E;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px">' +
-                '<span style="font-size:30px">' + ph.emoji + '</span>' +
-                '<span style="font-size:9px;color:#555;text-align:center;padding:0 6px">' + escHtml(ph.label) + '</span>' +
+              '<div style="aspect-ratio:1;border-radius:12px;border:1px solid #1E1E2E;overflow:hidden;position:relative">' +
+                (ph.image ? '<img src="' + ph.image + '" alt="' + escHtml(ph.label) + '" style="width:100%;height:100%;object-fit:cover" />' : '<div style="width:100%;height:100%;background:#111118;display:flex;align-items:center;justify-content:center"><span style="font-size:30px;color:var(--text-faint)">&#128247;</span></div>') +
+                (ph.label ? '<span style="position:absolute;bottom:0;left:0;right:0;font-size:9px;color:#fff;text-align:center;padding:12px 6px 6px;background:linear-gradient(transparent,rgba(0,0,0,0.7))">' + escHtml(ph.label) + '</span>' : '') +
               '</div>'
             ).join("") +
           '</div>' +
