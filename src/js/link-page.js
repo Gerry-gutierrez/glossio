@@ -94,9 +94,20 @@ function shareGeneral() {
 
 document.addEventListener("DOMContentLoaded", function() {
   var display = document.getElementById("link-url-display");
+  var copyBtn = document.getElementById("copyLinkBtn2");
 
-  /* Fetch real slug from Supabase profile */
-  if (window.db && window.db.profile) {
+  /* Show loading state until real slug is fetched */
+  if (display) {
+    display.textContent = "Loading your link...";
+  }
+  if (copyBtn) {
+    copyBtn.disabled = true;
+    copyBtn.style.opacity = "0.5";
+  }
+
+  function loadSlug() {
+    if (!window.db || !window.db.profile) return;
+
     window.db.profile.get().then(function(profile) {
       if (profile && profile.slug) {
         _cachedSlug = profile.slug;
@@ -108,14 +119,37 @@ document.addEventListener("DOMContentLoaded", function() {
           console.warn("Failed to save slug:", err);
         });
       }
-      if (display && _cachedSlug) {
-        display.textContent = window.location.host + "/profile/" + _cachedSlug;
+      if (_cachedSlug) {
+        if (display) display.textContent = window.location.host + "/profile/" + _cachedSlug;
+        if (copyBtn) { copyBtn.disabled = false; copyBtn.style.opacity = ""; }
+      } else {
+        if (display) display.textContent = "Unable to load link — please refresh";
       }
+    }).catch(function() {
+      if (display) display.textContent = "Unable to load link — please refresh";
     });
   }
 
-  /* Show placeholder until async load completes */
-  if (display && !_cachedSlug) {
-    display.textContent = window.location.host + "/profile/your-business";
+  /* Wait for auth to be ready before fetching slug */
+  if (window.__glossio_user_id) {
+    /* Auth already resolved */
+    loadSlug();
+  } else if (window.sbAuth) {
+    /* Listen for auth state change */
+    window.sbAuth.onAuthStateChange(function(event, session) {
+      if (session && session.user) {
+        window.__glossio_user_id = session.user.id;
+        loadSlug();
+      }
+    });
+    /* Also try getSession in case onAuthStateChange already fired */
+    window.sbAuth.getSession().then(function(session) {
+      if (session && session.user && !_cachedSlug) {
+        window.__glossio_user_id = session.user.id;
+        loadSlug();
+      }
+    });
+  } else {
+    if (display) display.textContent = "Unable to load link — please refresh";
   }
 });
