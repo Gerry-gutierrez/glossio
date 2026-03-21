@@ -193,10 +193,13 @@ function renderAppts() {
             <div class="appt-actions">
               ${a.status === "pending" ? `
                 <button class="action-btn" style="background:#00C2FF15;border-color:#00C2FF33;color:#00C2FF" onclick="confirmAppt('${a.id}')">✓ Confirm</button>
+                <button class="action-btn" style="background:#A78BFA15;border-color:#A78BFA33;color:#A78BFA" onclick="openAdjustModal('${a.id}')">✎ Adjust</button>
+                <button class="action-btn" style="background:#00E5A015;border-color:#00E5A033;color:#00E5A0" onclick="completeAppt('${a.id}')">✅ Complete</button>
                 <button class="action-btn" style="background:#FF336615;border-color:#FF336633;color:#FF3366" onclick="cancelAppt('${a.id}')">✗ Cancel</button>
               ` : ''}
               ${a.status === "confirmed" ? `
-                <button class="action-btn" style="background:#00E5A015;border-color:#00E5A033;color:#00E5A0" onclick="completeAppt('${a.id}')">✅ Mark Complete</button>
+                <button class="action-btn" style="background:#A78BFA15;border-color:#A78BFA33;color:#A78BFA" onclick="openAdjustModal('${a.id}')">✎ Adjust</button>
+                <button class="action-btn" style="background:#00E5A015;border-color:#00E5A033;color:#00E5A0" onclick="completeAppt('${a.id}')">✅ Complete</button>
                 <button class="action-btn" style="background:#FF336615;border-color:#FF336633;color:#FF3366" onclick="cancelAppt('${a.id}')">✗ Cancel</button>
               ` : ''}
               ${a.status === "complete" ? '<span style="font-size:12px;color:var(--text-faint)">Done ✓</span>' : ''}
@@ -235,6 +238,76 @@ function updateApptStatus(id, newStatus) {
 function confirmAppt(id) { updateApptStatus(id, "confirmed"); }
 function completeAppt(id) { updateApptStatus(id, "complete"); }
 function cancelAppt(id) { updateApptStatus(id, "cancelled"); }
+
+/* ── Adjust Modal ───────────────────────────────────────────────────────── */
+
+function openAdjustModal(id) {
+  const a = appointments.find(ap => ap.id === id);
+  if (!a) return;
+
+  /* Remove existing modal if any */
+  const existing = document.getElementById("adjust-modal");
+  if (existing) existing.remove();
+
+  const modal = document.createElement("div");
+  modal.id = "adjust-modal";
+  modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px";
+  modal.innerHTML = `
+    <div style="background:var(--card-bg, #1a1a2e);border:1px solid var(--border, #2a2a3e);border-radius:16px;padding:28px;width:100%;max-width:420px;color:var(--text, #fff)">
+      <h3 style="margin:0 0 20px;font-size:18px;font-weight:700">Adjust Appointment</h3>
+      <p style="margin:0 0 16px;font-size:13px;color:var(--text-dim, #888)">${a.client} · ${a.service}</p>
+
+      <label style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim, #888);display:block;margin-bottom:6px">Date</label>
+      <input type="date" id="adjust-date" value="${a.date}" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border, #2a2a3e);background:var(--input-bg, #0d0d1a);color:var(--text, #fff);font-size:14px;margin-bottom:16px;box-sizing:border-box" />
+
+      <label style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim, #888);display:block;margin-bottom:6px">Time</label>
+      <input type="time" id="adjust-time" value="${a.time || ''}" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border, #2a2a3e);background:var(--input-bg, #0d0d1a);color:var(--text, #fff);font-size:14px;margin-bottom:16px;box-sizing:border-box" />
+
+      <label style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim, #888);display:block;margin-bottom:6px">Notes</label>
+      <textarea id="adjust-notes" rows="3" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border, #2a2a3e);background:var(--input-bg, #0d0d1a);color:var(--text, #fff);font-size:14px;margin-bottom:20px;resize:vertical;box-sizing:border-box">${a.notes || ''}</textarea>
+
+      <div style="display:flex;gap:10px">
+        <button onclick="saveAdjustment('${a.id}')" style="flex:1;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,#A78BFA,#7C3AED);color:#fff;font-weight:700;font-size:14px;cursor:pointer">Save Changes</button>
+        <button onclick="closeAdjustModal()" style="flex:1;padding:12px;border-radius:10px;border:1px solid var(--border, #2a2a3e);background:transparent;color:var(--text, #fff);font-weight:600;font-size:14px;cursor:pointer">Cancel</button>
+      </div>
+    </div>
+  `;
+  modal.addEventListener("click", function(e) { if (e.target === modal) closeAdjustModal(); });
+  document.body.appendChild(modal);
+}
+
+function closeAdjustModal() {
+  const modal = document.getElementById("adjust-modal");
+  if (modal) modal.remove();
+}
+
+function saveAdjustment(id) {
+  const a = appointments.find(ap => ap.id === id);
+  if (!a) return;
+
+  const newDate = document.getElementById("adjust-date").value;
+  const newTime = document.getElementById("adjust-time").value;
+  const newNotes = document.getElementById("adjust-notes").value;
+
+  a.date = newDate || a.date;
+  a.time = newTime || a.time;
+  a.notes = newNotes;
+
+  /* Persist to Supabase */
+  if (window.db && window.db.appointments) {
+    window.db.appointments.update(id, {
+      appt_date: a.date,
+      appt_time: a.time,
+      scheduled_date: a.date,
+      scheduled_time: a.time,
+      notes: newNotes,
+      detailer_notes: newNotes
+    });
+  }
+  saveAppts();
+  closeAdjustModal();
+  renderAppts();
+}
 
 /* ── Calendar ────────────────────────────────────────────────────────────── */
 
