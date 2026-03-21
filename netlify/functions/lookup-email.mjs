@@ -24,22 +24,36 @@ export const handler = async (event) => {
   try {
     /* Strip phone to digits for comparison — DB may store formatted numbers */
     const digits = phone.replace(/\D/g, "");
+    const last10 = digits.slice(-10);
     const variants = [
-      phone,                          /* as-is (e.g. +12398229268) */
-      digits,                         /* just digits (12398229268) */
-      digits.slice(-10),              /* last 10 digits (2398229268) */
-      "(" + digits.slice(-10,-7) + ") " + digits.slice(-7,-4) + "-" + digits.slice(-4), /* (239) 822-9268 */
-      "+1" + digits.slice(-10),       /* +1 prefix */
+      phone,                                                                        /* as-is */
+      digits,                                                                       /* just digits */
+      last10,                                                                       /* last 10 digits */
+      "(" + last10.slice(0,3) + ") " + last10.slice(3,6) + "-" + last10.slice(6),  /* (239) 822-9268 */
+      "+1" + last10,                                                                /* +1 prefix */
+      "1" + last10,                                                                 /* 1 prefix */
+      last10.slice(0,3) + "-" + last10.slice(3,6) + "-" + last10.slice(6),         /* 239-822-9268 */
     ];
 
-    const { data } = await supabase
+    console.log("lookup-email: searching for phone variants:", variants);
+
+    const { data, error } = await supabase
       .from("profiles")
       .select("email")
       .in("phone", variants)
-      .limit(1)
-      .single();
+      .limit(1);
 
-    if (!data) {
+    console.log("lookup-email: query result:", { data, error });
+
+    if (error) {
+      console.error("lookup-email supabase error:", error);
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: "Lookup failed" }),
+      };
+    }
+
+    if (!data || data.length === 0) {
       return {
         statusCode: 404,
         body: JSON.stringify({ error: "No account found with that phone number" }),
@@ -48,7 +62,7 @@ export const handler = async (event) => {
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ email: data.email }),
+      body: JSON.stringify({ email: data[0].email }),
     };
   } catch (err) {
     console.error("lookup-email error:", err);
