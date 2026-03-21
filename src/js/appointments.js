@@ -18,6 +18,29 @@ let expandedApptId = null;
 
 function fmt(n) { return "$" + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
 
+/* Format date as "Apr 2, 2026" */
+function fmtDate(dateStr) {
+  if (!dateStr) return "";
+  var parts = dateStr.split("-");
+  if (parts.length < 3) return dateStr;
+  var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var m = parseInt(parts[1], 10) - 1;
+  var d = parseInt(parts[2], 10);
+  return months[m] + " " + d + ", " + parts[0];
+}
+
+/* Format time as "3:00 PM" */
+function fmtTime(timeStr) {
+  if (!timeStr) return "";
+  var parts = timeStr.split(":");
+  var h = parseInt(parts[0], 10);
+  var min = parts[1] || "00";
+  var ampm = h >= 12 ? "PM" : "AM";
+  if (h === 0) h = 12;
+  else if (h > 12) h -= 12;
+  return h + ":" + min + " " + ampm;
+}
+
 /* ── Persistence ─────────────────────────────────────────────────────────── */
 
 /* Normalize a Supabase row to the shape the UI expects */
@@ -176,9 +199,9 @@ function renderAppts() {
             <p style="margin:0 0 4px;font-size:15px;font-weight:700;color:var(--success)">${fmt(a.price)}</p>
             <span class="appt-status-badge" style="background:${cfg.bg};color:${cfg.color};border:1px solid ${cfg.border}">${cfg.label}</span>
           </div>
-          <div style="flex-shrink:0;margin-left:8px">
-            <p style="margin:0 0 2px;font-size:13px;color:#C8C4BC">${a.date}</p>
-            <p style="margin:0;font-size:11px;color:var(--text-faint)">${a.time || ''}</p>
+          <div style="flex-shrink:0;margin-left:8px;text-align:right">
+            <p style="margin:0 0 2px;font-size:14px;font-weight:600;color:#C8C4BC">${fmtDate(a.date)}</p>
+            <p style="margin:0;font-size:13px;color:var(--text-dim)">${fmtTime(a.time)}</p>
           </div>
           <span style="color:var(--text-faint);font-size:14px;flex-shrink:0;margin-left:8px">${isExpanded ? '▲' : '▼'}</span>
         </div>

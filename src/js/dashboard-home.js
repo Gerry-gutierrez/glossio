@@ -2,6 +2,27 @@
 
 function fmt(n) { return "$" + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
 
+function fmtDate(dateStr) {
+  if (!dateStr) return "";
+  var parts = dateStr.split("-");
+  if (parts.length < 3) return dateStr;
+  var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var m = parseInt(parts[1], 10) - 1;
+  var d = parseInt(parts[2], 10);
+  return months[m] + " " + d + ", " + parts[0];
+}
+
+function fmtTime(timeStr) {
+  if (!timeStr) return "";
+  var parts = timeStr.split(":");
+  var h = parseInt(parts[0], 10);
+  var min = parts[1] || "00";
+  var ampm = h >= 12 ? "PM" : "AM";
+  if (h === 0) h = 12;
+  else if (h > 12) h -= 12;
+  return h + ":" + min + " " + ampm;
+}
+
 /* Normalize a Supabase appointment row to the shape the UI expects */
 function normalizeAppt(a) {
   return {
@@ -110,7 +131,7 @@ function _renderDashStats(appts, now, thisMonth, thisYear, getMonth, getYear) {
           '<div style="width:4px;height:40px;border-radius:2px;background:' + c + ';flex-shrink:0"></div>' +
           '<div style="flex:1;min-width:0">' +
             '<p style="margin:0 0 3px;font-size:14px;font-weight:700">' + a.client + '</p>' +
-            '<p style="margin:0;font-size:12px;color:var(--text-dim)">' + a.service + ' · ' + a.date + '</p>' +
+            '<p style="margin:0;font-size:12px;color:var(--text-dim)">' + a.service + ' · ' + fmtDate(a.date) + '</p>' +
           '</div>' +
           '<div style="text-align:right;flex-shrink:0">' +
             '<p style="margin:0 0 2px;font-size:14px;font-weight:700;color:var(--success)">' + fmt(a.price) + '</p>' +
