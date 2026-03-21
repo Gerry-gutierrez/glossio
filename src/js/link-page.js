@@ -1,19 +1,11 @@
 /* ─── Link Page ──────────────────────────────────────────────────────────── */
 
-function getSlug() {
-  try {
-    var p = JSON.parse(localStorage.getItem("glossio_profile") || "{}");
-    if (p.displayName) return p.displayName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/,"");
-  } catch(e) {}
-  try {
-    var s = JSON.parse(localStorage.getItem("glossio_settings") || "{}");
-    if (s.bizName) return s.bizName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/,"");
-  } catch(e) {}
-  return "your-business";
-}
+/* Cached slug — populated on DOMContentLoaded from Supabase */
+var _cachedSlug = null;
 
 function getProfileUrl() {
-  return window.location.origin + "/" + getSlug() + "/";
+  var slug = _cachedSlug || "your-business";
+  return window.location.origin + "/profile/" + slug + "/";
 }
 
 function copyProfileLink() {
@@ -102,7 +94,24 @@ function shareGeneral() {
 
 document.addEventListener("DOMContentLoaded", function() {
   var display = document.getElementById("link-url-display");
-  if (display) {
-    display.textContent = window.location.host + "/" + getSlug();
+
+  /* Fetch real slug from Supabase profile */
+  if (window.db && window.db.profile) {
+    window.db.profile.get().then(function(profile) {
+      if (profile && profile.slug) {
+        _cachedSlug = profile.slug;
+      } else if (profile && profile.company_name) {
+        /* Fallback: derive slug from company name (matches seed-profile.mjs logic) */
+        _cachedSlug = profile.company_name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
+      }
+      if (display && _cachedSlug) {
+        display.textContent = window.location.host + "/profile/" + _cachedSlug;
+      }
+    });
+  }
+
+  /* Show placeholder until async load completes */
+  if (display && !_cachedSlug) {
+    display.textContent = window.location.host + "/profile/your-business";
   }
 });
