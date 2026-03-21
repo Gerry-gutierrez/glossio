@@ -72,8 +72,24 @@ export const handler = async (event) => {
     if (svcData) {
       service = svcData;
     } else if (serviceName) {
-      /* Service exists in localStorage but not Supabase — use provided details */
-      service = { id: serviceId, name: serviceName, price: parseFloat(servicePrice) || 0 };
+      /* Service exists in localStorage but not Supabase — sync it to DB first
+         (appointments.service_id is NOT NULL with FK constraint) */
+      const { data: newSvc, error: svcErr } = await supabase
+        .from("services")
+        .insert({
+          profile_id: profile.id,
+          name: serviceName,
+          price: parseFloat(servicePrice) || 0,
+          is_active: true
+        })
+        .select("id, name, price")
+        .single();
+
+      if (svcErr || !newSvc) {
+        console.error("Service sync error:", svcErr);
+        return { statusCode: 500, body: JSON.stringify({ error: "Failed to sync service" }) };
+      }
+      service = newSvc;
     } else {
       return { statusCode: 404, body: JSON.stringify({ error: "Service not found" }) };
     }
@@ -126,14 +142,12 @@ export const handler = async (event) => {
     }
 
     /* ── Create the appointment ── */
-    const serviceExistsInDb = !!svcData;
     const { data: appointment, error: apptErr } = await supabase
       .from("appointments")
       .insert({
         profile_id: profile.id,
         client_id: clientId,
-        service_id: serviceExistsInDb ? serviceId : null,
-        service_name: service.name,
+        service_id: service.id,
         status: "pending",
         scheduled_date: scheduledDate,
         scheduled_time: scheduledTime,
