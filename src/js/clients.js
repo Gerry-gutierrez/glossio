@@ -33,8 +33,8 @@ function loadClients() {
           since: c.since || "",
           lastVisit: c.last_visit || c.lastVisit || "",
           totalSpent: parseFloat(c.total_spent) || parseFloat(c.totalSpent) || 0,
-          visits: parseInt(c.visits) || parseInt(c.visit_count) || 0,
-          status: c.status || "never_came",
+          visits: parseInt(c.total_visits) || parseInt(c.visits) || parseInt(c.visit_count) || 0,
+          status: c.status || ((parseInt(c.total_visits) || 0) > 0 ? "active" : "never_came"),
           notes: c.notes || "",
           history: c.history || []
         };
