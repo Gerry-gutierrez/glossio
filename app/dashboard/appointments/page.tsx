@@ -82,6 +82,13 @@ export default function AppointmentsPage() {
 
   useEffect(() => { loadAppointments() }, [loadAppointments])
 
+  const deleteAppointment = async (id: number) => {
+    if (!confirm('Delete this appointment? This cannot be undone.')) return
+    setAppointments(prev => prev.filter(a => a.id !== id))
+    const supabase = createClient()
+    await supabase.from('appointments').delete().eq('id', id)
+  }
+
   const updateStatus = async (id: number, status: 'pending' | 'confirmed' | 'complete' | 'cancelled') => {
     if (status === 'complete' || status === 'cancelled') {
       // Remove from the active appointments list
@@ -255,6 +262,9 @@ export default function AppointmentsPage() {
                     </button>
                   </>
                 )}
+                <button onClick={() => deleteAppointment(appt.id)} className={`${styles.actionBtn}`} style={{ background: 'rgba(255,51,102,0.08)', border: '1px solid rgba(255,51,102,0.2)', color: '#FF3366' }}>
+                  Delete
+                </button>
               </div>
             </div>
           )

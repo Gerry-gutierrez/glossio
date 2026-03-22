@@ -95,7 +95,7 @@ function ArrowLeftSvg() {
   return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>
 }
 
-function ClientDetail({ client, onBack }: { client: Client; onBack: () => void }) {
+function ClientDetail({ client, onBack, onDelete }: { client: Client; onBack: () => void; onDelete: (id: string | number) => void }) {
   const [notes, setNotes] = useState(client.notes)
   const [saved, setSaved] = useState(false)
 
@@ -106,9 +106,17 @@ function ClientDetail({ client, onBack }: { client: Client; onBack: () => void }
 
   return (
     <>
-      <button onClick={onBack} className={styles.detailBackBtn}>
-        <ArrowLeftSvg /> Back to Clients
-      </button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <button onClick={onBack} className={styles.detailBackBtn}>
+          <ArrowLeftSvg /> Back to Clients
+        </button>
+        <button
+          onClick={() => onDelete(client.id)}
+          style={{ padding: '6px 14px', fontSize: 13, fontWeight: 600, borderRadius: 8, cursor: 'pointer', background: 'rgba(255,51,102,0.08)', border: '1px solid rgba(255,51,102,0.2)', color: '#FF3366' }}
+        >
+          Delete Client
+        </button>
+      </div>
 
       <div className={styles.detailGrid}>
         {/* Left */}
@@ -258,6 +266,15 @@ export default function ClientsPage() {
     }
   }, [])
 
+  const deleteClient = async (id: string | number) => {
+    if (!confirm('Delete this client and all their appointments? This cannot be undone.')) return
+    setClients(prev => prev.filter(c => c.id !== id))
+    setSelectedClient(null)
+    const supabase = createClient()
+    // Appointments cascade-delete via FK, so just delete the client
+    await supabase.from('clients').delete().eq('id', id)
+  }
+
   useEffect(() => { loadClients() }, [loadClients])
   const activeCount = clients.filter(c => c.status === 'active').length
   const neverCount = clients.filter(c => c.status === 'never_came').length
@@ -279,7 +296,7 @@ export default function ClientsPage() {
     })
 
   if (selectedClient) {
-    return <ClientDetail client={selectedClient} onBack={() => setSelectedClient(null)} />
+    return <ClientDetail client={selectedClient} onBack={() => setSelectedClient(null)} onDelete={deleteClient} />
   }
 
   return (
