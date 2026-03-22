@@ -94,8 +94,9 @@ export const handler = async (event) => {
       return { statusCode: 404, body: JSON.stringify({ error: "Service not found" }) };
     }
 
-    /* ── Create or find client ── */
-    /* Check if client already exists (by phone + profile_id) */
+    /* ── Find existing client (if any) — don't create yet ── */
+    /* Clients are only created when the detailer marks "Came Through" */
+    let clientId = null;
     const { data: existingClient } = await supabase
       .from("clients")
       .select("id")
@@ -103,42 +104,8 @@ export const handler = async (event) => {
       .eq("phone", phone)
       .single();
 
-    let clientId;
     if (existingClient) {
       clientId = existingClient.id;
-      /* Update client info in case it changed */
-      await supabase.from("clients").update({
-        first_name: firstName,
-        last_name: lastName,
-        email: email || null,
-        vehicle_year: vehicleYear || null,
-        vehicle_make: vehicleMake || null,
-        vehicle_model: vehicleModel || null,
-        source: "booking_link"
-      }).eq("id", clientId);
-    } else {
-      const { data: newClient, error: clientErr } = await supabase
-        .from("clients")
-        .insert({
-          profile_id: profile.id,
-          first_name: firstName,
-          last_name: lastName,
-          email: email || null,
-          phone: phone,
-          vehicle_year: vehicleYear || null,
-          vehicle_make: vehicleMake || null,
-          vehicle_model: vehicleModel || null,
-          source: "booking_link",
-          notes: notes || null
-        })
-        .select("id")
-        .single();
-
-      if (clientErr || !newClient) {
-        console.error("Client create error:", clientErr);
-        return { statusCode: 500, body: JSON.stringify({ error: "Failed to create client record: " + (clientErr ? clientErr.message || clientErr.details || clientErr.code || JSON.stringify(clientErr) : "no data returned") }) };
-      }
-      clientId = newClient.id;
     }
 
     /* ── Create the appointment ── */
