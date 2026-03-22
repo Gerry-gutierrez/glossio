@@ -106,7 +106,9 @@ function _renderDashStats(appts, now, thisMonth, thisYear, getMonth, getYear) {
 
   /* Appointment count */
   const apptSub = document.querySelector(".appt-subtitle");
-  if (apptSub) apptSub.textContent = appts.length + " total";
+  const todayStr2 = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
+  const todaysAppts = appts.filter(a => a.date === todayStr2 && a.status !== "cancelled");
+  if (apptSub) apptSub.textContent = pending.length + " pending · " + todaysAppts.length + " today";
 
   /* Recent appointments list */
   const emptyState = document.querySelector(".appt-card .empty-state");
@@ -116,10 +118,17 @@ function _renderDashStats(appts, now, thisMonth, thisYear, getMonth, getYear) {
   if (appts.length === 0 && emptyState) emptyState.style.display = "";
 
   if (recentContainer) {
+    const todayStr = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
     const upcoming = appts
-      .filter(a => ["pending","confirmed"].includes(a.status))
-      .sort((a, b) => a.date.localeCompare(b.date))
-      .slice(0, 5);
+      .filter(a => a.status === "pending" || (a.date === todayStr && a.status !== "cancelled"))
+      .sort((a, b) => {
+        /* Today's appts first, then by date, then by time */
+        var aToday = a.date === todayStr ? 0 : 1;
+        var bToday = b.date === todayStr ? 0 : 1;
+        if (aToday !== bToday) return aToday - bToday;
+        if (a.date !== b.date) return a.date.localeCompare(b.date);
+        return (a.time || "").localeCompare(b.time || "");
+      });
 
     if (upcoming.length > 0) {
       const statusColors = {
