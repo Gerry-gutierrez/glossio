@@ -261,8 +261,99 @@ function updateApptStatus(id, newStatus) {
 }
 
 function confirmAppt(id) { updateApptStatus(id, "confirmed"); }
-function completeAppt(id) { updateApptStatus(id, "complete"); }
 function cancelAppt(id) { updateApptStatus(id, "cancelled"); }
+
+function completeAppt(id) {
+  updateApptStatus(id, "complete");
+
+  /* Auto-create client when appointment is completed */
+  const a = appointments.find(ap => ap.id === id);
+  if (!a) return;
+
+  const nameParts = (a.client || "").split(" ");
+  const firstName = nameParts[0] || "Unknown";
+  const lastName = nameParts.slice(1).join(" ") || "";
+  const now = new Date();
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const since = months[now.getMonth()] + " " + now.getFullYear();
+  const dateStr = a.date || now.toISOString().split("T")[0];
+
+  /* Check if client already exists in localStorage (by phone) */
+  let existingClients = [];
+  try { existingClients = JSON.parse(localStorage.getItem("glossio_clients") || "[]"); } catch(e) {}
+
+  const existing = existingClients.find(c =>
+    (a.phone && c.phone === a.phone) || (a.email && c.email === a.email)
+  );
+
+  if (existing) {
+    /* Update existing client: add to history, bump visits/spent */
+    existing.visits = (existing.visits || 0) + 1;
+    existing.totalSpent = (existing.totalSpent || 0) + (a.price || 0);
+    existing.lastVisit = dateStr;
+    existing.status = "active";
+    if (!existing.history) existing.history = [];
+    existing.history.push({
+      service: a.service || "Service",
+      date: dateStr,
+      price: a.price || 0,
+      status: "complete"
+    });
+    /* Also update in Supabase */
+    if (window.db && window.db.clients && existing.supabaseId) {
+      window.db.clients.update(existing.supabaseId, {
+        visits: existing.visits,
+        total_spent: existing.totalSpent,
+        last_visit: dateStr,
+        status: "active"
+      });
+    }
+  } else {
+    /* Create new client */
+    const nextId = existingClients.reduce((max, c) => Math.max(max, (c.id || 0) + 1), 1);
+    const newClient = {
+      id: nextId,
+      firstName: firstName,
+      lastName: lastName,
+      phone: a.phone || "",
+      email: a.email || "",
+      vehicle: a.vehicle || "",
+      source: "Booking Link",
+      since: since,
+      lastVisit: dateStr,
+      totalSpent: a.price || 0,
+      visits: 1,
+      status: "active",
+      notes: "",
+      history: [{
+        service: a.service || "Service",
+        date: dateStr,
+        price: a.price || 0,
+        status: "complete"
+      }]
+    };
+    existingClients.push(newClient);
+
+    /* Also create in Supabase */
+    if (window.db && window.db.clients) {
+      window.db.clients.create({
+        first_name: firstName,
+        last_name: lastName,
+        phone: a.phone || "",
+        email: a.email || "",
+        vehicle: a.vehicle || "",
+        source: "Booking Link",
+        status: "active",
+        visits: 1,
+        total_spent: a.price || 0,
+        last_visit: dateStr,
+        notes: ""
+      });
+    }
+  }
+
+  localStorage.setItem("glossio_clients", JSON.stringify(existingClients));
+}
 
 function deleteAppt(id) {
   if (!confirm("Are you sure you want to permanently delete this appointment?")) return;
