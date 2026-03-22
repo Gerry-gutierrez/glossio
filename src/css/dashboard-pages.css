@@ -558,12 +558,12 @@
 
 .btn-danger {
   background: #FF336615; border: 1px solid #FF336633; color: #FF3366;
-  border-radius: var(--radius-sm); font-family: Georgia, serif;
+  border-radius: var(--radius-sm); font-family: var(--font-serif);
   font-weight: 700; cursor: pointer;
 }
 .btn-ghost {
   background: transparent; border: 1px solid var(--border); color: var(--text-dim);
-  border-radius: var(--radius-sm); font-family: Georgia, serif;
+  border-radius: var(--radius-sm); font-family: var(--font-serif);
   font-weight: 600; cursor: pointer; padding: 10px 20px;
 }
 
@@ -725,7 +725,7 @@
 /* Back button */
 .settings-back-btn {
   background: transparent; border: none; color: #666; font-size: 13px;
-  cursor: pointer; margin-bottom: 20px; padding: 0; font-family: Georgia, serif;
+  cursor: pointer; margin-bottom: 20px; padding: 0; font-family: var(--font-serif);
 }
 .settings-back-btn:hover { color: var(--primary); }
 
@@ -858,14 +858,14 @@
 .time-select {
   flex: 1; background: #111118; border: 1px solid #2A2A3E; border-radius: 8px;
   color: var(--text); font-size: 12px; padding: 7px 10px; outline: none;
-  font-family: Georgia, serif;
+  font-family: var(--font-serif);
 }
 
 /* Copy to all */
 .copy-all-btn {
   background: transparent; border: 1px solid #2A2A3E; border-radius: 7px;
   color: #555; font-size: 10px; padding: 5px 8px; cursor: pointer;
-  flex-shrink: 0; white-space: nowrap; font-family: Georgia, serif;
+  flex-shrink: 0; white-space: nowrap; font-family: var(--font-serif);
 }
 .copy-all-btn:hover { border-color: #555; color: #888; }
 
@@ -873,7 +873,7 @@
 .btn-gradient {
   width: 100%; background: linear-gradient(135deg, #00C2FF, #A259FF);
   border: none; border-radius: 10px; color: #fff; font-size: 14px;
-  font-weight: 700; padding: 14px; cursor: pointer; font-family: Georgia, serif;
+  font-weight: 700; padding: 14px; cursor: pointer; font-family: var(--font-serif);
 }
 
 /* Block row */
