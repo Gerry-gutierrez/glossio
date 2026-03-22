@@ -286,8 +286,55 @@ function completeAppt(id) {
     (a.phone && c.phone === a.phone) || (a.email && c.email === a.email)
   );
 
+  /* Update client in Supabase directly — find by phone + profile */
+  if (window.db && window.db.isOnline() && window.sbClient) {
+    var uid = window.__glossio_user_id;
+    if (uid && a.phone) {
+      window.sbClient.from("clients")
+        .select("id, visits, total_spent")
+        .eq("profile_id", uid)
+        .eq("phone", a.phone)
+        .single()
+        .then(function(r) {
+          if (r.data) {
+            /* Update existing client: bump visits, total_spent, status */
+            var newVisits = (parseInt(r.data.visits) || 0) + 1;
+            var newSpent = (parseFloat(r.data.total_spent) || 0) + (a.price || 0);
+            window.sbClient.from("clients").update({
+              visits: newVisits,
+              total_spent: newSpent,
+              last_visit: dateStr,
+              status: "active"
+            }).eq("id", r.data.id).then(function() {
+              console.log("Client updated: visits=" + newVisits + ", spent=" + newSpent);
+            });
+          } else {
+            /* Create new client in Supabase */
+            window.sbClient.from("clients").insert({
+              profile_id: uid,
+              first_name: firstName,
+              last_name: lastName,
+              phone: a.phone || "",
+              email: a.email || "",
+              vehicle_year: (a.vehicle || "").split(" ")[0] || null,
+              vehicle_make: (a.vehicle || "").split(" ")[1] || null,
+              vehicle_model: (a.vehicle || "").split(" ").slice(2).join(" ") || null,
+              source: "booking_link",
+              status: "active",
+              visits: 1,
+              total_spent: a.price || 0,
+              last_visit: dateStr,
+              notes: ""
+            }).then(function() {
+              console.log("New client created in Supabase");
+            });
+          }
+        });
+    }
+  }
+
+  /* Also update localStorage for offline fallback */
   if (existing) {
-    /* Update existing client: add to history, bump visits/spent */
     existing.visits = (existing.visits || 0) + 1;
     existing.totalSpent = (existing.totalSpent || 0) + (a.price || 0);
     existing.lastVisit = dateStr;
@@ -299,17 +346,7 @@ function completeAppt(id) {
       price: a.price || 0,
       status: "complete"
     });
-    /* Also update in Supabase */
-    if (window.db && window.db.clients && existing.supabaseId) {
-      window.db.clients.update(existing.supabaseId, {
-        visits: existing.visits,
-        total_spent: existing.totalSpent,
-        last_visit: dateStr,
-        status: "active"
-      });
-    }
   } else {
-    /* Create new client */
     const nextId = existingClients.reduce((max, c) => Math.max(max, (c.id || 0) + 1), 1);
     const newClient = {
       id: nextId,
@@ -333,23 +370,6 @@ function completeAppt(id) {
       }]
     };
     existingClients.push(newClient);
-
-    /* Also create in Supabase */
-    if (window.db && window.db.clients) {
-      window.db.clients.create({
-        first_name: firstName,
-        last_name: lastName,
-        phone: a.phone || "",
-        email: a.email || "",
-        vehicle: a.vehicle || "",
-        source: "Booking Link",
-        status: "active",
-        visits: 1,
-        total_spent: a.price || 0,
-        last_visit: dateStr,
-        notes: ""
-      });
-    }
   }
 
   localStorage.setItem("glossio_clients", JSON.stringify(existingClients));
