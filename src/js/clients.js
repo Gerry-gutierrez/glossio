@@ -241,8 +241,9 @@ function showDetail(id) {
         <div class="detail-card">
           <h3 style="margin:0 0 14px;font-size:15px;font-weight:700">Notes</h3>
           <textarea id="client-notes" class="input" style="height:100px;resize:vertical;margin-bottom:12px" placeholder="Add notes about this client...">${c.notes || ""}</textarea>
-          <button class="btn btn-primary" style="font-size:12px;padding:9px 20px" onclick="saveNotes(${c.id})">Save Notes</button>
+          <button class="btn btn-primary" style="font-size:12px;padding:9px 20px" onclick="saveNotes('${c.id}')">Save Notes</button>
           <span id="notes-toast" class="save-toast" style="display:none;margin-left:10px">✓ Saved!</span>
+          <button class="btn" style="font-size:12px;padding:9px 20px;margin-top:16px;background:#FF336615;border:1px solid #FF336633;color:#FF3366;width:100%" onclick="deleteClient('${c.id}')">🗑 Delete Client</button>
         </div>
       </div>
     </div>
@@ -267,6 +268,16 @@ function saveNotes(id) {
   const toast = document.getElementById("notes-toast");
   toast.style.display = "inline";
   setTimeout(() => { toast.style.display = "none"; }, 2000);
+}
+
+function deleteClient(id) {
+  if (!confirm("Are you sure you want to permanently delete this client? This cannot be undone.")) return;
+  clients = clients.filter(cl => cl.id !== id);
+  hideDetail();
+  if (window.db && window.db.clients) {
+    window.db.clients.remove(id);
+  }
+  saveClients();
 }
 
 /* ── Add Client ──────────────────────────────────────────────────────────── */

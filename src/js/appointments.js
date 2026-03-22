@@ -225,8 +225,10 @@ function renderAppts() {
                 <button class="action-btn" style="background:#00E5A015;border-color:#00E5A033;color:#00E5A0" onclick="completeAppt('${a.id}')">✅ Complete</button>
                 <button class="action-btn" style="background:#FF336615;border-color:#FF336633;color:#FF3366" onclick="cancelAppt('${a.id}')">✗ Cancel</button>
               ` : ''}
-              ${a.status === "complete" ? '<span style="font-size:12px;color:var(--text-faint)">Done ✓</span>' : ''}
-              ${a.status === "cancelled" ? '<span style="font-size:12px;color:var(--text-faint)">Cancelled</span>' : ''}
+              ${a.status === "complete" ? `<span style="font-size:12px;color:var(--text-faint)">Done ✓</span>
+                <button class="action-btn" style="background:#FF336615;border-color:#FF336633;color:#FF3366" onclick="deleteAppt('${a.id}')">🗑 Delete</button>` : ''}
+              ${a.status === "cancelled" ? `<span style="font-size:12px;color:var(--text-faint)">Cancelled</span>
+                <button class="action-btn" style="background:#FF336615;border-color:#FF336633;color:#FF3366" onclick="deleteAppt('${a.id}')">🗑 Delete</button>` : ''}
             </div>
           </div>
         ` : ''}
@@ -261,6 +263,17 @@ function updateApptStatus(id, newStatus) {
 function confirmAppt(id) { updateApptStatus(id, "confirmed"); }
 function completeAppt(id) { updateApptStatus(id, "complete"); }
 function cancelAppt(id) { updateApptStatus(id, "cancelled"); }
+
+function deleteAppt(id) {
+  if (!confirm("Are you sure you want to permanently delete this appointment?")) return;
+  appointments = appointments.filter(ap => ap.id !== id);
+  expandedApptId = null;
+  renderAppts();
+  if (window.db && window.db.appointments) {
+    window.db.appointments.remove(id);
+  }
+  saveAppts();
+}
 
 /* ── Adjust Modal ───────────────────────────────────────────────────────── */
 
