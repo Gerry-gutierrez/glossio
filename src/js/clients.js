@@ -152,7 +152,7 @@ function renderList() {
     const statusColor = isActive ? "#00E5A0" : "#FFD60A";
     const statusLabel = isActive ? "Came Through" : "Never Came";
     return `
-      <div class="client-row" style="border-left:3px solid ${statusColor}" onclick="showDetail(${c.id})">
+      <div class="client-row" style="border-left:3px solid ${statusColor}" onclick="showDetail('${c.id}')">
         <div class="client-avatar" style="background:linear-gradient(135deg, ${statusColor}22, ${statusColor}11);border:1.5px solid ${statusColor}33;color:${statusColor}">
           ${c.firstName[0]}
         </div>
@@ -186,7 +186,7 @@ function renderList() {
 /* ── Client Detail ───────────────────────────────────────────────────────── */
 
 function showDetail(id) {
-  const c = clients.find(cl => cl.id === id);
+  const c = clients.find(cl => String(cl.id) === String(id));
   if (!c) return;
 
   viewingDetail = true;
@@ -294,7 +294,7 @@ function hideDetail() {
 }
 
 function saveNotes(id) {
-  const c = clients.find(cl => cl.id === id);
+  const c = clients.find(cl => String(cl.id) === String(id));
   if (!c) return;
   c.notes = document.getElementById("client-notes").value;
   saveClients();
@@ -305,7 +305,7 @@ function saveNotes(id) {
 
 function deleteClient(id) {
   if (!confirm("Are you sure you want to permanently delete this client? This cannot be undone.")) return;
-  clients = clients.filter(cl => cl.id !== id);
+  clients = clients.filter(cl => String(cl.id) !== String(id));
   hideDetail();
   if (window.db && window.db.clients) {
     window.db.clients.remove(id);
