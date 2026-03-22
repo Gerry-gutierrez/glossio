@@ -209,13 +209,15 @@ function openServicesSheet() {
       '<p style="font-size:12px;color:#555">Check back soon!</p>' +
     '</div>';
   } else {
+    _selectedServices = [];
     html += '<div class="pub-service-list">';
     services.forEach(function(svc) {
       var color = svc.color || '#00C2FF';
       var icon = svc.icon || '&#128736;';
       html +=
-        '<div class="pub-svc-card" data-svc-id="' + svc.id + '" style="border-left:3px solid ' + color + '">' +
-          '<div class="pub-svc-row" onclick="toggleService(\'' + svc.id + '\')">' +
+        '<div class="pub-svc-card" data-svc-id="' + svc.id + '" data-svc-name="' + esc(svc.name) + '" data-svc-price="' + esc(svc.price) + '" data-svc-color="' + color + '" style="border-left:3px solid ' + color + ';cursor:pointer" onclick="toggleServiceSelect(\'' + svc.id + '\')">' +
+          '<div class="pub-svc-row">' +
+            '<div class="pub-svc-check" id="svc-check-' + svc.id + '" style="width:22px;height:22px;border-radius:6px;border:2px solid #555;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:10px;transition:all .2s"></div>' +
             '<div class="pub-svc-icon" style="background:' + color + '15;border-color:' + color + '33">' + icon + '</div>' +
             '<div style="flex:1;min-width:0">' +
               '<p class="pub-svc-name">' + esc(svc.name) + '</p>' +
@@ -223,7 +225,7 @@ function openServicesSheet() {
             '</div>' +
             '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">' +
               '<p class="pub-svc-price" style="color:' + color + '">$' + esc(svc.price) + '</p>' +
-              '<span class="pub-svc-toggle">&#9660; More</span>' +
+              '<span class="pub-svc-toggle" onclick="event.stopPropagation();toggleService(\'' + svc.id + '\')">&#9660; More</span>' +
             '</div>' +
           '</div>' +
           '<div class="pub-svc-expanded" style="display:none;border-top:1px solid ' + color + '22">' +
@@ -233,13 +235,19 @@ function openServicesSheet() {
               '<span style="font-size:12px;color:#888">Starting at</span>' +
               '<span style="font-size:20px;font-weight:700;color:' + color + '">$' + esc(svc.price) + '</span>' +
             '</div>' +
-            '<button class="pub-svc-book-btn" onclick="handleBooking(\'' + svc.id + '\', this)" style="background:linear-gradient(135deg,' + color + ',' + color + '99)">' +
-              'Book ' + esc(svc.name) + ' &#8594;' +
-            '</button>' +
           '</div>' +
         '</div>';
     });
     html += '</div>';
+
+    /* Continue button + total */
+    html += '<div id="svc-selection-summary" style="display:none;margin-top:16px;padding:16px;background:var(--bg-card);border:1px solid var(--border);border-radius:12px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
+        '<span style="font-size:14px;color:#aaa" id="svc-sel-count">0 services selected</span>' +
+        '<span style="font-size:18px;font-weight:700;color:var(--success)" id="svc-sel-total">$0</span>' +
+      '</div>' +
+      '<button id="svc-continue-btn" onclick="handleMultiBooking()" style="width:100%;padding:14px;border:none;border-radius:10px;font-size:15px;font-weight:700;color:#fff;cursor:pointer;background:linear-gradient(135deg,#7C5CFC,#00C2FF)">Continue to Booking &#8594;</button>' +
+    '</div>';
   }
 
   html += '<div class="pub-sheet-info">' +
@@ -284,13 +292,76 @@ function toggleService(id) {
 
 /* ── Booking Flow — Multi-step form ──────────────────────────────────── */
 
+var _selectedServices = [];  /* Array of { id, name, price, color } */
 var _selectedServiceId = null;
 var _selectedServiceName = "";
 var _selectedServiceColor = "";
 var _selectedServicePrice = "";
 
+function toggleServiceSelect(serviceId) {
+  var card = document.querySelector('.pub-svc-card[data-svc-id="' + serviceId + '"]');
+  if (!card) return;
+  var check = document.getElementById("svc-check-" + serviceId);
+  var idx = -1;
+  for (var i = 0; i < _selectedServices.length; i++) {
+    if (_selectedServices[i].id === serviceId) { idx = i; break; }
+  }
+
+  if (idx >= 0) {
+    /* Deselect */
+    _selectedServices.splice(idx, 1);
+    if (check) { check.style.background = ""; check.style.borderColor = "#555"; check.innerHTML = ""; }
+    card.style.boxShadow = "";
+  } else {
+    /* Select */
+    var color = card.getAttribute("data-svc-color") || "#00C2FF";
+    _selectedServices.push({
+      id: serviceId,
+      name: card.getAttribute("data-svc-name") || "Service",
+      price: card.getAttribute("data-svc-price") || "0",
+      color: color
+    });
+    if (check) {
+      check.style.background = color;
+      check.style.borderColor = color;
+      check.innerHTML = '<span style="color:#fff;font-size:14px;font-weight:700">&#10003;</span>';
+    }
+    card.style.boxShadow = "0 0 0 2px " + color + "44";
+  }
+
+  /* Update summary */
+  var summary = document.getElementById("svc-selection-summary");
+  var countEl = document.getElementById("svc-sel-count");
+  var totalEl = document.getElementById("svc-sel-total");
+  if (summary) {
+    if (_selectedServices.length > 0) {
+      summary.style.display = "";
+      var total = _selectedServices.reduce(function(s, svc) { return s + (parseFloat(svc.price) || 0); }, 0);
+      if (countEl) countEl.textContent = _selectedServices.length + " service" + (_selectedServices.length > 1 ? "s" : "") + " selected";
+      if (totalEl) totalEl.textContent = "$" + total.toFixed(2);
+    } else {
+      summary.style.display = "none";
+    }
+  }
+}
+
+function handleMultiBooking() {
+  if (_selectedServices.length === 0) return;
+
+  /* Combine selected services into the booking variables */
+  _selectedServiceId = _selectedServices[0].id;
+  _selectedServiceName = _selectedServices.map(function(s) { return s.name; }).join(" + ");
+  _selectedServiceColor = _selectedServices[0].color;
+  var totalPrice = _selectedServices.reduce(function(s, svc) { return s + (parseFloat(svc.price) || 0); }, 0);
+  _selectedServicePrice = totalPrice.toFixed(2);
+
+  /* Close services sheet and open booking form */
+  closeServicesSheet();
+  openBookingForm();
+}
+
 function handleBooking(serviceId, btn) {
-  /* Find service info from the rendered cards */
+  /* Legacy single-service booking (kept for compatibility) */
   var card = document.querySelector('.pub-svc-card[data-svc-id="' + serviceId + '"]');
   _selectedServiceId = serviceId;
   _selectedServiceName = card ? card.querySelector('.pub-svc-name').textContent : "Service";
