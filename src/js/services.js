@@ -143,62 +143,32 @@ function render() {
   }
 
   emptyState.style.display = "none";
-  if (!activeTab || !services.find(s => s.id === activeTab)) {
-    activeTab = services[0].id;
-  }
-
-  const active = services.find(s => s.id === activeTab);
 
   container.innerHTML = `
-    <div class="svc-panel">
-      <div class="svc-tabs">
-        ${services.map(svc => `
-          <button class="svc-tab ${svc.id === activeTab ? 'svc-tab-active' : ''}"
-                  style="${svc.id === activeTab ? 'border-bottom-color:' + svc.color : ''}"
-                  onclick="switchTab('${svc.id}')">
-            <span>${svc.icon}</span>
-            <span>${svc.name}</span>
-          </button>
-        `).join("")}
+    <div class="svc-table" style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+      <div class="svc-table-header" style="display:grid;grid-template-columns:2fr 100px 3fr 80px 80px;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-faint)">
+        <span>Service</span>
+        <span>Price</span>
+        <span>Description</span>
+        <span style="text-align:center">Edit</span>
+        <span style="text-align:center">Delete</span>
       </div>
-      <div class="svc-content">
-        ${renderServiceView(active)}
-      </div>
-    </div>
-  `;
-}
-
-function renderServiceView(svc) {
-  return `
-    <div class="svc-view">
-      <div class="svc-view-header">
-        <div style="display:flex;align-items:center;gap:16px">
-          <div class="svc-icon-large" style="background:${svc.color}18;border-color:${svc.color}44">
-            ${svc.icon}
+      ${services.map((svc, i) => `
+        <div class="svc-table-row" style="display:grid;grid-template-columns:2fr 100px 3fr 80px 80px;gap:12px;align-items:center;padding:16px 20px;${i < services.length - 1 ? 'border-bottom:1px solid var(--border)' : ''};transition:background .15s" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background=''">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:18px">${svc.icon}</span>
+            <span style="font-size:14px;font-weight:600">${svc.name}</span>
           </div>
-          <div>
-            <h2 class="svc-view-name">${svc.name}</h2>
-            <p class="svc-view-price" style="color:${svc.color}">$${svc.price}</p>
+          <span style="font-size:15px;font-weight:700;color:var(--success)">$${svc.price}</span>
+          <span style="font-size:13px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${svc.description || '<span style="color:var(--text-faint);font-style:italic">No description</span>'}</span>
+          <div style="text-align:center">
+            <button onclick="openEditModal('${svc.id}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-size:12px;color:var(--primary);cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border)'">Edit</button>
+          </div>
+          <div style="text-align:center">
+            <button onclick="openDeleteModal('${svc.id}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-size:12px;color:#FF3366;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='#FF3366'" onmouseout="this.style.borderColor='var(--border)'">Delete</button>
           </div>
         </div>
-        <div class="svc-view-actions">
-          <button class="btn-edit" onclick="openEditModal('${svc.id}')">✏️ Edit</button>
-          <button class="btn-remove" onclick="openDeleteModal('${svc.id}')">🗑 Remove</button>
-        </div>
-      </div>
-
-      <div class="svc-desc-box">
-        <p class="svc-desc-label">What's Included</p>
-        <p class="svc-desc-text">${svc.description || 'No description added yet.'}</p>
-      </div>
-
-      <div class="svc-price-divider">
-        <div class="svc-price-line"></div>
-        <span class="svc-price-label">Starting At</span>
-        <div class="svc-price-line"></div>
-      </div>
-      <p class="svc-price-big" style="color:${svc.color}">$${svc.price}</p>
-      <p class="svc-price-hint">This is what clients see on your public profile</p>
+      `).join("")}
     </div>
   `;
 }
