@@ -19,11 +19,44 @@ function fmt(n) { return "$" + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ","
 /* ── Persistence ─────────────────────────────────────────────────────────── */
 
 function loadClients() {
+  if (window.db && window.db.clients) {
+    return window.db.clients.list().then(function(rows) {
+      clients = (rows || []).map(function(c) {
+        return {
+          id: c.id,
+          firstName: c.first_name || c.firstName || "",
+          lastName: c.last_name || c.lastName || "",
+          phone: c.phone || "",
+          email: c.email || "",
+          vehicle: [c.vehicle_year, c.vehicle_make, c.vehicle_model].filter(Boolean).join(" ") || c.vehicle || "",
+          source: c.source || "",
+          since: c.since || "",
+          lastVisit: c.last_visit || c.lastVisit || "",
+          totalSpent: parseFloat(c.total_spent) || parseFloat(c.totalSpent) || 0,
+          visits: parseInt(c.visits) || parseInt(c.visit_count) || 0,
+          status: c.status || "never_came",
+          notes: c.notes || "",
+          history: c.history || []
+        };
+      });
+      nextClientId = clients.reduce((max, c) => Math.max(max, (typeof c.id === "number" ? c.id : 0) + 1), 1);
+      return clients;
+    }).catch(function() {
+      /* Fallback to localStorage */
+      _loadClientsFromLS();
+      return clients;
+    });
+  }
+  _loadClientsFromLS();
+  return Promise.resolve(clients);
+}
+
+function _loadClientsFromLS() {
   try {
     const data = localStorage.getItem(CLIENTS_KEY);
     if (data) {
       clients = JSON.parse(data);
-      nextClientId = clients.reduce((max, c) => Math.max(max, c.id + 1), 1);
+      nextClientId = clients.reduce((max, c) => Math.max(max, (typeof c.id === "number" ? c.id : 0) + 1), 1);
     }
   } catch (e) { clients = []; }
 }
@@ -331,8 +364,12 @@ function addClient() {
 /* ── Init ─────────────────────────────────────────────────────────────────── */
 
 document.addEventListener("DOMContentLoaded", function() {
-  loadClients();
-  renderList();
+  var result = loadClients();
+  if (result && result.then) {
+    result.then(function() { updateStats(); renderList(); });
+  } else {
+    updateStats(); renderList();
+  }
 
   document.getElementById("client-search").addEventListener("input", renderList);
 
