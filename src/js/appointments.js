@@ -217,12 +217,12 @@ function renderAppts() {
               ${a.status === "pending" ? `
                 <button class="action-btn" style="background:#00C2FF15;border-color:#00C2FF33;color:#00C2FF" onclick="confirmAppt('${a.id}')">✓ Confirm</button>
                 <button class="action-btn" style="background:#A78BFA15;border-color:#A78BFA33;color:#A78BFA" onclick="openAdjustModal('${a.id}')">✎ Adjust</button>
-                <button class="action-btn" style="background:#00E5A015;border-color:#00E5A033;color:#00E5A0" onclick="completeAppt('${a.id}')">✅ Complete</button>
+                <button class="action-btn" style="background:#00E5A015;border-color:#00E5A033;color:#00E5A0" onclick="completeAppt('${a.id}')">✅ Came Through</button>
                 <button class="action-btn" style="background:#FF336615;border-color:#FF336633;color:#FF3366" onclick="cancelAppt('${a.id}')">✗ Cancel</button>
               ` : ''}
               ${a.status === "confirmed" ? `
                 <button class="action-btn" style="background:#A78BFA15;border-color:#A78BFA33;color:#A78BFA" onclick="openAdjustModal('${a.id}')">✎ Adjust</button>
-                <button class="action-btn" style="background:#00E5A015;border-color:#00E5A033;color:#00E5A0" onclick="completeAppt('${a.id}')">✅ Complete</button>
+                <button class="action-btn" style="background:#00E5A015;border-color:#00E5A033;color:#00E5A0" onclick="completeAppt('${a.id}')">✅ Came Through</button>
                 <button class="action-btn" style="background:#FF336615;border-color:#FF336633;color:#FF3366" onclick="cancelAppt('${a.id}')">✗ Cancel</button>
               ` : ''}
               ${a.status === "complete" ? `<span style="font-size:12px;color:var(--text-faint)">Done ✓</span>
