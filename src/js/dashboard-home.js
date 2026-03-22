@@ -104,50 +104,61 @@ function _renderDashStats(appts, now, thisMonth, thisYear, getMonth, getYear) {
   if (statusItems[1]) statusItems[1].textContent = "Confirmed (" + confirmed + ")";
   if (statusItems[2]) statusItems[2].textContent = "Complete (" + complete + ")";
 
-  /* Appointment count */
-  const apptSub = document.querySelector(".appt-subtitle");
-  const todayStr2 = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
-  const todaysAppts = appts.filter(a => a.date === todayStr2 && a.status !== "cancelled");
-  if (apptSub) apptSub.textContent = pending.length + " pending · " + todaysAppts.length + " today";
+  /* ── Two-column appointment lists ── */
+  const todayStr = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
 
-  /* Recent appointments list */
-  const emptyState = document.querySelector(".appt-card .empty-state");
-  const recentContainer = document.getElementById("dash-recent-appts");
+  /* Left: All pending appointments (any date), sorted earliest first */
+  const pendingAppts = pending.sort((a, b) => {
+    if (a.date !== b.date) return a.date.localeCompare(b.date);
+    return (a.time || "").localeCompare(b.time || "");
+  });
 
-  if (appts.length > 0 && emptyState) emptyState.style.display = "none";
-  if (appts.length === 0 && emptyState) emptyState.style.display = "";
+  /* Right: Confirmed appointments for today only, sorted by time */
+  const confirmedToday = appts
+    .filter(a => a.status === "confirmed" && a.date === todayStr)
+    .sort((a, b) => (a.time || "").localeCompare(b.time || ""));
 
-  if (recentContainer) {
-    const todayStr = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
-    const upcoming = appts
-      .filter(a => a.status === "pending" || (a.date === todayStr && a.status !== "cancelled"))
-      .sort((a, b) => {
-        /* Today's appts first, then by date, then by time */
-        var aToday = a.date === todayStr ? 0 : 1;
-        var bToday = b.date === todayStr ? 0 : 1;
-        if (aToday !== bToday) return aToday - bToday;
-        if (a.date !== b.date) return a.date.localeCompare(b.date);
-        return (a.time || "").localeCompare(b.time || "");
-      });
+  /* Render pending column */
+  var pendingList = document.getElementById("dash-pending-list");
+  var pendingEmpty = document.getElementById("dash-pending-empty");
+  var pendingCount = document.getElementById("dash-pending-count");
+  if (pendingCount) pendingCount.textContent = pendingAppts.length;
 
-    if (upcoming.length > 0) {
-      const statusColors = {
-        pending: "#FFD60A", confirmed: "#00C2FF", complete: "#00E5A0", cancelled: "#FF3366"
-      };
-      recentContainer.innerHTML = upcoming.map(a => {
-        const c = statusColors[a.status] || "#FFD60A";
-        return '<div style="display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--border)">' +
-          '<div style="width:4px;height:40px;border-radius:2px;background:' + c + ';flex-shrink:0"></div>' +
-          '<div style="flex:1;min-width:0">' +
-            '<p style="margin:0 0 3px;font-size:14px;font-weight:700">' + a.client + '</p>' +
-            '<p style="margin:0;font-size:12px;color:var(--text-dim)">' + a.service + ' · ' + fmtDate(a.date) + '</p>' +
-          '</div>' +
-          '<div style="text-align:right;flex-shrink:0">' +
-            '<p style="margin:0 0 2px;font-size:14px;font-weight:700;color:var(--success)">' + fmt(a.price) + '</p>' +
-            '<span style="font-size:10px;background:' + c + '15;color:' + c + ';border:1px solid ' + c + '33;border-radius:20px;padding:2px 8px;font-weight:700;text-transform:uppercase">' + a.status + '</span>' +
-          '</div>' +
+  if (pendingList) {
+    if (pendingAppts.length > 0) {
+      if (pendingEmpty) pendingEmpty.style.display = "none";
+      pendingList.innerHTML = pendingAppts.map(function(a) {
+        return '<div class="dash-col-card">' +
+          '<p class="dash-col-card-name">' + a.client + '</p>' +
+          '<p class="dash-col-card-detail">' + a.service + ' · ' + (a.vehicle || '') + '</p>' +
+          '<p class="dash-col-card-time">' + fmtDate(a.date) + ' · ' + fmtTime(a.time) + '</p>' +
         '</div>';
       }).join("");
+    } else {
+      if (pendingEmpty) pendingEmpty.style.display = "";
+      pendingList.innerHTML = "";
+    }
+  }
+
+  /* Render confirmed today column */
+  var confirmedList = document.getElementById("dash-confirmed-list");
+  var confirmedEmpty = document.getElementById("dash-confirmed-empty");
+  var confirmedCount = document.getElementById("dash-confirmed-count");
+  if (confirmedCount) confirmedCount.textContent = confirmedToday.length;
+
+  if (confirmedList) {
+    if (confirmedToday.length > 0) {
+      if (confirmedEmpty) confirmedEmpty.style.display = "none";
+      confirmedList.innerHTML = confirmedToday.map(function(a) {
+        return '<div class="dash-col-card">' +
+          '<p class="dash-col-card-name">' + a.client + '</p>' +
+          '<p class="dash-col-card-detail">' + a.service + ' · ' + (a.vehicle || '') + '</p>' +
+          '<p class="dash-col-card-time">' + fmtTime(a.time) + ' · ' + fmt(a.price) + '</p>' +
+        '</div>';
+      }).join("");
+    } else {
+      if (confirmedEmpty) confirmedEmpty.style.display = "";
+      confirmedList.innerHTML = "";
     }
   }
 }

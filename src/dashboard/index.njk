@@ -54,30 +54,31 @@ extraJs: dashboard-home.js
   </div>
 </div>
 
-<!-- Appointments -->
-<div class="appt-card">
-  <div class="appt-header">
-    <div>
-      <h2 class="appt-title">Appointments</h2>
-      <p class="appt-subtitle">0 total</p>
+<!-- Appointments — Two Column Layout -->
+<div class="dash-appt-columns">
+  <!-- Left: Pending Appointments (all dates) -->
+  <div class="dash-appt-col">
+    <div class="dash-col-header" style="border-bottom:2px solid #FFD60A">
+      <span class="dash-col-dot" style="background:#FFD60A"></span>
+      <h2 class="dash-col-title">Pending Appointments</h2>
+      <span class="dash-col-count" id="dash-pending-count">0</span>
+    </div>
+    <div id="dash-pending-list" class="dash-col-list"></div>
+    <div id="dash-pending-empty" class="dash-col-empty">
+      <p>No pending appointments</p>
     </div>
   </div>
 
-  <div class="status-legend">
-    <div class="status-item"><div class="status-dot" style="background:#FFD60A"></div><span>Pending (0)</span></div>
-    <div class="status-item"><div class="status-dot" style="background:#00C2FF"></div><span>Confirmed (0)</span></div>
-    <div class="status-item"><div class="status-dot" style="background:#00E5A0"></div><span>Complete (0)</span></div>
-  </div>
-
-  <!-- List View -->
-  <div class="list-view">
-    <div id="dash-recent-appts"></div>
-    <div class="empty-state">
-    <div class="empty-icon" style="background:#00C2FF15">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00C2FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+  <!-- Right: Confirmed Appointments Today -->
+  <div class="dash-appt-col">
+    <div class="dash-col-header" style="border-bottom:2px solid #00C2FF">
+      <span class="dash-col-dot" style="background:#00C2FF"></span>
+      <h2 class="dash-col-title">Confirmed Today</h2>
+      <span class="dash-col-count" id="dash-confirmed-count">0</span>
     </div>
-    <p class="empty-title">No appointments yet</p>
-    <p class="empty-sub">Share your booking link to start getting appointments.</p>
-  </div>
+    <div id="dash-confirmed-list" class="dash-col-list"></div>
+    <div id="dash-confirmed-empty" class="dash-col-empty">
+      <p>No confirmed appointments today</p>
+    </div>
   </div>
 </div>
