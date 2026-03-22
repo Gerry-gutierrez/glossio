@@ -5,7 +5,7 @@ const CLIENTS_KEY = "glossio_clients";
 const STATUS_CONFIG = {
   pending:   { color: "#FFD60A", bg: "#FFD60A15", border: "#FFD60A33", label: "Pending" },
   confirmed: { color: "#00C2FF", bg: "#00C2FF15", border: "#00C2FF33", label: "Confirmed" },
-  complete:  { color: "#00E5A0", bg: "#00E5A015", border: "#00E5A033", label: "Complete" },
+  complete:  { color: "#00E5A0", bg: "#00E5A015", border: "#00E5A033", label: "Came Through" },
 };
 
 let clients = [];
@@ -202,7 +202,39 @@ function showDetail(id) {
   const detail = document.getElementById("client-detail");
   detail.style.display = "block";
 
-  const history = c.history || [];
+  /* Fetch completed appointments for this client from Supabase */
+  _renderClientDetail(c, detail, []);
+  if (window.db && window.db.appointments) {
+    window.db.appointments.list().then(function(appts) {
+      var clientAppts = (appts || []).filter(function(a) {
+        return a.status === "complete" && (
+          (c.phone && a.client_phone === c.phone) ||
+          (c.email && a.client_email === c.email)
+        );
+      }).map(function(a) {
+        return {
+          service: a.service_name || a.service || "Service",
+          date: a.appt_date || a.scheduled_date || "",
+          price: parseFloat(a.service_price) || parseFloat(a.price) || 0,
+          status: "complete"
+        };
+      }).sort(function(a, b) { return (b.date || "").localeCompare(a.date || ""); });
+      _renderClientDetail(c, detail, clientAppts);
+    });
+  }
+}
+
+function _fmtDetailDate(dateStr) {
+  if (!dateStr) return "";
+  var parts = dateStr.split("-");
+  if (parts.length < 3) return dateStr;
+  var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var m = parseInt(parts[1], 10) - 1;
+  var d = parseInt(parts[2], 10);
+  return months[m] + " " + d + ", " + parts[0];
+}
+
+function _renderClientDetail(c, detail, history) {
 
   detail.innerHTML = `
     <button class="back-btn" onclick="hideDetail()">← Back to Clients</button>
@@ -258,7 +290,7 @@ function showDetail(id) {
                 <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;${i < history.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
                   <div>
                     <p style="margin:0 0 3px;font-size:14px;font-weight:600">${h.service}</p>
-                    <p style="margin:0;font-size:12px;color:var(--text-dim)">${h.date}</p>
+                    <p style="margin:0;font-size:12px;color:var(--text-dim)">${_fmtDetailDate(h.date)}</p>
                   </div>
                   <div style="text-align:right">
                     <p style="margin:0 0 4px;font-size:14px;font-weight:700;color:var(--success)">${fmt(h.price)}</p>
