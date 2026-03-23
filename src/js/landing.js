@@ -12,7 +12,7 @@ function setPricing(cycle) {
     monthly.className = 'toggle-btn toggle-btn-inactive';
     annual.className = 'toggle-btn toggle-btn-active';
     label.textContent = 'Annual Plan';
-    amount.textContent = '$250';
+    amount.textContent = '$189.76';
     period.textContent = '/year';
     breakdown.style.display = 'block';
     badge.style.display = 'block';
@@ -20,7 +20,7 @@ function setPricing(cycle) {
     monthly.className = 'toggle-btn toggle-btn-active';
     annual.className = 'toggle-btn toggle-btn-inactive';
     label.textContent = 'Monthly Plan';
-    amount.textContent = '$25';
+    amount.textContent = '$19.98';
     period.textContent = '/mo';
     breakdown.style.display = 'none';
     badge.style.display = 'none';
