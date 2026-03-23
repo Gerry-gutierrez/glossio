@@ -740,11 +740,11 @@ function saveSummary() { const c = Object.values(settings.summaryIncludes).filte
 
 /* ── Subscription & Billing ──────────────────────────────────────────────── */
 
-const PLAN = { name: "GlossIO Pro", price: "$25/mo", trialEnds: "Mar 26, 2026", nextBilling: "Mar 26, 2026", memberSince: "Mar 12, 2026", email: "you@email.com", card: "Visa ending in 4242" };
+const PLAN = { name: "GlossIO Pro", price: "$19.98/mo", trialEnds: "Mar 26, 2026", nextBilling: "Mar 26, 2026", memberSince: "Mar 12, 2026", email: "you@email.com", card: "Visa ending in 4242" };
 const BILLING_HISTORY = [
-  { id: 1, date: "Mar 12, 2026", amount: "$25.00", status: "Trial", desc: "GlossIO Pro — Trial Period", invoice: "#INV-0001" },
-  { id: 2, date: "Feb 12, 2026", amount: "$25.00", status: "Paid", desc: "GlossIO Pro — Monthly", invoice: "#INV-0002" },
-  { id: 3, date: "Jan 12, 2026", amount: "$25.00", status: "Paid", desc: "GlossIO Pro — Monthly", invoice: "#INV-0003" },
+  { id: 1, date: "Mar 12, 2026", amount: "$19.98", status: "Trial", desc: "GlossIO Pro — Trial Period", invoice: "#INV-0001" },
+  { id: 2, date: "Feb 12, 2026", amount: "$19.98", status: "Paid", desc: "GlossIO Pro — Monthly", invoice: "#INV-0002" },
+  { id: 3, date: "Jan 12, 2026", amount: "$19.98", status: "Paid", desc: "GlossIO Pro — Monthly", invoice: "#INV-0003" },
 ];
 
 function renderBilling() {
@@ -809,7 +809,7 @@ function renderBillingPlan() {
       ).join("") +
     '</div>' +
 
-    '<div class="stg-hint" style="background:#FFD60A08;border-color:#FFD60A33"><span style="font-size:24px">💡</span><div><p style="margin:0 0 4px;font-size:13px;font-weight:700;color:#FFD60A">Save $50 with Annual billing</p><p style="margin:0;font-size:12px;color:#888;line-height:1.6">Switch to $250/yr and get 2 months free.</p></div></div>' +
+    '<div class="stg-hint" style="background:#FFD60A08;border-color:#FFD60A33"><span style="font-size:24px">💡</span><div><p style="margin:0 0 4px;font-size:13px;font-weight:700;color:#FFD60A">Save $50 with Annual billing</p><p style="margin:0;font-size:12px;color:#888;line-height:1.6">Switch to $189.76/yr and save $50.</p></div></div>' +
     '<button class="btn btn-gradient" style="margin-top:16px" onclick="showScreen(\'billing\')">Got It</button>';
 }
 
