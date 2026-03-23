@@ -54,8 +54,61 @@
       if (dashTitle && profile.company_name) {
         dashTitle.textContent = profile.company_name;
       }
+
+      /* ── Trial expiry / paywall check ── */
+      var subStatus = profile.subscription_status || "trialing";
+      var needsPaywall = false;
+
+      if (subStatus === "active") {
+        /* Full access — do nothing */
+      } else if (subStatus === "past_due" || subStatus === "canceled" || subStatus === "incomplete") {
+        needsPaywall = true;
+      } else if (subStatus === "trialing") {
+        var trialEnd = profile.trial_ends_at ? new Date(profile.trial_ends_at) : null;
+        if (trialEnd && trialEnd < new Date()) {
+          needsPaywall = true;
+        }
+      }
+
+      if (needsPaywall) {
+        showPaywall();
+      }
     });
   });
+
+  /* ── Paywall display + Stripe checkout wiring ── */
+  function showPaywall() {
+    var overlay = document.getElementById("paywallOverlay");
+    if (!overlay) return;
+
+    overlay.style.display = "flex";
+    document.body.style.overflow = "hidden";
+
+    var buttons = overlay.querySelectorAll(".paywall-btn");
+    buttons.forEach(function(btn) {
+      btn.addEventListener("click", function() {
+        var plan = btn.getAttribute("data-plan");
+        var priceId = plan === "annual"
+          ? window.__GLOSSIO_STRIPE_ANNUAL_PRICE
+          : window.__GLOSSIO_STRIPE_MONTHLY_PRICE;
+
+        if (!priceId) {
+          alert("Unable to load plan. Please try again later.");
+          return;
+        }
+
+        buttons.forEach(function(b) { b.disabled = true; });
+        btn.textContent = "Redirecting to Stripe...";
+
+        window.glossioStripe.checkout(priceId).catch(function(err) {
+          console.error("Checkout error:", err);
+          buttons.forEach(function(b) { b.disabled = false; });
+          btn.textContent = plan === "annual" ? "Select Annual" : "Select Monthly";
+          alert("Something went wrong. Please try again.");
+        });
+      });
+    });
+  }
 
   /* Wire up sign out button */
   document.addEventListener("DOMContentLoaded", function() {

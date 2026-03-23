@@ -14,6 +14,8 @@ window.__GLOSSIO_SUPABASE_URL = "${process.env.SUPABASE_URL || ""}";
 window.__GLOSSIO_SUPABASE_ANON_KEY = "${process.env.SUPABASE_ANON_KEY || ""}";
 window.__GLOSSIO_STRIPE_KEY = "${process.env.STRIPE_PUBLISHABLE_KEY || ""}";
 window.__GLOSSIO_SENTRY_DSN = "${process.env.SENTRY_DSN || ""}";
+window.__GLOSSIO_STRIPE_MONTHLY_PRICE = "${process.env.STRIPE_MONTHLY_PRICE_ID || ""}";
+window.__GLOSSIO_STRIPE_ANNUAL_PRICE = "${process.env.STRIPE_ANNUAL_PRICE_ID || ""}";
 `;
 
 const mimeTypes = {

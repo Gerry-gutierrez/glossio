@@ -12,6 +12,33 @@
   {% if extraCss %}<link rel="stylesheet" href="/css/{{ extraCss }}">{% endif %}
 </head>
 <body>
+  <!-- Paywall overlay (hidden by default, shown by auth-guard when trial expired) -->
+  <div id="paywallOverlay" class="paywall-overlay" style="display:none">
+    <div class="paywall-card">
+      <div class="paywall-icon">&#128274;</div>
+      <h2 class="paywall-title">Your Free Trial Has Ended</h2>
+      <p class="paywall-subtitle">To continue using GlossIO, please select a plan below.</p>
+
+      <div class="paywall-plans">
+        <div class="paywall-plan">
+          <p class="paywall-plan-label">Monthly</p>
+          <p class="paywall-plan-price">$19.98<span class="paywall-plan-period">/mo</span></p>
+          <p class="paywall-plan-detail">Billed monthly, cancel anytime</p>
+          <button class="paywall-btn" data-plan="monthly">Select Monthly</button>
+        </div>
+        <div class="paywall-plan paywall-plan-featured">
+          <div class="paywall-plan-badge">Save $50</div>
+          <p class="paywall-plan-label">Annual</p>
+          <p class="paywall-plan-price">$189.76<span class="paywall-plan-period">/yr</span></p>
+          <p class="paywall-plan-detail">That's just $15.81/mo</p>
+          <button class="paywall-btn paywall-btn-featured" data-plan="annual">Select Annual</button>
+        </div>
+      </div>
+
+      <p class="paywall-footer">All plans include unlimited bookings, client CRM, automated reminders, and your custom booking page.</p>
+    </div>
+  </div>
+
   <div class="shell">
     <!-- Hamburger (mobile) -->
     <button class="hamburger" id="hamburgerBtn" aria-label="Toggle menu">
@@ -101,6 +128,8 @@
   <script src="/js/supabase-client.js"></script>
   <script src="/js/supabase-data.js"></script>
   <script src="/js/api.js"></script>
+  <script src="https://js.stripe.com/v3/"></script>
+  <script src="/js/stripe-client.js"></script>
   <script src="/js/auth-guard.js"></script>
   <script src="/js/sentry-init.js"></script>
 
