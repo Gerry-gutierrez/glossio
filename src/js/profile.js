@@ -198,6 +198,20 @@ function renderProfile() {
     '</div>' +
 
 
+    /* My Link */
+    '<div class="card" style="margin-bottom:28px">' +
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">' +
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>' +
+        '<h3 style="font-size:15px;font-weight:700;margin:0">Your Public Profile Link</h3>' +
+      '</div>' +
+      '<p style="font-size:12px;color:var(--text-dim);margin:0 0 14px">Share this link anywhere — social media, messages, business cards.</p>' +
+      '<div class="link-url-box">' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>' +
+        '<span class="link-url" id="profile-link-url">Loading your link...</span>' +
+        '<button class="btn btn-primary" style="font-size:12px;padding:8px 16px;white-space:nowrap" id="profileCopyLinkBtn" onclick="copyProfileLink()">Copy Link</button>' +
+      '</div>' +
+    '</div>' +
+
     /* Bio */
     '<div class="card" style="margin-bottom:28px">' +
       '<h3 style="font-size:14px;font-weight:700;margin:0 0 12px;color:var(--text-muted)">About</h3>' +
@@ -531,9 +545,61 @@ function renderPreview() {
     '</div>';
 }
 
+/* ── Profile Link ────────────────────────────────────────────────────────── */
+
+var _profileSlug = null;
+
+function getProfileUrl() {
+  var slug = _profileSlug || "your-business";
+  return window.location.origin + "/profile/" + slug + "/";
+}
+
+function copyProfileLink() {
+  var url = getProfileUrl();
+  navigator.clipboard.writeText(url).then(function() {
+    showProfileToast("Link copied to clipboard!");
+  }).catch(function() {
+    showProfileToast("Link: " + url);
+  });
+}
+
+function loadProfileSlug() {
+  var display = document.getElementById("profile-link-url");
+  var copyBtn = document.getElementById("profileCopyLinkBtn");
+
+  if (!display) return;
+
+  if (!window.db || !window.db.profile) {
+    display.textContent = "Unable to load link — please refresh";
+    return;
+  }
+
+  window.db.profile.get().then(function(p) {
+    if (p && p.slug) {
+      _profileSlug = p.slug;
+    } else if (p && p.company_name) {
+      _profileSlug = p.company_name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
+      window.db.profile.update({ slug: _profileSlug }).catch(function() {});
+    }
+    if (_profileSlug) {
+      if (display) display.textContent = window.location.host + "/profile/" + _profileSlug;
+      if (copyBtn) { copyBtn.disabled = false; copyBtn.style.opacity = ""; }
+    } else {
+      if (display) display.textContent = "Unable to load link — please refresh";
+    }
+  }).catch(function() {
+    if (display) display.textContent = "Unable to load link — please refresh";
+  });
+}
+
 /* ── Init ─────────────────────────────────────────────────────────────────── */
 
 document.addEventListener("DOMContentLoaded", function() {
   loadProfile();
   renderProfile();
+
+  /* Load slug once auth is ready */
+  waitForAuth(function() {
+    loadProfileSlug();
+  });
 });
