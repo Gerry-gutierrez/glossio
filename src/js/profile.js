@@ -315,13 +315,17 @@ function saveEdit() {
 
   /* Persist all fields directly to Supabase */
   if (window.db && window.db.isOnline()) {
-    window.db.profile.update({
+    var updateFields = {
       company_name: profile.displayName,
-      tagline: profile.tagline || null,
-      bio: profile.bio || null,
-      instagram_handle: profile.instagram || null,
-      city: profile.city || null,
-      state: profile.state || null
+      tagline: profile.tagline || "",
+      bio: profile.bio || "",
+      instagram_handle: profile.instagram || "",
+      city: profile.city || "",
+      state: profile.state || ""
+    };
+    console.log("Saving profile to Supabase:", updateFields);
+    window.db.profile.update(updateFields).then(function(result) {
+      console.log("Profile save result:", result);
     }).catch(function(err) {
       console.error("Failed to save profile to Supabase:", err);
     });

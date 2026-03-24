@@ -94,7 +94,13 @@
     update: afterAuth(function(fields) {
       if (sb() && userId()) {
         return sb().from("profiles").update(fields).eq("id", userId())
-          .then(function(r) { return r.data; });
+          .then(function(r) {
+            if (r.error) {
+              console.error("Supabase profile update error:", r.error);
+              return Promise.reject(r.error);
+            }
+            return r.data;
+          });
       }
       var p = lsGet(LS.profile) || {};
       Object.assign(p, fields);
