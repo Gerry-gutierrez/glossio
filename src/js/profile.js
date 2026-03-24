@@ -51,9 +51,13 @@ function loadProfile() {
         profile.displayName = sbProfile.company_name || profile.displayName;
         profile.tagline = sbProfile.tagline || profile.tagline;
         profile.instagram = sbProfile.instagram_handle || profile.instagram;
-        profile.city = sbProfile.city || profile.city;
-        profile.state = sbProfile.state || profile.state;
         profile.bio = sbProfile.bio || profile.bio;
+        /* Split location column into city/state */
+        if (sbProfile.location) {
+          var parts = sbProfile.location.split(",").map(function(s) { return s.trim(); });
+          profile.city = parts[0] || profile.city;
+          profile.state = parts[1] || profile.state;
+        }
         localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
         renderProfile();
       } else if (profile.displayName && profile.displayName !== "Your Business") {
@@ -100,13 +104,13 @@ function waitForAuth(fn) {
 /** Sync profile fields to Supabase */
 function syncProfileToSupabase() {
   if (!window.db || !window.db.isOnline()) return;
+  var loc = [profile.city, profile.state].filter(Boolean).join(", ");
   window.db.profile.update({
     company_name: profile.displayName,
     tagline: profile.tagline || null,
     bio: profile.bio || null,
     instagram_handle: profile.instagram || null,
-    city: profile.city || null,
-    state: profile.state || null
+    location: loc || null
   }).catch(function(err) {
     console.warn("Failed to sync profile to Supabase:", err);
   });
@@ -315,13 +319,13 @@ function saveEdit() {
 
   /* Persist all fields directly to Supabase */
   if (window.db && window.db.isOnline()) {
+    var locationStr = [profile.city, profile.state].filter(Boolean).join(", ");
     var updateFields = {
       company_name: profile.displayName,
       tagline: profile.tagline || "",
       bio: profile.bio || "",
       instagram_handle: profile.instagram || "",
-      city: profile.city || "",
-      state: profile.state || ""
+      location: locationStr
     };
     console.log("Saving profile to Supabase:", updateFields);
     window.db.profile.update(updateFields).then(function(result) {
