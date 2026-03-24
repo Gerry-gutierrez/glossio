@@ -80,7 +80,7 @@ function getFilteredClients() {
   const search = (document.getElementById("client-search")?.value || "").toLowerCase();
   return clients
     .filter(c => {
-      const matchSearch = (c.firstName + " " + c.lastName + " " + c.vehicle + " " + c.email + " " + c.source)
+      const matchSearch = (c.firstName + " " + c.lastName + " " + c.phone + " " + c.vehicle + " " + c.email + " " + c.source)
         .toLowerCase().includes(search);
       const matchFilter = currentFilter === "all" || c.status === currentFilter;
       return matchSearch && matchFilter;
@@ -330,6 +330,12 @@ function saveNotes(id) {
   if (!c) return;
   c.notes = document.getElementById("client-notes").value;
   saveClients();
+
+  /* Persist to Supabase */
+  if (window.db && window.db.clients) {
+    window.db.clients.update(id, { notes: c.notes });
+  }
+
   const toast = document.getElementById("notes-toast");
   toast.style.display = "inline";
   setTimeout(() => { toast.style.display = "none"; }, 2000);
@@ -371,26 +377,69 @@ function addClient() {
   const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const since = months[now.getMonth()] + " " + now.getFullYear();
 
-  clients.push({
+  const phone = document.getElementById("ac-phone").value.trim();
+  const email = document.getElementById("ac-email").value.trim();
+  const vehicle = document.getElementById("ac-vehicle").value.trim();
+  const source = document.getElementById("ac-source").value;
+  const notes = document.getElementById("ac-notes").value.trim();
+
+  /* Parse vehicle into year/make/model for Supabase */
+  const vParts = vehicle.split(" ");
+  const vYear = vParts.length >= 3 && /^\d{4}$/.test(vParts[0]) ? vParts[0] : "";
+  const vMake = vYear ? (vParts[1] || "") : (vParts[0] || "");
+  const vModel = vYear ? vParts.slice(2).join(" ") : vParts.slice(1).join(" ");
+
+  const newClient = {
     id: nextClientId++,
     firstName: first,
     lastName: last || "",
-    phone: document.getElementById("ac-phone").value.trim(),
-    email: document.getElementById("ac-email").value.trim(),
-    vehicle: document.getElementById("ac-vehicle").value.trim(),
-    source: document.getElementById("ac-source").value,
+    phone: phone,
+    email: email,
+    vehicle: vehicle,
+    source: source,
     since: since,
     lastVisit: "—",
     totalSpent: 0,
     visits: 0,
     status: "never_came",
-    notes: document.getElementById("ac-notes").value.trim(),
+    notes: notes,
     history: []
-  });
+  };
 
-  saveClients();
-  closeAddClient();
-  renderList();
+  /* Persist to Supabase */
+  if (window.db && window.db.clients) {
+    window.db.clients.create({
+      first_name: first,
+      last_name: last || "",
+      phone: phone,
+      email: email,
+      vehicle_year: vYear,
+      vehicle_make: vMake,
+      vehicle_model: vModel,
+      source: source,
+      notes: notes,
+      status: "never_came"
+    }).then(function(row) {
+      if (row && row.id) {
+        newClient.id = row.id;
+      }
+      clients.push(newClient);
+      saveClients();
+      closeAddClient();
+      renderList();
+    }).catch(function() {
+      /* Fallback to local-only */
+      clients.push(newClient);
+      saveClients();
+      closeAddClient();
+      renderList();
+    });
+  } else {
+    clients.push(newClient);
+    saveClients();
+    closeAddClient();
+    renderList();
+  }
 }
 
 /* ── Init ─────────────────────────────────────────────────────────────────── */
