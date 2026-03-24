@@ -91,8 +91,8 @@ function showScreen(screen) {
   sub.style.display = "block";
 
   switch (screen) {
-    case "business": renderBusiness(); break;
     case "availability": renderAvailability(); break;
+    case "availability-hours": renderAvailabilityHours(); break;
     case "availability-vacation": renderVacation(); break;
     case "availability-maxappts": renderMaxAppts(); break;
     case "availability-advance": renderAdvance(); break;
@@ -328,6 +328,7 @@ function saveBio() {
 
 function renderAvailability() {
   const s = settings;
+  const openDays = DAYS.filter(d => s.hours[d].open);
   const blockCount = s.blocks.length;
   const maxLabel = s.noLimit ? "No limit" : "Max " + s.maxAppts + " appts/day";
   const advLabel = s.advanceDays + " days ahead · " + s.minHours + "hr min notice";
@@ -337,6 +338,7 @@ function renderAvailability() {
     subHeader("Settings", "Availability & Blocking", "Control when clients can and can't book you.") +
 
     [
+      { id: "availability-hours", icon: "🕐", color: "#FFD60A", label: "Business Hours", desc: "Set the days and hours you're available for appointments.", meta: openDays.length + " days open" },
       { id: "availability-vacation", icon: "🏖️", color: "#00C2FF", label: "Vacation / Date Blocks", desc: "Block specific dates or ranges — clients won't be able to book you on these days.", meta: blockCount > 0 ? blockCount + " active block" + (blockCount > 1 ? "s" : "") : "No blocks set" },
       { id: "availability-maxappts", icon: "📋", color: "#A259FF", label: "Max Appointments Per Day", desc: "Set a daily cap so you don't get overbooked.", meta: maxLabel },
       { id: "availability-advance", icon: "📅", color: "#FF6B35", label: "Advance Booking Window", desc: "Control how far ahead clients can book and how much notice you need.", meta: advLabel },
@@ -353,6 +355,50 @@ function renderAvailability() {
         '<span style="font-size:18px;color:#444;flex-shrink:0;margin-left:12px">›</span>' +
       '</div>'
     ).join("");
+}
+
+function renderAvailabilityHours() {
+  const s = settings;
+  const openDays = DAYS.filter(d => s.hours[d].open);
+
+  document.getElementById("settings-sub").innerHTML =
+    backBtn("availability") +
+    subHeader("Availability & Blocking", "Business Hours", "Set the days and hours you're available for appointments.") +
+
+    '<div class="day-chips">' +
+      DAYS.map(d => '<span class="day-chip' + (s.hours[d].open ? ' day-chip-active' : '') + '">' + d.slice(0,3) + '</span>').join("") +
+    '</div>' +
+    '<div class="hours-list">' +
+      DAYS.map(d => {
+        const h = s.hours[d];
+        return '<div class="hour-row' + (h.open ? '' : ' hour-row-closed') + '">' +
+          '<div class="toggle-switch' + (h.open ? ' toggle-on' : '') + '" onclick="toggleDayAvail(\'' + d + '\')"><div class="toggle-knob"></div></div>' +
+          '<p class="hour-day-name">' + d + '</p>' +
+          (h.open ?
+            '<select class="time-select" onchange="updateHour(\'' + d + '\',\'openTime\',this.value)">' + timeOptions(h.openTime) + '</select>' +
+            '<span style="font-size:11px;color:#555;flex-shrink:0">to</span>' +
+            '<select class="time-select" onchange="updateHour(\'' + d + '\',\'closeTime\',this.value)">' + timeOptions(h.closeTime) + '</select>' +
+            '<button class="copy-all-btn" onclick="copyHoursToAllAvail(\'' + d + '\')">Copy to all</button>'
+          : '<p style="margin:0;font-size:12px;color:#444;font-style:italic">Closed</p>') +
+        '</div>';
+      }).join("") +
+    '</div>' +
+    '<div class="stg-preview"><p style="margin:0 0 6px;font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.15em">Open ' + openDays.length + ' days a week</p><p style="margin:0;font-size:12px;color:#888">' + openDays.join(", ") + '</p></div>' +
+    '<button class="btn btn-gradient" style="background:linear-gradient(135deg,#FFD60A,#FF6B35);color:#0A0A0F" onclick="saveHours()">Save Business Hours</button>';
+}
+
+function toggleDayAvail(day) {
+  settings.hours[day].open = !settings.hours[day].open;
+  renderAvailabilityHours();
+}
+
+function copyHoursToAllAvail(sourceDay) {
+  const src = settings.hours[sourceDay];
+  DAYS.forEach(d => {
+    settings.hours[d].openTime = src.openTime;
+    settings.hours[d].closeTime = src.closeTime;
+  });
+  renderAvailabilityHours();
 }
 
 function formatDate(dateStr) {
@@ -1014,7 +1060,6 @@ document.addEventListener("DOMContentLoaded", function() {
     const title = card.querySelector(".settings-section-title")?.textContent || "";
     let screen = "hub";
     if (title.includes("Account")) screen = "account";
-    else if (title.includes("Business")) screen = "business";
     else if (title.includes("Availability")) screen = "availability";
     else if (title.includes("Notifications")) screen = "notifications";
     else if (title.includes("Subscription")) screen = "billing";
