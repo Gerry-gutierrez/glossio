@@ -309,7 +309,24 @@ function saveEdit() {
   profile.city = document.getElementById("edit-city").value.trim();
   profile.state = document.getElementById("edit-state").value.trim();
   profile.bio = document.getElementById("edit-bio").value.trim();
-  saveProfile();
+
+  /* Save to localStorage */
+  localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+
+  /* Persist all fields directly to Supabase */
+  if (window.db && window.db.isOnline()) {
+    window.db.profile.update({
+      company_name: profile.displayName,
+      tagline: profile.tagline || null,
+      bio: profile.bio || null,
+      instagram_handle: profile.instagram || null,
+      city: profile.city || null,
+      state: profile.state || null
+    }).catch(function(err) {
+      console.error("Failed to save profile to Supabase:", err);
+    });
+  }
+
   closeEditModal();
   renderProfile();
   showProfileToast("Profile updated!");
