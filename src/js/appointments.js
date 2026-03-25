@@ -193,7 +193,7 @@ function renderAppts() {
               <p style="margin:0;font-size:15px;font-weight:700">${a.client}</p>
               ${isPending ? '<span class="new-badge">NEW</span>' : ''}
             </div>
-            <p style="margin:0;font-size:12px;color:var(--text-dim)">${a.vehicle || ''} · ${a.service}</p>
+            <p style="margin:0;font-size:12px;color:var(--text-dim)">${a.vehicle || ''}</p>
           </div>
           <div style="text-align:right;flex-shrink:0">
             <p style="margin:0 0 4px;font-size:15px;font-weight:700;color:var(--success)">${fmt(a.price)}</p>
@@ -211,6 +211,7 @@ function renderAppts() {
               <div><span class="appt-detail-label">Phone</span><span class="appt-detail-value">${a.phone || '—'}</span></div>
               <div><span class="appt-detail-label">Email</span><span class="appt-detail-value">${a.email || '—'}</span></div>
               <div><span class="appt-detail-label">Vehicle</span><span class="appt-detail-value">${a.vehicle || '—'}</span></div>
+              <div><span class="appt-detail-label">Services</span><span class="appt-detail-value">${a.service ? a.service.replace(/\s*\+\s*/g, ', ') : '—'}</span></div>
               <div><span class="appt-detail-label">Notes</span><span class="appt-detail-value">${a.notes || 'None'}</span></div>
             </div>
             <div class="appt-actions">

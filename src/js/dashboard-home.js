@@ -133,7 +133,7 @@ function _renderDashStats(appts, now, thisMonth, thisYear, getMonth, getYear) {
       pendingList.innerHTML = pendingAppts.map(function(a) {
         return '<div class="dash-col-card" onclick="dashToggleCard(this)" style="cursor:pointer">' +
           '<p class="dash-col-card-name">' + a.client + '</p>' +
-          '<p class="dash-col-card-detail">' + a.service + ' · ' + (a.vehicle || '') + '</p>' +
+          '<p class="dash-col-card-detail">' + (a.vehicle || '') + '</p>' +
           '<p class="dash-col-card-time">' + fmtDate(a.date) + ' · ' + fmtTime(a.time) + '</p>' +
           '<div class="dash-card-actions" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:none;flex-wrap:wrap;gap:6px">' +
             '<button style="' + btnBase + 'background:#00C2FF15;border:1px solid #00C2FF33;color:#00C2FF" onclick="event.stopPropagation();dashAction(\'' + a.id + '\',\'confirmed\')">✓ Confirm</button>' +
@@ -160,7 +160,7 @@ function _renderDashStats(appts, now, thisMonth, thisYear, getMonth, getYear) {
       confirmedList.innerHTML = confirmedToday.map(function(a) {
         return '<div class="dash-col-card" onclick="dashToggleCard(this)" style="cursor:pointer">' +
           '<p class="dash-col-card-name">' + a.client + '</p>' +
-          '<p class="dash-col-card-detail">' + a.service + ' · ' + (a.vehicle || '') + '</p>' +
+          '<p class="dash-col-card-detail">' + (a.vehicle || '') + '</p>' +
           '<p class="dash-col-card-time">' + fmtTime(a.time) + ' · ' + fmt(a.price) + '</p>' +
           '<div class="dash-card-actions" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:none;flex-wrap:wrap;gap:6px">' +
             '<button style="' + btnBase + 'background:#00E5A015;border:1px solid #00E5A033;color:#00E5A0" onclick="event.stopPropagation();dashCameThrough(\'' + a.id + '\')">✅ Came Through</button>' +
