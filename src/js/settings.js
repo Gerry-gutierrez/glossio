@@ -399,7 +399,6 @@ function renderAvailability() {
     [
       { id: "availability-hours", icon: "🕐", color: "#FFD60A", label: "Business Hours", desc: "Set the days and hours you're available for appointments.", meta: openDays.length + " days open" },
       { id: "availability-vacation", icon: "🏖️", color: "#00C2FF", label: "Vacation / Date Blocks", desc: "Block specific dates or ranges — clients won't be able to book you on these days.", meta: blockCount > 0 ? blockCount + " active block" + (blockCount > 1 ? "s" : "") : "No blocks set" },
-      { id: "availability-maxappts", icon: "📋", color: "#A259FF", label: "Max Appointments Per Day", desc: "Set a daily cap so you don't get overbooked.", meta: maxLabel },
       { id: "availability-advance", icon: "📅", color: "#FF6B35", label: "Advance Booking Window", desc: "Control how far ahead clients can book and how much notice you need.", meta: advLabel },
     ].map(item =>
       '<div class="stg-nav-card" style="border-left-color:' + item.color + '" onclick="showScreen(\'' + item.id + '\')">' +
