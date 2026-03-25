@@ -786,7 +786,7 @@ function saveSummary() { const c = Object.values(settings.summaryIncludes).filte
 
 /* ── Subscription & Billing ──────────────────────────────────────────────── */
 
-const PLAN = { name: "GlossIO Pro", price: "$19.98/mo", trialEnds: "Mar 26, 2026", nextBilling: "Mar 26, 2026", memberSince: "Mar 12, 2026", email: "you@email.com", card: "Visa ending in 4242" };
+var PLAN = { name: "GlossIO Pro", price: "$19.98/mo", trialEnds: "—", nextBilling: "—", memberSince: "—", email: "—", card: "Managed by Stripe" };
 const BILLING_HISTORY = [
   { id: 1, date: "Mar 12, 2026", amount: "$19.98", status: "Trial", desc: "GlossIO Pro — Trial Period", invoice: "#INV-0001" },
   { id: 2, date: "Feb 12, 2026", amount: "$19.98", status: "Paid", desc: "GlossIO Pro — Monthly", invoice: "#INV-0002" },
@@ -1054,6 +1054,87 @@ function escHtml(str) {
 
 document.addEventListener("DOMContentLoaded", function() {
   loadSettings();
+
+  /* ── Hydrate settings bar from Supabase profile ── */
+  if (window.db && window.db.profile) {
+    window.db.profile.get().then(function(profile) {
+      if (!profile) return;
+
+      /* Also hydrate the PLAN object for billing sub-pages */
+      var status = profile.subscription_status || "trialing";
+      var trialEnd = profile.trial_ends_at ? new Date(profile.trial_ends_at) : null;
+      var createdAt = profile.created_at ? new Date(profile.created_at) : null;
+
+      /* Plan label */
+      var planEl = document.getElementById("stgBarPlan");
+      if (planEl) {
+        var planLabels = { trialing: "Free Trial", active: "PRO", past_due: "Past Due", canceled: "Canceled", incomplete: "Incomplete" };
+        planEl.textContent = planLabels[status] || "Free Trial";
+        if (status === "active") planEl.style.color = "#00E5A0";
+        else if (status === "past_due" || status === "canceled") planEl.style.color = "#FF3366";
+      }
+
+      /* Trial Ends */
+      var trialEl = document.getElementById("stgBarTrialEnds");
+      if (trialEl && trialEnd) {
+        var now = new Date();
+        var daysLeft = Math.max(0, Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24)));
+        if (status === "active") {
+          trialEl.textContent = "—";
+          trialEl.style.color = "#555";
+        } else if (daysLeft <= 0) {
+          trialEl.textContent = "Expired";
+          trialEl.style.color = "#FF3366";
+        } else {
+          trialEl.textContent = daysLeft + (daysLeft === 1 ? " day" : " days");
+        }
+      }
+
+      /* Member Since */
+      var memberEl = document.getElementById("stgBarMemberSince");
+      if (memberEl && createdAt) {
+        var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+        memberEl.textContent = months[createdAt.getMonth()] + " " + createdAt.getDate() + ", " + createdAt.getFullYear();
+      }
+
+      /* Account status */
+      var acctEl = document.getElementById("stgBarAccount");
+      if (acctEl) {
+        if (status === "active" || status === "trialing") {
+          acctEl.textContent = "Active";
+          acctEl.style.color = "#00E5A0";
+        } else if (status === "past_due") {
+          acctEl.textContent = "Past Due";
+          acctEl.style.color = "#FF3366";
+        } else if (status === "canceled") {
+          acctEl.textContent = "Canceled";
+          acctEl.style.color = "#FF3366";
+        } else {
+          acctEl.textContent = "Inactive";
+          acctEl.style.color = "#FF3366";
+        }
+      }
+
+      /* Update PLAN object for billing sub-pages */
+      if (trialEnd) {
+        var m2 = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+        PLAN.trialEnds = m2[trialEnd.getMonth()] + " " + trialEnd.getDate() + ", " + trialEnd.getFullYear();
+        PLAN.nextBilling = PLAN.trialEnds;
+      }
+      if (createdAt) {
+        var m3 = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+        PLAN.memberSince = m3[createdAt.getMonth()] + " " + createdAt.getDate() + ", " + createdAt.getFullYear();
+      }
+      /* Use real email from auth session */
+      if (window.sbAuth) {
+        window.sbAuth.getSession().then(function(session) {
+          if (session && session.user && session.user.email) {
+            PLAN.email = session.user.email;
+          }
+        });
+      }
+    });
+  }
 
   // Make hub section cards clickable
   document.querySelectorAll(".settings-section").forEach(card => {
