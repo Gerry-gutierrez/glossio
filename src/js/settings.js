@@ -787,14 +787,27 @@ function saveSummary() { const c = Object.values(settings.summaryIncludes).filte
 /* ── Subscription & Billing ──────────────────────────────────────────────── */
 
 var PLAN = { name: "GlossIO Pro", price: "$19.98/mo", trialEnds: "—", nextBilling: "—", memberSince: "—", email: "—", card: "Managed by Stripe" };
-const BILLING_HISTORY = [
-  { id: 1, date: "Mar 12, 2026", amount: "$19.98", status: "Trial", desc: "GlossIO Pro — Trial Period", invoice: "#INV-0001" },
-  { id: 2, date: "Feb 12, 2026", amount: "$19.98", status: "Paid", desc: "GlossIO Pro — Monthly", invoice: "#INV-0002" },
-  { id: 3, date: "Jan 12, 2026", amount: "$19.98", status: "Paid", desc: "GlossIO Pro — Monthly", invoice: "#INV-0003" },
-];
+var BILLING_HISTORY = [];
+
+function getBillingBadge() {
+  var st = PLAN.status || "trialing";
+  if (st === "active") return { text: "Active", bg: "#00E5A020", border: "#00E5A044", color: "#00E5A0" };
+  if (st === "canceled") return { text: "Cancelled", bg: "#FF336620", border: "#FF336644", color: "#FF3366" };
+  if (st === "past_due") return { text: "Past Due", bg: "#FF336620", border: "#FF336644", color: "#FF3366" };
+  return { text: "Trial Active", bg: "#FFD60A20", border: "#FFD60A44", color: "#FFD60A" };
+}
+
+function getBillingSubline() {
+  var st = PLAN.status || "trialing";
+  if (st === "active") return "Your subscription is active · " + PLAN.price;
+  if (st === "canceled") return "Access until " + PLAN.trialEnds;
+  if (st === "past_due") return "Payment failed — please update your payment method";
+  return "Trial ends " + PLAN.trialEnds + " · " + PLAN.price + " after";
+}
 
 function renderBilling() {
-  const s = settings;
+  var badge = getBillingBadge();
+  var isCanceled = (PLAN.status === "canceled") || settings.cancelled;
   document.getElementById("settings-sub").innerHTML =
     backBtn("hub") +
     subHeader("Settings", "Subscription & Billing", "Manage your plan, payment method, and billing history.") +
@@ -805,9 +818,9 @@ function renderBilling() {
         '<div>' +
           '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
             '<p style="margin:0;font-size:16px;font-weight:700">' + PLAN.name + '</p>' +
-            '<span class="stg-meta-badge" style="background:' + (s.cancelled ? '#FF336620' : '#FFD60A20') + ';border-color:' + (s.cancelled ? '#FF336644' : '#FFD60A44') + ';color:' + (s.cancelled ? '#FF3366' : '#FFD60A') + '">' + (s.cancelled ? "Cancelled" : "Trial Active") + '</span>' +
+            '<span class="stg-meta-badge" style="background:' + badge.bg + ';border-color:' + badge.border + ';color:' + badge.color + '">' + badge.text + '</span>' +
           '</div>' +
-          '<p style="margin:0;font-size:12px;color:#666">' + (s.cancelled ? "Access until " + PLAN.trialEnds : "Trial ends " + PLAN.trialEnds + " · " + PLAN.price + " after") + '</p>' +
+          '<p style="margin:0;font-size:12px;color:#666">' + getBillingSubline() + '</p>' +
         '</div>' +
       '</div>' +
     '</div>' +
@@ -815,8 +828,8 @@ function renderBilling() {
     [
       { id: "billing-plan", icon: "⭐", color: "#FFD60A", label: "Current Plan", desc: PLAN.name + " · " + PLAN.price },
       { id: "billing-payment", icon: "💳", color: "#00C2FF", label: "Update Payment Method", desc: PLAN.card + " · Redirects to Stripe" },
-      { id: "billing-history", icon: "🧾", color: "#A259FF", label: "Billing History", desc: BILLING_HISTORY.length + " invoices on file" },
-      { id: "billing-cancel", icon: "⚠️", color: "#FF3366", label: "Cancel Subscription", desc: s.cancelled ? "Already cancelled" : "Keep access until end of billing period", disabled: s.cancelled },
+      { id: "billing-history", icon: "🧾", color: "#A259FF", label: "Billing History", desc: "View invoices and charges" },
+      { id: "billing-cancel", icon: "⚠️", color: "#FF3366", label: "Cancel Subscription", desc: isCanceled ? "Already cancelled" : "Keep access until end of billing period", disabled: isCanceled },
     ].map(item =>
       '<div class="stg-nav-card' + (item.disabled ? ' stg-nav-disabled' : '') + '" style="border-left-color:' + (item.disabled ? '#2A2A3E' : item.color) + '" onclick="' + (item.disabled ? '' : "showScreen('" + item.id + "')") + '">' +
         '<div style="display:flex;gap:14px;align-items:center">' +
@@ -829,13 +842,14 @@ function renderBilling() {
 }
 
 function renderBillingPlan() {
+  var badge = getBillingBadge();
   document.getElementById("settings-sub").innerHTML =
     backBtn("billing") +
     subHeader("Subscription & Billing", "Current Plan", "") +
 
     '<div class="billing-plan-card">' +
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">' +
-        '<div><p style="margin:0 0 6px;font-size:22px;font-weight:700">' + PLAN.name + '</p><span class="stg-meta-badge" style="background:#FFD60A20;border-color:#FFD60A44;color:#FFD60A">Trial Active</span></div>' +
+        '<div><p style="margin:0 0 6px;font-size:22px;font-weight:700">' + PLAN.name + '</p><span class="stg-meta-badge" style="background:' + badge.bg + ';border-color:' + badge.border + ';color:' + badge.color + '">' + badge.text + '</span></div>' +
         '<p style="margin:0;font-size:28px;font-weight:700;color:#00C2FF">' + PLAN.price + '</p>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
@@ -860,6 +874,7 @@ function renderBillingPlan() {
 }
 
 function renderBillingPayment() {
+  var hasCard = PLAN.card && PLAN.card !== "Managed by Stripe" && PLAN.card !== "—";
   document.getElementById("settings-sub").innerHTML =
     backBtn("billing") +
     subHeader("Subscription & Billing", "Update Payment Method", "Your payment details are managed securely through Stripe.") +
@@ -868,8 +883,7 @@ function renderBillingPayment() {
       '<p style="margin:0 0 14px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:0.15em">Current Payment Method</p>' +
       '<div style="display:flex;align-items:center;gap:12px">' +
         '<div style="width:48px;height:32px;background:#1A1A2E;border:1px solid #2A2A3E;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:18px">💳</div>' +
-        '<div><p style="margin:0 0 2px;font-size:14px;font-weight:700">' + PLAN.card + '</p><p style="margin:0;font-size:11px;color:#555">Expires 12/28</p></div>' +
-        '<span class="stg-meta-badge" style="margin-left:auto;background:#00E5A015;border-color:#00E5A033;color:#00E5A0">Active</span>' +
+        '<div><p style="margin:0 0 2px;font-size:14px;font-weight:700">' + PLAN.card + '</p><p style="margin:0;font-size:11px;color:#555">' + (hasCard ? "Managed by Stripe" : "No card on file yet") + '</p></div>' +
       '</div>' +
     '</div>' +
 
@@ -882,30 +896,51 @@ function renderBillingPayment() {
       '</div>' +
     '</div>' +
 
-    '<button class="btn btn-gradient" onclick="showSettingsToast(\'Redirecting to Stripe...\')">🔒 Update Payment Method via Stripe →</button>';
+    '<button class="btn btn-gradient" onclick="openStripePortal()">🔒 Update Payment Method via Stripe →</button>';
+}
+
+function openStripePortal() {
+  if (window.glossioStripe && window.glossioStripe.openPortal) {
+    showSettingsToast("Redirecting to Stripe...");
+    window.glossioStripe.openPortal().catch(function(err) {
+      console.error("Stripe portal error:", err);
+      showSettingsToast("Could not open Stripe portal. Please try again.");
+    });
+  } else {
+    showSettingsToast("Stripe is not configured yet.");
+  }
 }
 
 function renderBillingHistory() {
+  var hasHistory = BILLING_HISTORY.length > 0;
   document.getElementById("settings-sub").innerHTML =
     backBtn("billing") +
     subHeader("Subscription & Billing", "Billing History", "All past charges and invoices for your GlossIO account.") +
 
-    '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px">' +
-      BILLING_HISTORY.map(item =>
-        '<div class="stg-card" style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px">' +
-          '<div style="display:flex;align-items:center;gap:12px">' +
-            '<div style="width:40px;height:40px;border-radius:10px;background:' + (item.status === "Trial" ? "#FFD60A10" : "#00E5A010") + ';border:1px solid ' + (item.status === "Trial" ? "#FFD60A33" : "#00E5A033") + ';display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🧾</div>' +
-            '<div><p style="margin:0 0 3px;font-size:13px;font-weight:700">' + item.desc + '</p><p style="margin:0;font-size:11px;color:#555">' + item.date + ' · ' + item.invoice + '</p></div>' +
-          '</div>' +
-          '<div style="text-align:right;flex-shrink:0">' +
-            '<p style="margin:0 0 4px;font-size:14px;font-weight:700">' + item.amount + '</p>' +
-            '<span class="stg-meta-badge" style="background:' + (item.status === "Trial" ? "#FFD60A15" : "#00E5A015") + ';border-color:' + (item.status === "Trial" ? "#FFD60A33" : "#00E5A033") + ';color:' + (item.status === "Trial" ? "#FFD60A" : "#00E5A0") + '">' + item.status + '</span>' +
-          '</div>' +
-        '</div>'
-      ).join("") +
-    '</div>' +
+    (hasHistory ?
+      '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px">' +
+        BILLING_HISTORY.map(item =>
+          '<div class="stg-card" style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px">' +
+            '<div style="display:flex;align-items:center;gap:12px">' +
+              '<div style="width:40px;height:40px;border-radius:10px;background:' + (item.status === "Trial" ? "#FFD60A10" : "#00E5A010") + ';border:1px solid ' + (item.status === "Trial" ? "#FFD60A33" : "#00E5A033") + ';display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🧾</div>' +
+              '<div><p style="margin:0 0 3px;font-size:13px;font-weight:700">' + item.desc + '</p><p style="margin:0;font-size:11px;color:#555">' + item.date + ' · ' + item.invoice + '</p></div>' +
+            '</div>' +
+            '<div style="text-align:right;flex-shrink:0">' +
+              '<p style="margin:0 0 4px;font-size:14px;font-weight:700">' + item.amount + '</p>' +
+              '<span class="stg-meta-badge" style="background:' + (item.status === "Trial" ? "#FFD60A15" : "#00E5A015") + ';border-color:' + (item.status === "Trial" ? "#FFD60A33" : "#00E5A033") + ';color:' + (item.status === "Trial" ? "#FFD60A" : "#00E5A0") + '">' + item.status + '</span>' +
+            '</div>' +
+          '</div>'
+        ).join("") +
+      '</div>'
+    :
+      '<div class="stg-card" style="padding:40px 20px;text-align:center">' +
+        '<p style="font-size:36px;margin:0 0 12px">🧾</p>' +
+        '<p style="margin:0 0 6px;font-size:15px;font-weight:700">No billing history yet</p>' +
+        '<p style="margin:0;font-size:12px;color:#555">Invoices will appear here once your trial ends and billing begins.</p>' +
+      '</div>'
+    ) +
 
-    '<div class="stg-hint"><span>💡</span><p>Need a receipt? Contact <span style="color:#00C2FF">support@glossio.app</span> and we\'ll send you a copy.</p></div>';
+    '<div class="stg-hint" style="margin-top:24px"><span>💡</span><p>Need a receipt? Contact <span style="color:#00C2FF">support@glossio.app</span> and we\'ll send you a copy.</p></div>';
 }
 
 function renderBillingCancel() {
@@ -1116,6 +1151,10 @@ document.addEventListener("DOMContentLoaded", function() {
       }
 
       /* Update PLAN object for billing sub-pages */
+      PLAN.status = status;
+      if (status === "active") {
+        PLAN.price = "$19.98/mo"; /* Will be updated if we know the actual plan */
+      }
       if (trialEnd) {
         var m2 = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
         PLAN.trialEnds = m2[trialEnd.getMonth()] + " " + trialEnd.getDate() + ", " + trialEnd.getFullYear();
