@@ -317,7 +317,63 @@ function saveLocation() {
 
 function saveHours() {
   saveSettings();
+  syncBusinessHoursToSupabase();
   showSettingsToast();
+}
+
+/** Convert 24hr "HH:MM" to 12hr "H:MM AM/PM" format */
+function from24(timeStr) {
+  if (!timeStr) return "8:00 AM";
+  var parts = timeStr.split(":");
+  var h = parseInt(parts[0], 10);
+  var m = parts[1] || "00";
+  var ampm = h >= 12 ? "PM" : "AM";
+  var display = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return display + ":" + m + " " + ampm;
+}
+
+/** Convert 12hr AM/PM time to 24hr "HH:00" format */
+function to24(timeStr) {
+  if (!timeStr) return "08:00";
+  var parts = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (!parts) return "08:00";
+  var h = parseInt(parts[1], 10);
+  var ampm = parts[3].toUpperCase();
+  if (ampm === "PM" && h !== 12) h += 12;
+  if (ampm === "AM" && h === 12) h = 0;
+  return (h < 10 ? "0" : "") + h + ":" + parts[2];
+}
+
+/** Map day name to day_of_week integer (0=Sun, 1=Mon, ..., 6=Sat) */
+function dayNameToNum(name) {
+  var map = { Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6 };
+  return map[name] !== undefined ? map[name] : -1;
+}
+
+/** Sync local business hours to Supabase business_hours table */
+function syncBusinessHoursToSupabase() {
+  if (!window.__glossio_user_id || !window.sbClient) return;
+
+  var profileId = window.__glossio_user_id;
+  var rows = DAYS.map(function(day) {
+    var h = settings.hours[day];
+    return {
+      profile_id: profileId,
+      day_of_week: dayNameToNum(day),
+      is_open: !!h.open,
+      open_time: to24(h.openTime),
+      close_time: to24(h.closeTime),
+    };
+  });
+
+  /* Upsert all 7 rows (on conflict profile_id + day_of_week) */
+  window.sbClient
+    .from("business_hours")
+    .upsert(rows, { onConflict: "profile_id,day_of_week" })
+    .then(function(res) {
+      if (res.error) console.error("Failed to sync business hours:", res.error);
+      else console.log("Business hours synced to Supabase");
+    });
 }
 
 function saveBio() {
@@ -1386,6 +1442,28 @@ document.addEventListener("DOMContentLoaded", function() {
           acctEl.style.color = "#FF3366";
         }
       }
+
+      /* Load business hours from Supabase and merge into local settings */
+      window.sbClient
+        .from("business_hours")
+        .select("day_of_week, is_open, open_time, close_time")
+        .eq("profile_id", profile.id)
+        .order("day_of_week")
+        .then(function(res) {
+          if (res.error || !res.data || res.data.length === 0) return;
+          var numToDay = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+          res.data.forEach(function(row) {
+            var dayName = numToDay[row.day_of_week];
+            if (!dayName || !settings.hours[dayName]) return;
+            settings.hours[dayName].open = row.is_open;
+            settings.hours[dayName].openTime = from24(row.open_time);
+            settings.hours[dayName].closeTime = from24(row.close_time);
+          });
+          saveSettings(); /* persist to localStorage so it stays in sync */
+          /* Re-render if currently viewing hours */
+          if (currentScreen === "availability-hours") renderAvailabilityHours();
+          if (currentScreen === "availability") renderAvailability();
+        });
 
       /* Update PLAN object for billing sub-pages */
       PLAN.status = status;
