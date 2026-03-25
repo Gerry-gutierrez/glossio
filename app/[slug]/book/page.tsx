@@ -7,7 +7,6 @@ import { createClient } from '@/lib/supabase/client'
 import styles from './page.module.css'
 
 const HOW_HEARD = ['Instagram', 'Facebook', 'Google', 'TikTok', 'Friend / Family Referral', 'Saw the vehicle', 'Business Card', 'Other']
-const TIMES = ['8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM']
 
 const getDates = () => {
   const dates: Date[] = []
@@ -17,6 +16,27 @@ const getDates = () => {
     dates.push(d)
   }
   return dates
+}
+
+type BusinessHour = {
+  day_of_week: number // 0=Sun, 1=Mon, ..., 6=Sat
+  is_open: boolean
+  open_time: string   // e.g. "08:00"
+  close_time: string  // e.g. "17:00"
+}
+
+/** Generate hourly time slots between open and close times */
+function getTimeSlotsForDay(hours: BusinessHour | undefined): string[] {
+  if (!hours || !hours.is_open) return []
+  const openH = parseInt(hours.open_time.split(':')[0], 10)
+  const closeH = parseInt(hours.close_time.split(':')[0], 10)
+  const slots: string[] = []
+  for (let h = openH; h < closeH; h++) {
+    const ampm = h < 12 ? 'AM' : 'PM'
+    const display = h === 0 ? 12 : h > 12 ? h - 12 : h
+    slots.push(`${display}:00 ${ampm}`)
+  }
+  return slots
 }
 
 const fmt = (d: Date) => d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
@@ -101,6 +121,7 @@ export default function BookingFlowPage() {
 
   const [services, setServices] = useState<Service[]>([])
   const [detailerName, setDetailerName] = useState('')
+  const [businessHours, setBusinessHours] = useState<BusinessHour[]>([])
   const [loadingData, setLoadingData] = useState(true)
   const [selectedService, setSelectedService] = useState<Service | null>(null)
   const [step, setStep] = useState(0)
@@ -120,14 +141,22 @@ export default function BookingFlowPage() {
 
     setDetailerName(profile.company_name?.split(' ')[0] || 'Detailer')
 
-    const { data: svcs } = await supabase
-      .from('services')
-      .select('id, name, description, price, icon, color')
-      .eq('profile_id', profile.id)
-      .eq('is_active', true)
-      .order('sort_order')
+    const [{ data: svcs }, { data: hours }] = await Promise.all([
+      supabase
+        .from('services')
+        .select('id, name, description, price, icon, color')
+        .eq('profile_id', profile.id)
+        .eq('is_active', true)
+        .order('sort_order'),
+      supabase
+        .from('business_hours')
+        .select('day_of_week, is_open, open_time, close_time')
+        .eq('profile_id', profile.id)
+        .order('day_of_week'),
+    ])
 
     if (svcs) setServices(svcs.map(s => ({ ...s, price: String(s.price) })))
+    if (hours) setBusinessHours(hours)
     setLoadingData(false)
   }, [supabase, slug])
 
@@ -422,25 +451,38 @@ export default function BookingFlowPage() {
               <div className={styles.dateScroll}>
                 {getDates().map((d, i) => {
                   const sel = form.date && fmt(form.date) === fmt(d)
+                  const dayOfWeek = d.getDay() // 0=Sun, 6=Sat
+                  const dayHours = businessHours.find(h => h.day_of_week === dayOfWeek)
+                  const isClosed = dayHours ? !dayHours.is_open : false
                   return (
                     <div
                       key={i}
-                      onClick={() => set('date')(d)}
+                      onClick={() => {
+                        if (isClosed) return
+                        set('date')(d)
+                        // Clear selected time when date changes (hours may differ)
+                        set('time')('')
+                      }}
                       className={styles.dateCard}
                       style={{
                         background: sel ? selectedService.color : 'var(--bg-card)',
                         border: `1px solid ${sel ? selectedService.color : 'var(--border)'}`,
+                        opacity: isClosed ? 0.35 : 1,
+                        cursor: isClosed ? 'not-allowed' : 'pointer',
                       }}
                     >
                       <p className={styles.dateCardDay} style={{ color: sel ? 'var(--bg)' : 'var(--text-faint)' }}>
                         {d.toLocaleDateString('en-US', { weekday: 'short' })}
                       </p>
-                      <p className={styles.dateCardNum} style={{ color: sel ? 'var(--bg)' : 'var(--text)' }}>
+                      <p className={styles.dateCardNum} style={{ color: sel ? 'var(--bg)' : isClosed ? 'var(--text-faint)' : 'var(--text)' }}>
                         {d.getDate()}
                       </p>
                       <p className={styles.dateCardMonth} style={{ color: sel ? 'var(--bg)' : 'var(--text-faint)' }}>
                         {d.toLocaleDateString('en-US', { month: 'short' })}
                       </p>
+                      {isClosed && (
+                        <p style={{ fontSize: 8, color: 'var(--text-faint)', margin: '2px 0 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Closed</p>
+                      )}
                     </div>
                   )
                 })}
@@ -448,24 +490,31 @@ export default function BookingFlowPage() {
 
               <label className={styles.fieldLabel}>Preferred Time<span className={styles.fieldRequired}>*</span></label>
               <div className={styles.timeGrid}>
-                {TIMES.map(t => {
-                  const sel = form.time === t
-                  return (
-                    <div
-                      key={t}
-                      onClick={() => set('time')(t)}
-                      className={styles.timeSlot}
-                      style={{
-                        background: sel ? selectedService.color : 'var(--bg-card)',
-                        border: `1px solid ${sel ? selectedService.color : 'var(--border)'}`,
-                        fontWeight: sel ? 700 : 400,
-                        color: sel ? 'var(--bg)' : '#C8C4BC',
-                      }}
-                    >
-                      {t}
-                    </div>
-                  )
-                })}
+                {(() => {
+                  const dayOfWeek = form.date ? form.date.getDay() : -1
+                  const dayHours = businessHours.find(h => h.day_of_week === dayOfWeek)
+                  const slots = getTimeSlotsForDay(dayHours)
+                  if (!form.date) return <p style={{ color: 'var(--text-faint)', fontSize: 13, gridColumn: '1 / -1' }}>Select a date first</p>
+                  if (slots.length === 0) return <p style={{ color: 'var(--text-faint)', fontSize: 13, gridColumn: '1 / -1' }}>No available times for this date</p>
+                  return slots.map(t => {
+                    const sel = form.time === t
+                    return (
+                      <div
+                        key={t}
+                        onClick={() => set('time')(t)}
+                        className={styles.timeSlot}
+                        style={{
+                          background: sel ? selectedService.color : 'var(--bg-card)',
+                          border: `1px solid ${sel ? selectedService.color : 'var(--border)'}`,
+                          fontWeight: sel ? 700 : 400,
+                          color: sel ? 'var(--bg)' : '#C8C4BC',
+                        }}
+                      >
+                        {t}
+                      </div>
+                    )
+                  })
+                })()}
               </div>
 
               <button
