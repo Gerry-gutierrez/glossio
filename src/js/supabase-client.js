@@ -73,6 +73,12 @@
       return client.auth.onAuthStateChange(callback);
     },
 
+    /** Update password (requires active session) */
+    updatePassword: function(newPassword) {
+      if (!client) return Promise.reject(new Error("Supabase not configured"));
+      return client.auth.updateUser({ password: newPassword });
+    },
+
     /** Check if user is logged in */
     isLoggedIn: function() {
       return auth.getSession().then(function(s) { return !!s; });

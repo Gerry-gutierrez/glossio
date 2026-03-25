@@ -108,6 +108,7 @@ function showScreen(screen) {
     case "billing-cancel": renderBillingCancel(); break;
     case "support": renderSupport(); break;
     case "account": renderAccount(); break;
+    case "account-password": renderAccountPassword(); break;
     default: showScreen("hub");
   }
 }
@@ -1059,8 +1060,15 @@ function renderAccount() {
     backBtn("hub") +
     subHeader("Settings", "Account & Security", "Manage your login credentials and security settings.") +
 
+    '<div class="stg-nav-card" style="border-left-color:#00C2FF" onclick="showScreen(\'account-password\')">' +
+      '<div style="display:flex;gap:14px;align-items:center">' +
+        '<div class="stg-section-icon" style="background:#00C2FF15;border-color:#00C2FF33">🔑</div>' +
+        '<div><p style="margin:0 0 4px;font-size:15px;font-weight:700">Change Password</p><p style="margin:0;font-size:12px;color:#666">Update your account password</p></div>' +
+      '</div>' +
+      '<span style="font-size:18px;color:#444;flex-shrink:0">›</span>' +
+    '</div>' +
+
     [
-      { icon: "🔑", color: "#00C2FF", label: "Change Password", desc: "Update your account password" },
       { icon: "✉️", color: "#A259FF", label: "Change Email", desc: "Update your login email address" },
       { icon: "📱", color: "#FF6B35", label: "Change Phone", desc: "Update your phone number" },
       { icon: "🛡️", color: "#FFD60A", label: "Two-Factor Authentication", desc: "Add an extra layer of security" },
@@ -1072,9 +1080,82 @@ function renderAccount() {
         '</div>' +
         '<span class="stg-meta-badge" style="background:#1A1A2E;border-color:#2A2A3E;color:#555">Coming Soon</span>' +
       '</div>'
-    ).join("") +
+    ).join("");
+}
 
-    '<div class="stg-hint"><span>🔒</span><p>Account security features require authentication to be connected. This will be available once login is set up.</p></div>';
+function renderAccountPassword() {
+  document.getElementById("settings-sub").innerHTML =
+    backBtn("account") +
+    subHeader("Account & Security", "Change Password", "Enter your current password and choose a new one.") +
+
+    '<div class="stg-card">' +
+      '<div style="margin-bottom:20px">' +
+        '<label style="display:block;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">Current Password</label>' +
+        '<input type="password" id="pwdCurrent" class="stg-input" placeholder="Enter current password" autocomplete="current-password">' +
+      '</div>' +
+      '<div style="margin-bottom:20px">' +
+        '<label style="display:block;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">New Password</label>' +
+        '<input type="password" id="pwdNew" class="stg-input" placeholder="Enter new password" autocomplete="new-password">' +
+      '</div>' +
+      '<div style="margin-bottom:24px">' +
+        '<label style="display:block;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">Confirm New Password</label>' +
+        '<input type="password" id="pwdConfirm" class="stg-input" placeholder="Confirm new password" autocomplete="new-password">' +
+      '</div>' +
+      '<div id="pwdMsg" style="display:none;margin-bottom:16px;padding:10px 14px;border-radius:8px;font-size:13px"></div>' +
+      '<button class="btn btn-gradient" id="pwdSubmit" onclick="handleChangePassword()">Change Password</button>' +
+    '</div>' +
+
+    '<div class="stg-hint"><span>🔒</span><p>Your password must be at least 6 characters. After changing your password you will remain logged in.</p></div>';
+}
+
+function handleChangePassword() {
+  var current = document.getElementById("pwdCurrent").value.trim();
+  var newPwd = document.getElementById("pwdNew").value.trim();
+  var confirm = document.getElementById("pwdConfirm").value.trim();
+  var msgEl = document.getElementById("pwdMsg");
+  var btn = document.getElementById("pwdSubmit");
+
+  function showMsg(text, isError) {
+    msgEl.style.display = "block";
+    msgEl.textContent = text;
+    msgEl.style.background = isError ? "#FF336615" : "#00E5A015";
+    msgEl.style.color = isError ? "#FF3366" : "#00E5A0";
+    msgEl.style.border = "1px solid " + (isError ? "#FF336633" : "#00E5A033");
+  }
+
+  if (!current) { showMsg("Please enter your current password.", true); return; }
+  if (!newPwd) { showMsg("Please enter a new password.", true); return; }
+  if (newPwd.length < 6) { showMsg("New password must be at least 6 characters.", true); return; }
+  if (newPwd !== confirm) { showMsg("New passwords do not match.", true); return; }
+  if (newPwd === current) { showMsg("New password must be different from current password.", true); return; }
+
+  btn.disabled = true;
+  btn.textContent = "Updating...";
+  msgEl.style.display = "none";
+
+  /* Verify current password by re-signing in */
+  window.sbAuth.getSession().then(function(session) {
+    if (!session || !session.user || !session.user.email) {
+      throw new Error("No active session");
+    }
+    return window.sbClient.auth.signInWithPassword({ email: session.user.email, password: current });
+  }).then(function(result) {
+    if (result.error) throw new Error("Current password is incorrect.");
+    /* Current password verified — now update */
+    return window.sbClient.auth.updateUser({ password: newPwd });
+  }).then(function(result) {
+    if (result.error) throw result.error;
+    showMsg("Password changed successfully!", false);
+    btn.textContent = "Change Password";
+    btn.disabled = false;
+    document.getElementById("pwdCurrent").value = "";
+    document.getElementById("pwdNew").value = "";
+    document.getElementById("pwdConfirm").value = "";
+  }).catch(function(err) {
+    showMsg(err.message || "Failed to change password. Please try again.", true);
+    btn.textContent = "Change Password";
+    btn.disabled = false;
+  });
 }
 
 /* ── Helpers ──────────────────────────────────────────────────────────────── */
