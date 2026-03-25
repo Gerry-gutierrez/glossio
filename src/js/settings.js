@@ -687,6 +687,22 @@ function saveAdvance() {
   settings.advanceDays = parseInt(document.getElementById("advance-days").value) || 1;
   settings.minHours = parseInt(document.getElementById("min-hours").value) || 1;
   saveSettings();
+
+  /* Sync to Supabase availability_settings */
+  if (window.__glossio_user_id && window.sbClient) {
+    window.sbClient
+      .from("availability_settings")
+      .upsert({
+        profile_id: window.__glossio_user_id,
+        advance_booking_days: settings.advanceDays,
+        minimum_notice_hours: settings.minHours,
+      }, { onConflict: "profile_id" })
+      .then(function(res) {
+        if (res.error) console.error("Failed to sync advance settings:", res.error);
+        else console.log("Advance settings synced to Supabase");
+      });
+  }
+
   showSettingsToast();
 }
 
@@ -1513,6 +1529,21 @@ document.addEventListener("DOMContentLoaded", function() {
           });
           saveSettings();
           if (currentScreen === "availability-vacation") renderVacation();
+          if (currentScreen === "availability") renderAvailability();
+        });
+
+      /* Load advance booking settings from Supabase */
+      window.sbClient
+        .from("availability_settings")
+        .select("advance_booking_days, minimum_notice_hours")
+        .eq("profile_id", profile.id)
+        .single()
+        .then(function(res) {
+          if (res.error || !res.data) return;
+          settings.advanceDays = res.data.advance_booking_days || 30;
+          settings.minHours = res.data.minimum_notice_hours || 24;
+          saveSettings();
+          if (currentScreen === "availability-advance") renderAdvance();
           if (currentScreen === "availability") renderAvailability();
         });
 

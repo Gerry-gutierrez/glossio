@@ -9,6 +9,7 @@ var _apiServices = null;
 var _apiPhotos = null;
 var _apiHours = null; /* business hours from API */
 var _apiBlocks = null; /* vacation / date blocks from API */
+var _apiAvailability = null; /* advance booking / min notice settings */
 
 function loadProfile() {
   try { return JSON.parse(localStorage.getItem(PROFILE_KEY) || "{}"); } catch(e) { return {}; }
@@ -42,6 +43,7 @@ function loadProfileData() {
         _apiPhotos = data.photos || [];
         _apiHours = data.hours || [];
         _apiBlocks = data.blocks || [];
+        _apiAvailability = data.availability || { advance_booking_days: 30, minimum_notice_hours: 24 };
         return {
           profile: data.profile || {},
           photos: _apiPhotos,
@@ -494,12 +496,21 @@ function renderBookingDateGrid() {
 
   var hours = _apiHours || [];
   var blocks = _apiBlocks || [];
+  var avail = _apiAvailability || { advance_booking_days: 30, minimum_notice_hours: 24 };
+  var maxDays = avail.advance_booking_days || 30;
+  var minNoticeHrs = avail.minimum_notice_hours || 24;
   var html = "";
 
-  for (var i = 1; i <= 14; i++) {
+  var nowMs = Date.now();
+
+  for (var i = 1; i <= maxDays; i++) {
     var d = new Date();
     d.setDate(d.getDate() + i);
     var dayOfWeek = d.getDay(); // 0=Sun, 6=Sat
+
+    /* Check minimum notice hours — if the start of this day is too soon, skip */
+    var hoursUntil = (d.getTime() - nowMs) / (1000 * 60 * 60);
+    if (hoursUntil < minNoticeHrs) continue;
     var dayHours = null;
     for (var h = 0; h < hours.length; h++) {
       if (hours[h].day_of_week === dayOfWeek) { dayHours = hours[h]; break; }

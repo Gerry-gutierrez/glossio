@@ -81,6 +81,13 @@ export const handler = async (event) => {
       .gte("end_date", today)
       .order("start_date");
 
+    /* Get availability settings (advance booking window, min notice) */
+    const { data: availSettings } = await supabase
+      .from("availability_settings")
+      .select("advance_booking_days, minimum_notice_hours")
+      .eq("profile_id", profile.id)
+      .single();
+
     return {
       statusCode: 200,
       headers: {
@@ -93,6 +100,7 @@ export const handler = async (event) => {
         photos: photos || [],
         hours: hours || [],
         blocks: blocks || [],
+        availability: availSettings || { advance_booking_days: 30, minimum_notice_hours: 24 },
       }),
     };
   } catch (err) {
