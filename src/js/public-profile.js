@@ -7,6 +7,7 @@ var SERVICES_KEY = "glossio_services";
 /* In-memory cache for API-fetched data (used by the booking flow) */
 var _apiServices = null;
 var _apiPhotos = null;
+var _apiHours = null; /* business hours from API */
 
 function loadProfile() {
   try { return JSON.parse(localStorage.getItem(PROFILE_KEY) || "{}"); } catch(e) { return {}; }
@@ -38,6 +39,7 @@ function loadProfileData() {
         /* Cache API data so openServicesSheet() and booking flow use real IDs */
         _apiServices = data.services || [];
         _apiPhotos = data.photos || [];
+        _apiHours = data.hours || [];
         return {
           profile: data.profile || {},
           photos: _apiPhotos,
@@ -445,15 +447,16 @@ function openBookingForm() {
         /* ── Date & Time Section ── */
         '<div class="booking-section-label" style="margin-top:24px">Preferred Date &amp; Time</div>' +
 
-        '<div class="booking-row">' +
-          '<div class="booking-field">' +
-            '<label class="booking-label" for="bf-date">Date *</label>' +
-            '<input class="booking-input" type="date" id="bf-date" name="scheduledDate" required min="' + minDate + '" max="' + maxDate + '" />' +
-          '</div>' +
-          '<div class="booking-field">' +
-            '<label class="booking-label" for="bf-time">Time *</label>' +
-            '<input class="booking-input" type="time" id="bf-time" name="scheduledTime" required />' +
-          '</div>' +
+        '<div class="booking-field">' +
+          '<label class="booking-label">Date *</label>' +
+          '<div id="bf-date-grid" class="bf-date-grid"></div>' +
+          '<input type="hidden" id="bf-date" name="scheduledDate" />' +
+        '</div>' +
+
+        '<div class="booking-field">' +
+          '<label class="booking-label">Time *</label>' +
+          '<div id="bf-time-grid" class="bf-time-grid"><p style="color:#555;font-size:12px;margin:0">Select a date first</p></div>' +
+          '<input type="hidden" id="bf-time" name="scheduledTime" />' +
         '</div>' +
 
         /* ── Error message ── */
@@ -478,11 +481,107 @@ function openBookingForm() {
     if (e.target === sheet) closeServicesSheet();
   };
 
-  /* Make clicking anywhere on date/time inputs open the native picker */
-  var dateEl = document.getElementById("bf-date");
-  var timeEl = document.getElementById("bf-time");
-  if (dateEl) dateEl.addEventListener("click", function() { try { dateEl.showPicker(); } catch(e) {} });
-  if (timeEl) timeEl.addEventListener("click", function() { try { timeEl.showPicker(); } catch(e) {} });
+  /* Render custom date grid */
+  renderBookingDateGrid();
+}
+
+/** Render the date card grid for the booking form */
+function renderBookingDateGrid() {
+  var container = document.getElementById("bf-date-grid");
+  if (!container) return;
+
+  var hours = _apiHours || [];
+  var html = "";
+
+  for (var i = 1; i <= 14; i++) {
+    var d = new Date();
+    d.setDate(d.getDate() + i);
+    var dayOfWeek = d.getDay(); // 0=Sun, 6=Sat
+    var dayHours = null;
+    for (var h = 0; h < hours.length; h++) {
+      if (hours[h].day_of_week === dayOfWeek) { dayHours = hours[h]; break; }
+    }
+    var isClosed = dayHours ? !dayHours.is_open : false;
+    var dateStr = d.toISOString().split("T")[0];
+    var weekday = d.toLocaleDateString("en-US", { weekday: "short" });
+    var dayNum = d.getDate();
+    var month = d.toLocaleDateString("en-US", { month: "short" });
+
+    html += '<div class="bf-date-card' + (isClosed ? ' bf-date-closed' : '') + '" data-date="' + dateStr + '" data-closed="' + (isClosed ? '1' : '0') + '">' +
+      '<span class="bf-date-weekday">' + weekday + '</span>' +
+      '<span class="bf-date-num">' + dayNum + '</span>' +
+      '<span class="bf-date-month">' + month + '</span>' +
+      (isClosed ? '<span class="bf-date-closed-label">Closed</span>' : '') +
+    '</div>';
+  }
+
+  container.innerHTML = html;
+
+  /* Add click handlers */
+  var cards = container.querySelectorAll(".bf-date-card");
+  cards.forEach(function(card) {
+    card.addEventListener("click", function() {
+      if (card.getAttribute("data-closed") === "1") return;
+      /* Deselect all */
+      cards.forEach(function(c) { c.classList.remove("bf-date-selected"); });
+      card.classList.add("bf-date-selected");
+      /* Set hidden input */
+      document.getElementById("bf-date").value = card.getAttribute("data-date");
+      /* Render time slots for this date */
+      renderBookingTimeGrid(card.getAttribute("data-date"));
+    });
+  });
+}
+
+/** Render time slots based on business hours for the selected date */
+function renderBookingTimeGrid(dateStr) {
+  var container = document.getElementById("bf-time-grid");
+  if (!container) return;
+
+  var d = new Date(dateStr + "T12:00:00");
+  var dayOfWeek = d.getDay();
+  var hours = _apiHours || [];
+  var dayHours = null;
+  for (var h = 0; h < hours.length; h++) {
+    if (hours[h].day_of_week === dayOfWeek) { dayHours = hours[h]; break; }
+  }
+
+  if (!dayHours || !dayHours.is_open) {
+    container.innerHTML = '<p style="color:#555;font-size:12px;margin:0">Not available on this day</p>';
+    document.getElementById("bf-time").value = "";
+    return;
+  }
+
+  var openH = parseInt(dayHours.open_time.split(":")[0], 10);
+  var closeH = parseInt(dayHours.close_time.split(":")[0], 10);
+  var html = "";
+
+  for (var hr = openH; hr < closeH; hr++) {
+    var ampm = hr < 12 ? "AM" : "PM";
+    var display = hr === 0 ? 12 : hr > 12 ? hr - 12 : hr;
+    var label = display + ":00 " + ampm;
+    var val24 = (hr < 10 ? "0" : "") + hr + ":00";
+    html += '<div class="bf-time-slot" data-time="' + val24 + '" data-label="' + label + '">' + label + '</div>';
+  }
+
+  if (!html) {
+    container.innerHTML = '<p style="color:#555;font-size:12px;margin:0">No available times</p>';
+    document.getElementById("bf-time").value = "";
+    return;
+  }
+
+  container.innerHTML = html;
+  document.getElementById("bf-time").value = "";
+
+  /* Add click handlers */
+  var slots = container.querySelectorAll(".bf-time-slot");
+  slots.forEach(function(slot) {
+    slot.addEventListener("click", function() {
+      slots.forEach(function(s) { s.classList.remove("bf-time-selected"); });
+      slot.classList.add("bf-time-selected");
+      document.getElementById("bf-time").value = slot.getAttribute("data-label");
+    });
+  });
 }
 
 function submitBooking(e) {
