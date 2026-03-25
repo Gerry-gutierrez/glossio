@@ -864,7 +864,7 @@ function renderBillingPlan() {
 
     '<div class="stg-card" style="margin-bottom:20px">' +
       '<p style="margin:0 0 14px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:0.15em">What\'s included</p>' +
-      ["Unlimited client bookings","Custom public booking page","Client CRM & history","Automated 24hr reminders","Revenue tracking dashboard","SMS & email notifications"].map(f =>
+      ["Unlimited client bookings","Custom public booking page","Client CRM & history","Revenue tracking dashboard","Shareable social media link","Photo gallery for your work"].map(f =>
         '<div style="display:flex;gap:10px;align-items:center;margin-bottom:10px"><span style="color:#00E5A0;font-weight:700;font-size:13px">✓</span><p style="margin:0;font-size:13px;color:#C8C4BC">' + f + '</p></div>'
       ).join("") +
     '</div>' +
