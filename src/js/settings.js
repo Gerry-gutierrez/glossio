@@ -503,7 +503,7 @@ function renderVacation() {
                   '<p style="margin:0;font-size:11px;color:#555">' + (block.start === block.end ? "Single day off" : "Date range blocked") + '</p>' +
                 '</div>' +
               '</div>' +
-              '<button class="block-delete-btn" onclick="removeBlock(' + block.id + ')">🗑️</button>' +
+              '<button class="block-delete-btn" onclick="removeBlock(\'' + block.id + '\')">🗑️</button>' +
             '</div>'
           ).join("") +
         '</div>'
@@ -581,7 +581,7 @@ function removeBlock(id) {
       });
   }
 
-  settings.blocks = settings.blocks.filter(b => b.id !== id && b.supabaseId !== id);
+  settings.blocks = settings.blocks.filter(function(b) { return String(b.id) !== String(id) && String(b.supabaseId || '') !== String(id); });
   saveSettings();
   renderVacation();
 }
