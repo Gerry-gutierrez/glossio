@@ -109,6 +109,8 @@ function showScreen(screen) {
     case "support": renderSupport(); break;
     case "account": renderAccount(); break;
     case "account-password": renderAccountPassword(); break;
+    case "account-email": renderAccountEmail(); break;
+    case "account-phone": renderAccountPhone(); break;
     default: showScreen("hub");
   }
 }
@@ -1068,19 +1070,29 @@ function renderAccount() {
       '<span style="font-size:18px;color:#444;flex-shrink:0">›</span>' +
     '</div>' +
 
-    [
-      { icon: "✉️", color: "#A259FF", label: "Change Email", desc: "Update your login email address" },
-      { icon: "📱", color: "#FF6B35", label: "Change Phone", desc: "Update your phone number" },
-      { icon: "🛡️", color: "#FFD60A", label: "Two-Factor Authentication", desc: "Add an extra layer of security" },
-    ].map(item =>
-      '<div class="stg-nav-card" style="border-left-color:' + item.color + ';cursor:default;opacity:0.6">' +
-        '<div style="display:flex;gap:14px;align-items:center">' +
-          '<div class="stg-section-icon" style="background:' + item.color + '15;border-color:' + item.color + '33">' + item.icon + '</div>' +
-          '<div><p style="margin:0 0 4px;font-size:15px;font-weight:700">' + item.label + '</p><p style="margin:0;font-size:12px;color:#666">' + item.desc + '</p></div>' +
-        '</div>' +
-        '<span class="stg-meta-badge" style="background:#1A1A2E;border-color:#2A2A3E;color:#555">Coming Soon</span>' +
-      '</div>'
-    ).join("");
+    '<div class="stg-nav-card" style="border-left-color:#A259FF" onclick="showScreen(\'account-email\')">' +
+      '<div style="display:flex;gap:14px;align-items:center">' +
+        '<div class="stg-section-icon" style="background:#A259FF15;border-color:#A259FF33">✉️</div>' +
+        '<div><p style="margin:0 0 4px;font-size:15px;font-weight:700">Change Email</p><p style="margin:0;font-size:12px;color:#666">Update your login email address</p></div>' +
+      '</div>' +
+      '<span style="font-size:18px;color:#444;flex-shrink:0">›</span>' +
+    '</div>' +
+
+    '<div class="stg-nav-card" style="border-left-color:#FF6B35" onclick="showScreen(\'account-phone\')">' +
+      '<div style="display:flex;gap:14px;align-items:center">' +
+        '<div class="stg-section-icon" style="background:#FF6B3515;border-color:#FF6B3533">📱</div>' +
+        '<div><p style="margin:0 0 4px;font-size:15px;font-weight:700">Change Phone</p><p style="margin:0;font-size:12px;color:#666">Update your phone number</p></div>' +
+      '</div>' +
+      '<span style="font-size:18px;color:#444;flex-shrink:0">›</span>' +
+    '</div>' +
+
+    '<div class="stg-nav-card" style="border-left-color:#FFD60A;cursor:default;opacity:0.6">' +
+      '<div style="display:flex;gap:14px;align-items:center">' +
+        '<div class="stg-section-icon" style="background:#FFD60A15;border-color:#FFD60A33">🛡️</div>' +
+        '<div><p style="margin:0 0 4px;font-size:15px;font-weight:700">Two-Factor Authentication</p><p style="margin:0;font-size:12px;color:#666">Add an extra layer of security</p></div>' +
+      '</div>' +
+      '<span class="stg-meta-badge" style="background:#1A1A2E;border-color:#2A2A3E;color:#555">Coming Soon</span>' +
+    '</div>';
 }
 
 function renderAccountPassword() {
@@ -1154,6 +1166,150 @@ function handleChangePassword() {
   }).catch(function(err) {
     showMsg(err.message || "Failed to change password. Please try again.", true);
     btn.textContent = "Change Password";
+    btn.disabled = false;
+  });
+}
+
+/* ── Change Email ─────────────────────────────────────────────────────────── */
+
+function renderAccountEmail() {
+  /* Get current email from session */
+  var currentEmail = "—";
+  window.sbAuth.getSession().then(function(session) {
+    if (session && session.user && session.user.email) {
+      var el = document.getElementById("currentEmailDisplay");
+      if (el) el.textContent = session.user.email;
+    }
+  });
+
+  document.getElementById("settings-sub").innerHTML =
+    backBtn("account") +
+    subHeader("Account & Security", "Change Email", "Update the email address you use to sign in.") +
+
+    '<div class="stg-card">' +
+      '<div style="margin-bottom:20px">' +
+        '<label style="display:block;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">Current Email</label>' +
+        '<p id="currentEmailDisplay" style="margin:0;font-size:15px;color:var(--text);padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px">' + currentEmail + '</p>' +
+      '</div>' +
+      '<div style="margin-bottom:20px">' +
+        '<label style="display:block;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">New Email</label>' +
+        '<input type="email" id="emailNew" class="stg-input" placeholder="Enter new email address" autocomplete="email">' +
+      '</div>' +
+      '<div style="margin-bottom:24px">' +
+        '<label style="display:block;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">Confirm New Email</label>' +
+        '<input type="email" id="emailConfirm" class="stg-input" placeholder="Confirm new email address" autocomplete="email">' +
+      '</div>' +
+      '<div id="emailMsg" style="display:none;margin-bottom:16px;padding:10px 14px;border-radius:8px;font-size:13px"></div>' +
+      '<button class="btn btn-gradient" id="emailSubmit" onclick="handleChangeEmail()">Update Email</button>' +
+    '</div>' +
+
+    '<div class="stg-hint"><span>✉️</span><p>A confirmation link will be sent to your new email address. Your email won\'t change until you click that link.</p></div>';
+}
+
+function handleChangeEmail() {
+  var newEmail = document.getElementById("emailNew").value.trim();
+  var confirmEmail = document.getElementById("emailConfirm").value.trim();
+  var msgEl = document.getElementById("emailMsg");
+  var btn = document.getElementById("emailSubmit");
+
+  function showMsg(text, isError) {
+    msgEl.style.display = "block";
+    msgEl.textContent = text;
+    msgEl.style.background = isError ? "#FF336615" : "#00E5A015";
+    msgEl.style.color = isError ? "#FF3366" : "#00E5A0";
+    msgEl.style.border = "1px solid " + (isError ? "#FF336633" : "#00E5A033");
+  }
+
+  if (!newEmail) { showMsg("Please enter a new email address.", true); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) { showMsg("Please enter a valid email address.", true); return; }
+  if (newEmail !== confirmEmail) { showMsg("Email addresses do not match.", true); return; }
+
+  btn.disabled = true;
+  btn.textContent = "Updating...";
+  msgEl.style.display = "none";
+
+  window.sbClient.auth.updateUser({ email: newEmail }).then(function(result) {
+    if (result.error) throw result.error;
+    showMsg("Confirmation link sent to " + newEmail + ". Check your inbox to complete the change.", false);
+    btn.textContent = "Update Email";
+    btn.disabled = false;
+    document.getElementById("emailNew").value = "";
+    document.getElementById("emailConfirm").value = "";
+  }).catch(function(err) {
+    showMsg(err.message || "Failed to update email. Please try again.", true);
+    btn.textContent = "Update Email";
+    btn.disabled = false;
+  });
+}
+
+/* ── Change Phone ────────────────────────────────────────────────────────── */
+
+function renderAccountPhone() {
+  /* Get current phone from session */
+  var currentPhone = "—";
+  window.sbAuth.getSession().then(function(session) {
+    if (session && session.user && session.user.phone) {
+      var el = document.getElementById("currentPhoneDisplay");
+      if (el) el.textContent = session.user.phone;
+    }
+  });
+
+  document.getElementById("settings-sub").innerHTML =
+    backBtn("account") +
+    subHeader("Account & Security", "Change Phone", "Update the phone number on your account.") +
+
+    '<div class="stg-card">' +
+      '<div style="margin-bottom:20px">' +
+        '<label style="display:block;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">Current Phone</label>' +
+        '<p id="currentPhoneDisplay" style="margin:0;font-size:15px;color:var(--text);padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px">' + currentPhone + '</p>' +
+      '</div>' +
+      '<div style="margin-bottom:24px">' +
+        '<label style="display:block;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">New Phone Number</label>' +
+        '<input type="tel" id="phoneNew" class="stg-input" placeholder="e.g. +12395551234" autocomplete="tel">' +
+      '</div>' +
+      '<div id="phoneMsg" style="display:none;margin-bottom:16px;padding:10px 14px;border-radius:8px;font-size:13px"></div>' +
+      '<button class="btn btn-gradient" id="phoneSubmit" onclick="handleChangePhone()">Update Phone</button>' +
+    '</div>' +
+
+    '<div class="stg-hint"><span>📱</span><p>Enter your phone number with country code (e.g. +1 for US). Your phone number will be updated immediately.</p></div>';
+}
+
+function handleChangePhone() {
+  var newPhone = document.getElementById("phoneNew").value.trim();
+  var msgEl = document.getElementById("phoneMsg");
+  var btn = document.getElementById("phoneSubmit");
+
+  function showMsg(text, isError) {
+    msgEl.style.display = "block";
+    msgEl.textContent = text;
+    msgEl.style.background = isError ? "#FF336615" : "#00E5A015";
+    msgEl.style.color = isError ? "#FF3366" : "#00E5A0";
+    msgEl.style.border = "1px solid " + (isError ? "#FF336633" : "#00E5A033");
+  }
+
+  if (!newPhone) { showMsg("Please enter a new phone number.", true); return; }
+  /* Basic phone validation — must start with + and have at least 10 digits */
+  if (!/^\+\d{10,15}$/.test(newPhone.replace(/[\s\-()]/g, ""))) {
+    showMsg("Please enter a valid phone number with country code (e.g. +12395551234).", true);
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Updating...";
+  msgEl.style.display = "none";
+
+  window.sbClient.auth.updateUser({ phone: newPhone }).then(function(result) {
+    if (result.error) throw result.error;
+    showMsg("Phone number updated successfully!", false);
+    btn.textContent = "Update Phone";
+    btn.disabled = false;
+    document.getElementById("phoneNew").value = "";
+    /* Update display */
+    var display = document.getElementById("currentPhoneDisplay");
+    if (display) display.textContent = newPhone;
+  }).catch(function(err) {
+    showMsg(err.message || "Failed to update phone number. Please try again.", true);
+    btn.textContent = "Update Phone";
     btn.disabled = false;
   });
 }
