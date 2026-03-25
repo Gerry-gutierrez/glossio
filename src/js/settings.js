@@ -539,13 +539,49 @@ function addBlock() {
   if (!end) { errEl.innerHTML = '<p style="margin:0 0 10px;font-size:12px;color:#FF3366;font-weight:700">✕ Please select an end date.</p>'; return; }
   if (end < start) { errEl.innerHTML = '<p style="margin:0 0 10px;font-size:12px;color:#FF3366;font-weight:700">✕ End date can\'t be before start date.</p>'; return; }
 
-  settings.blocks.push({ id: Date.now(), start, end });
-  saveSettings();
-  renderVacation();
+  /* Save to Supabase first, then update local */
+  if (window.__glossio_user_id && window.sbClient) {
+    window.sbClient
+      .from("availability_blocks")
+      .insert({ profile_id: window.__glossio_user_id, start_date: start, end_date: end })
+      .select()
+      .then(function(res) {
+        if (res.error) {
+          console.error("Failed to save block:", res.error);
+          errEl.innerHTML = '<p style="margin:0 0 10px;font-size:12px;color:#FF3366;font-weight:700">✕ Failed to save. Please try again.</p>';
+          return;
+        }
+        var row = res.data && res.data[0];
+        settings.blocks.push({ id: row ? row.id : Date.now(), start, end, supabaseId: row ? row.id : null });
+        saveSettings();
+        renderVacation();
+        showSettingsToast("Date block saved!");
+      });
+  } else {
+    settings.blocks.push({ id: Date.now(), start, end });
+    saveSettings();
+    renderVacation();
+  }
 }
 
 function removeBlock(id) {
-  settings.blocks = settings.blocks.filter(b => b.id !== id);
+  /* Find the block to get its Supabase ID */
+  var block = settings.blocks.find(b => b.id === id || b.supabaseId === id);
+
+  /* Delete from Supabase */
+  var sbId = block ? (block.supabaseId || block.id) : id;
+  if (window.__glossio_user_id && window.sbClient && sbId) {
+    window.sbClient
+      .from("availability_blocks")
+      .delete()
+      .eq("id", sbId)
+      .then(function(res) {
+        if (res.error) console.error("Failed to delete block:", res.error);
+        else console.log("Block deleted from Supabase");
+      });
+  }
+
+  settings.blocks = settings.blocks.filter(b => b.id !== id && b.supabaseId !== id);
   saveSettings();
   renderVacation();
 }
@@ -1462,6 +1498,22 @@ document.addEventListener("DOMContentLoaded", function() {
           saveSettings(); /* persist to localStorage so it stays in sync */
           /* Re-render if currently viewing hours */
           if (currentScreen === "availability-hours") renderAvailabilityHours();
+          if (currentScreen === "availability") renderAvailability();
+        });
+
+      /* Load availability blocks from Supabase */
+      window.sbClient
+        .from("availability_blocks")
+        .select("id, start_date, end_date, reason")
+        .eq("profile_id", profile.id)
+        .order("start_date")
+        .then(function(res) {
+          if (res.error || !res.data) return;
+          settings.blocks = res.data.map(function(row) {
+            return { id: row.id, supabaseId: row.id, start: row.start_date, end: row.end_date, reason: row.reason || "" };
+          });
+          saveSettings();
+          if (currentScreen === "availability-vacation") renderVacation();
           if (currentScreen === "availability") renderAvailability();
         });
 

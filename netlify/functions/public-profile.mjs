@@ -72,6 +72,15 @@ export const handler = async (event) => {
       .eq("profile_id", profile.id)
       .order("day_of_week");
 
+    /* Get availability blocks (vacation / date blocks) */
+    const today = new Date().toISOString().split("T")[0];
+    const { data: blocks } = await supabase
+      .from("availability_blocks")
+      .select("start_date, end_date, reason")
+      .eq("profile_id", profile.id)
+      .gte("end_date", today)
+      .order("start_date");
+
     return {
       statusCode: 200,
       headers: {
@@ -83,6 +92,7 @@ export const handler = async (event) => {
         services: services || [],
         photos: photos || [],
         hours: hours || [],
+        blocks: blocks || [],
       }),
     };
   } catch (err) {

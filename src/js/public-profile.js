@@ -8,6 +8,7 @@ var SERVICES_KEY = "glossio_services";
 var _apiServices = null;
 var _apiPhotos = null;
 var _apiHours = null; /* business hours from API */
+var _apiBlocks = null; /* vacation / date blocks from API */
 
 function loadProfile() {
   try { return JSON.parse(localStorage.getItem(PROFILE_KEY) || "{}"); } catch(e) { return {}; }
@@ -40,6 +41,7 @@ function loadProfileData() {
         _apiServices = data.services || [];
         _apiPhotos = data.photos || [];
         _apiHours = data.hours || [];
+        _apiBlocks = data.blocks || [];
         return {
           profile: data.profile || {},
           photos: _apiPhotos,
@@ -491,6 +493,7 @@ function renderBookingDateGrid() {
   if (!container) return;
 
   var hours = _apiHours || [];
+  var blocks = _apiBlocks || [];
   var html = "";
 
   for (var i = 1; i <= 14; i++) {
@@ -503,6 +506,17 @@ function renderBookingDateGrid() {
     }
     var isClosed = dayHours ? !dayHours.is_open : false;
     var dateStr = d.toISOString().split("T")[0];
+
+    /* Check if date falls within any vacation / date block */
+    if (!isClosed) {
+      for (var b = 0; b < blocks.length; b++) {
+        if (dateStr >= blocks[b].start_date && dateStr <= blocks[b].end_date) {
+          isClosed = true;
+          break;
+        }
+      }
+    }
+
     var weekday = d.toLocaleDateString("en-US", { weekday: "short" });
     var dayNum = d.getDate();
     var month = d.toLocaleDateString("en-US", { month: "short" });
