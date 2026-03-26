@@ -221,7 +221,7 @@ function openServicesSheet() {
       var color = svc.color || '#00C2FF';
       var icon = svc.icon || '&#128736;';
       html +=
-        '<div class="pub-svc-card" data-svc-id="' + svc.id + '" data-svc-name="' + esc(svc.name) + '" data-svc-price="' + esc(svc.price) + '" data-svc-color="' + color + '" style="border-left:3px solid ' + color + ';cursor:pointer" onclick="toggleServiceSelect(\'' + svc.id + '\')">' +
+        '<div class="pub-svc-card" data-svc-id="' + svc.id + '" data-svc-name="' + esc(svc.name) + '" data-svc-price="' + esc(svc.price) + '" data-svc-color="' + color + '" data-svc-pricing-type="' + (svc.pricing_type || 'fixed') + '" style="border-left:3px solid ' + color + ';cursor:pointer" onclick="toggleServiceSelect(\'' + svc.id + '\')">' +
           '<div class="pub-svc-row">' +
             '<div class="pub-svc-check" id="svc-check-' + svc.id + '" style="width:22px;height:22px;border-radius:6px;border:2px solid #555;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:10px;transition:all .2s"></div>' +
             '<div class="pub-svc-icon" style="background:' + color + '15;border-color:' + color + '33">' + icon + '</div>' +
@@ -230,7 +230,7 @@ function openServicesSheet() {
               '<p class="pub-svc-desc-short">' + esc(svc.description || '') + '</p>' +
             '</div>' +
             '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">' +
-              '<p class="pub-svc-price" style="color:' + color + '">$' + esc(svc.price) + '</p>' +
+              '<p class="pub-svc-price" style="color:' + color + '">' + (svc.pricing_type === 'quote' ? 'Get Quote' : '$' + esc(svc.price)) + '</p>' +
               '<span class="pub-svc-toggle" onclick="event.stopPropagation();toggleService(\'' + svc.id + '\')">&#9660; More</span>' +
             '</div>' +
           '</div>' +
@@ -238,8 +238,8 @@ function openServicesSheet() {
             '<p class="pub-svc-inc-label">What\'s Included</p>' +
             '<p class="pub-svc-inc-text">' + esc(svc.description || '') + '</p>' +
             '<div class="pub-svc-price-box" style="background:' + color + '10;border-color:' + color + '22">' +
-              '<span style="font-size:12px;color:#888">Starting at</span>' +
-              '<span style="font-size:20px;font-weight:700;color:' + color + '">$' + esc(svc.price) + '</span>' +
+              '<span style="font-size:12px;color:#888">' + (svc.pricing_type === 'quote' ? 'Pricing' : 'Starting at') + '</span>' +
+              '<span style="font-size:20px;font-weight:700;color:' + color + '">' + (svc.pricing_type === 'quote' ? 'Request a Quote' : '$' + esc(svc.price)) + '</span>' +
             '</div>' +
           '</div>' +
         '</div>';
@@ -325,7 +325,8 @@ function toggleServiceSelect(serviceId) {
       id: serviceId,
       name: card.getAttribute("data-svc-name") || "Service",
       price: card.getAttribute("data-svc-price") || "0",
-      color: color
+      color: color,
+      pricing_type: card.getAttribute("data-svc-pricing-type") || "fixed"
     });
     if (check) {
       check.style.background = color;
@@ -342,9 +343,10 @@ function toggleServiceSelect(serviceId) {
   if (summary) {
     if (_selectedServices.length > 0) {
       summary.style.display = "";
-      var total = _selectedServices.reduce(function(s, svc) { return s + (parseFloat(svc.price) || 0); }, 0);
+      var hasQuote = _selectedServices.some(function(svc) { return svc.pricing_type === 'quote'; });
+      var total = _selectedServices.reduce(function(s, svc) { return s + (svc.pricing_type === 'quote' ? 0 : (parseFloat(svc.price) || 0)); }, 0);
       if (countEl) countEl.textContent = _selectedServices.length + " service" + (_selectedServices.length > 1 ? "s" : "") + " selected";
-      if (totalEl) totalEl.textContent = "$" + total.toFixed(2);
+      if (totalEl) totalEl.textContent = hasQuote ? (total > 0 ? "$" + total.toFixed(2) + " + Quote" : "Quote") : "$" + total.toFixed(2);
     } else {
       summary.style.display = "none";
     }
