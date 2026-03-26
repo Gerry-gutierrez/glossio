@@ -1390,18 +1390,23 @@ function handleChangePhone() {
   btn.textContent = "Updating...";
   msgEl.style.display = "none";
 
-  window.sbClient.auth.updateUser({ phone: newPhone }).then(function(result) {
-    if (result.error) throw result.error;
-    showMsg("Phone number updated successfully!", false);
-    btn.textContent = "Update Phone";
-    btn.disabled = false;
-    document.getElementById("phoneNew").value = "";
-    /* Update display */
-    var display = document.getElementById("currentPhoneDisplay");
-    if (display) display.textContent = newPhone;
-  }).catch(function(err) {
-    showMsg(err.message || "Failed to update phone number. Please try again.", true);
-    btn.textContent = "Update Phone";
+  /* Update phone directly in profiles table (no SMS verification) */
+  window.sbClient
+    .from("profiles")
+    .update({ phone: newPhone })
+    .eq("id", window.__glossio_user_id)
+    .then(function(result) {
+      if (result.error) throw result.error;
+      showMsg("Phone number updated successfully!", false);
+      btn.textContent = "Update Phone";
+      btn.disabled = false;
+      document.getElementById("phoneNew").value = "";
+      /* Update display */
+      var display = document.getElementById("currentPhoneDisplay");
+      if (display) display.textContent = newPhone;
+    }).catch(function(err) {
+      showMsg(err.message || "Failed to update phone number. Please try again.", true);
+      btn.textContent = "Update Phone";
     btn.disabled = false;
   });
 }
