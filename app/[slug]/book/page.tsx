@@ -42,7 +42,7 @@ function getTimeSlotsForDay(hours: BusinessHour | undefined): string[] {
 const fmt = (d: Date) => d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 const fmtLong = (d: Date) => d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
 
-type Service = { id: string; name: string; price: string; description: string; icon: string; color: string }
+type Service = { id: string; name: string; price: string; description: string; icon: string; color: string; pricing_type: 'fixed' | 'quote' }
 
 interface FormState {
   firstName: string; lastName: string; phone: string; email: string
@@ -144,7 +144,7 @@ export default function BookingFlowPage() {
     const [{ data: svcs }, { data: hours }] = await Promise.all([
       supabase
         .from('services')
-        .select('id, name, description, price, icon, color')
+        .select('id, name, description, price, icon, color, pricing_type')
         .eq('profile_id', profile.id)
         .eq('is_active', true)
         .order('sort_order'),
@@ -155,7 +155,7 @@ export default function BookingFlowPage() {
         .order('day_of_week'),
     ])
 
-    if (svcs) setServices(svcs.map(s => ({ ...s, price: String(s.price) })))
+    if (svcs) setServices(svcs.map(s => ({ ...s, price: String(s.price), pricing_type: (s.pricing_type || 'fixed') as 'fixed' | 'quote' })))
     if (hours) setBusinessHours(hours)
     setLoadingData(false)
   }, [supabase, slug])
@@ -246,7 +246,9 @@ export default function BookingFlowPage() {
           <p className={styles.confirmContact}><PhoneSvg /> {form.phone}</p>
           <p className={styles.confirmContact}><MailSvg /> {form.email}</p>
           <div className={styles.confirmDivider}>
-            <p className={styles.confirmService}>{selectedService.icon} {selectedService.name} — ${selectedService.price}</p>
+            <p className={styles.confirmService}>
+              {selectedService.icon} {selectedService.name} — {selectedService.pricing_type === 'quote' ? 'Quote Requested' : `$${selectedService.price}`}
+            </p>
             <p className={styles.confirmDate}>
               {form.date ? fmtLong(form.date) : ''} · {form.time}
             </p>
@@ -307,7 +309,9 @@ export default function BookingFlowPage() {
                       <p className={`${styles.serviceDesc} ${!isOpen ? styles.serviceDescTruncated : ''}`}>{svc.description}</p>
                     </div>
                     <div className={styles.servicePriceCol}>
-                      <p className={styles.servicePrice} style={{ color: svc.color }}>${svc.price}</p>
+                      <p className={styles.servicePrice} style={{ color: svc.color }}>
+                        {svc.pricing_type === 'quote' ? 'Get Quote' : `$${svc.price}`}
+                      </p>
                       <span className={styles.expandArrow}>{isOpen ? '\u25B2' : '\u25BC'}</span>
                     </div>
                   </div>
@@ -317,8 +321,10 @@ export default function BookingFlowPage() {
                       <p className={styles.expandedLabel}>What&apos;s Included</p>
                       <p className={styles.expandedDesc}>{svc.description}</p>
                       <div className={styles.priceBox} style={{ background: `${svc.color}10`, border: `1px solid ${svc.color}22` }}>
-                        <span className={styles.priceBoxLabel}>Starting at</span>
-                        <span className={styles.priceBoxValue} style={{ color: svc.color }}>${svc.price}</span>
+                        <span className={styles.priceBoxLabel}>{svc.pricing_type === 'quote' ? 'Pricing' : 'Starting at'}</span>
+                        <span className={styles.priceBoxValue} style={{ color: svc.color }}>
+                          {svc.pricing_type === 'quote' ? 'Request a Quote' : `$${svc.price}`}
+                        </span>
                       </div>
                       <button onClick={() => startBooking(svc)} className={styles.bookServiceBtn} style={{ background: svc.color }}>
                         Book {svc.name}
@@ -340,7 +346,9 @@ export default function BookingFlowPage() {
           <div className={styles.serviceChip} style={{ background: `${selectedService.color}15`, border: `1px solid ${selectedService.color}33` }}>
             <span>{selectedService.icon}</span>
             <span className={styles.serviceChipName} style={{ color: selectedService.color }}>{selectedService.name}</span>
-            <span className={styles.serviceChipPrice}>· ${selectedService.price}</span>
+            <span className={styles.serviceChipPrice}>
+              {selectedService.pricing_type === 'quote' ? '· Quote' : `· $${selectedService.price}`}
+            </span>
           </div>
 
           {/* Progress */}
@@ -571,7 +579,7 @@ export default function BookingFlowPage() {
               <div className={styles.summaryCard}>
                 <p className={styles.summaryLabel}>Booking Summary</p>
                 {[
-                  { label: 'Service', value: `${selectedService.icon} ${selectedService.name} — $${selectedService.price}` },
+                  { label: 'Service', value: `${selectedService.icon} ${selectedService.name}${selectedService.pricing_type === 'quote' ? '' : ` — $${selectedService.price}`}` },
                   { label: 'Client', value: `${form.firstName} ${form.lastName}` },
                   { label: 'Contact', value: `${form.phone} · ${form.email}` },
                   { label: 'Vehicle', value: `${form.year} ${form.make} ${form.model} (${form.color})` },
@@ -584,8 +592,10 @@ export default function BookingFlowPage() {
                   </div>
                 ))}
                 <div className={styles.summaryTotal}>
-                  <span className={styles.summaryTotalLabel}>Total</span>
-                  <span className={styles.summaryTotalValue} style={{ color: selectedService.color }}>${selectedService.price}</span>
+                  <span className={styles.summaryTotalLabel}>{selectedService.pricing_type === 'quote' ? 'Pricing' : 'Total'}</span>
+                  <span className={styles.summaryTotalValue} style={{ color: selectedService.color }}>
+                    {selectedService.pricing_type === 'quote' ? 'Quote after review' : `$${selectedService.price}`}
+                  </span>
                 </div>
               </div>
 

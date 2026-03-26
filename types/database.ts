@@ -29,12 +29,15 @@ export interface Profile {
   updated_at: string
 }
 
+export type PricingType = 'fixed' | 'quote'
+
 export interface Service {
   id: string
   profile_id: string
   name: string
   description: string | null
   price: number
+  pricing_type: PricingType
   icon: string // emoji
   color: string // hex
   is_active: boolean

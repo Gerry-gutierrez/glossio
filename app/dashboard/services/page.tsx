@@ -7,7 +7,7 @@ import styles from './page.module.css'
 const ICON_OPTIONS = ['🚗', '💧', '✨', '🔧', '🪑', '🧼', '💎', '🏆', '⚡', '🌟', '🛞', '🪣', '🎯', '🔥', '🌊']
 const COLOR_OPTIONS = ['#00C2FF', '#FF6B35', '#A259FF', '#FFD60A', '#00E5A0', '#FF3366', '#FF9F1C', '#2EC4B6']
 
-type Service = { id: string; name: string; price: string; description: string; icon: string; color: string; sort_order: number }
+type Service = { id: string; name: string; price: string; description: string; icon: string; color: string; sort_order: number; pricing_type: 'fixed' | 'quote' }
 
 export default function ServicesPage() {
   const supabase = createClient()
@@ -18,7 +18,7 @@ export default function ServicesPage() {
   const [editData, setEditData] = useState<Partial<Service>>({})
   const [showAddModal, setShowAddModal] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
-  const [newService, setNewService] = useState({ name: '', price: '', description: '', icon: '🚗', color: '#00C2FF' })
+  const [newService, setNewService] = useState({ name: '', price: '', description: '', icon: '🚗', color: '#00C2FF', pricing_type: 'fixed' as 'fixed' | 'quote' })
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -28,12 +28,12 @@ export default function ServicesPage() {
 
     const { data } = await supabase
       .from('services')
-      .select('id, name, description, price, icon, color, sort_order')
+      .select('id, name, description, price, icon, color, sort_order, pricing_type')
       .eq('profile_id', user.id)
       .order('sort_order')
 
     if (data) {
-      const mapped = data.map(s => ({ ...s, price: String(s.price) }))
+      const mapped = data.map(s => ({ ...s, price: String(s.price), pricing_type: (s.pricing_type || 'fixed') as 'fixed' | 'quote' }))
       setServices(mapped)
       if (mapped.length > 0 && !activeTab) setActiveTab(mapped[0].id)
     }
@@ -46,7 +46,7 @@ export default function ServicesPage() {
 
   const startEdit = (svc: Service) => {
     setEditingId(svc.id)
-    setEditData({ name: svc.name, price: svc.price, description: svc.description, icon: svc.icon, color: svc.color })
+    setEditData({ name: svc.name, price: svc.price, description: svc.description, icon: svc.icon, color: svc.color, pricing_type: svc.pricing_type || 'fixed' })
   }
 
   const saveEdit = async () => {
@@ -56,10 +56,11 @@ export default function ServicesPage() {
       .from('services')
       .update({
         name: editData.name,
-        price: parseFloat(editData.price || '0'),
+        price: editData.pricing_type === 'quote' ? 0 : parseFloat(editData.price || '0'),
         description: editData.description,
         icon: editData.icon,
         color: editData.color,
+        pricing_type: editData.pricing_type || 'fixed',
       })
       .eq('id', editingId)
 
@@ -98,26 +99,27 @@ export default function ServicesPage() {
       .insert({
         profile_id: user.id,
         name: newService.name,
-        price: parseFloat(newService.price || '0'),
+        price: newService.pricing_type === 'quote' ? 0 : parseFloat(newService.price || '0'),
         description: newService.description,
         icon: newService.icon,
         color: newService.color,
         sort_order: services.length,
+        pricing_type: newService.pricing_type,
       })
       .select()
       .single()
 
     if (!error && data) {
-      const svc = { ...data, price: String(data.price) }
+      const svc = { ...data, price: String(data.price), pricing_type: (data.pricing_type || 'fixed') as 'fixed' | 'quote' }
       setServices([...services, svc])
       setActiveTab(svc.id)
       setShowAddModal(false)
-      setNewService({ name: '', price: '', description: '', icon: '🚗', color: '#00C2FF' })
+      setNewService({ name: '', price: '', description: '', icon: '🚗', color: '#00C2FF', pricing_type: 'fixed' })
     }
     setSaving(false)
   }
 
-  const prices = services.map(s => parseFloat(s.price)).filter(p => !isNaN(p))
+  const prices = services.filter(s => s.pricing_type !== 'quote').map(s => parseFloat(s.price)).filter(p => !isNaN(p))
 
   if (loading) {
     return <div style={{ padding: 40, color: 'var(--text-muted)' }}>Loading services...</div>
@@ -214,24 +216,41 @@ export default function ServicesPage() {
                     ))}
                   </div>
 
-                  <div className={styles.editRow}>
-                    <div>
-                      <p className={styles.editLabel}>Service Name</p>
-                      <input
-                        className={styles.editInput}
-                        value={editData.name || ''}
-                        onChange={e => setEditData({ ...editData, name: e.target.value })}
-                      />
-                    </div>
+                  <p className={styles.editLabel}>Service Name</p>
+                  <input
+                    className={styles.editInput}
+                    value={editData.name || ''}
+                    onChange={e => setEditData({ ...editData, name: e.target.value })}
+                  />
+
+                  <p className={styles.editLabel}>Pricing</p>
+                  <div className={styles.pricingToggle}>
+                    <button
+                      type="button"
+                      onClick={() => setEditData({ ...editData, pricing_type: 'fixed' })}
+                      className={`${styles.toggleBtn} ${editData.pricing_type !== 'quote' ? styles.toggleBtnActive : ''}`}
+                    >
+                      Set Price
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditData({ ...editData, pricing_type: 'quote' })}
+                      className={`${styles.toggleBtn} ${editData.pricing_type === 'quote' ? styles.toggleBtnActive : ''}`}
+                    >
+                      Request Quote
+                    </button>
+                  </div>
+                  {editData.pricing_type !== 'quote' && (
                     <div>
                       <p className={styles.editLabel}>Price ($)</p>
                       <input
                         className={styles.editInput}
                         value={editData.price || ''}
                         onChange={e => setEditData({ ...editData, price: e.target.value })}
+                        placeholder="e.g. 199.99"
                       />
                     </div>
-                  </div>
+                  )}
 
                   <p className={styles.editLabel}>Description</p>
                   <textarea
@@ -260,7 +279,9 @@ export default function ServicesPage() {
                       </div>
                       <div>
                         <h2 className={styles.serviceName}>{active.name}</h2>
-                        <p className={styles.servicePrice} style={{ color: active.color }}>${active.price}</p>
+                        <p className={styles.servicePrice} style={{ color: active.color }}>
+                          {active.pricing_type === 'quote' ? 'Request a Quote' : `$${active.price}`}
+                        </p>
                       </div>
                     </div>
                     <div className={styles.serviceActions}>
@@ -286,11 +307,17 @@ export default function ServicesPage() {
 
                   <div className={styles.priceDivider}>
                     <div className={styles.priceLine} />
-                    <span className={styles.priceLabel}>Starting At</span>
+                    <span className={styles.priceLabel}>{active.pricing_type === 'quote' ? 'Pricing' : 'Starting At'}</span>
                     <div className={styles.priceLine} />
                   </div>
-                  <p className={styles.priceDisplay} style={{ color: active.color }}>${active.price}</p>
-                  <p className={styles.priceNote}>This is what clients see on your public profile</p>
+                  <p className={styles.priceDisplay} style={{ color: active.color }}>
+                    {active.pricing_type === 'quote' ? 'Request a Quote' : `$${active.price}`}
+                  </p>
+                  <p className={styles.priceNote}>
+                    {active.pricing_type === 'quote'
+                      ? 'Clients will need to contact you for pricing'
+                      : 'This is what clients see on your public profile'}
+                  </p>
                 </div>
               )}
             </div>
@@ -354,13 +381,34 @@ export default function ServicesPage() {
               placeholder="e.g. Ceramic Coating"
             />
 
-            <p className={styles.editLabel}>Price ($)</p>
-            <input
-              className={styles.editInput}
-              value={newService.price}
-              onChange={e => setNewService({ ...newService, price: e.target.value })}
-              placeholder="e.g. 199.99"
-            />
+            <p className={styles.editLabel}>Pricing</p>
+            <div className={styles.pricingToggle}>
+              <button
+                type="button"
+                onClick={() => setNewService({ ...newService, pricing_type: 'fixed' })}
+                className={`${styles.toggleBtn} ${newService.pricing_type !== 'quote' ? styles.toggleBtnActive : ''}`}
+              >
+                Set Price
+              </button>
+              <button
+                type="button"
+                onClick={() => setNewService({ ...newService, pricing_type: 'quote' })}
+                className={`${styles.toggleBtn} ${newService.pricing_type === 'quote' ? styles.toggleBtnActive : ''}`}
+              >
+                Request Quote
+              </button>
+            </div>
+            {newService.pricing_type !== 'quote' && (
+              <>
+                <p className={styles.editLabel}>Price ($)</p>
+                <input
+                  className={styles.editInput}
+                  value={newService.price}
+                  onChange={e => setNewService({ ...newService, price: e.target.value })}
+                  placeholder="e.g. 199.99"
+                />
+              </>
+            )}
 
             <p className={styles.editLabel}>Description</p>
             <textarea
@@ -378,7 +426,9 @@ export default function ServicesPage() {
                   <span className={styles.previewIcon}>{newService.icon}</span>
                   <div>
                     <p className={styles.previewName}>{newService.name}</p>
-                    {newService.price && <p className={styles.previewPrice} style={{ color: newService.color }}>${newService.price}</p>}
+                    <p className={styles.previewPrice} style={{ color: newService.color }}>
+                      {newService.pricing_type === 'quote' ? 'Request a Quote' : newService.price ? `$${newService.price}` : ''}
+                    </p>
                   </div>
                 </div>
               </div>

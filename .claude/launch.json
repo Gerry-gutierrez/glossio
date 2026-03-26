@@ -2,10 +2,22 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "nextjs-dev",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["next", "dev", "--port", "9471"],
+      "port": 9471
+    },
+    {
       "name": "eleventy-dev",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["node_modules/@11ty/eleventy/cmd.cjs", "--serve", "--port", "8080"],
-      "port": 8080
+      "runtimeArgs": ["node_modules/@11ty/eleventy/cmd.cjs", "--serve", "--port", "9382"],
+      "port": 9382
+    },
+    {
+      "name": "server-legacy",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["server.js"],
+      "port": 9538
     }
   ]
 }

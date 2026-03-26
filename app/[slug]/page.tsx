@@ -9,7 +9,7 @@ type ProfileData = {
   company_name: string; tagline: string; bio: string; is_pro: boolean; avatar_url: string | null
 }
 type ServiceData = {
-  id: string | number; name: string; price: string; description: string; icon: string; color: string
+  id: string | number; name: string; price: string; description: string; icon: string; color: string; pricing_type: 'fixed' | 'quote'
 }
 type PhotoData = {
   id: string | number; color: string; label: string; url: string | null
@@ -83,13 +83,13 @@ export default function PublicProfilePage() {
       const supabase = createClient()
       const { data: svcs } = await supabase
         .from('services')
-        .select('id, name, description, price, icon, color')
+        .select('id, name, description, price, icon, color, pricing_type')
         .eq('profile_id', prof.id)
         .eq('is_active', true)
         .order('sort_order')
 
       if (svcs && svcs.length > 0) {
-        setServices(svcs.map(s => ({ ...s, price: String(s.price) })))
+        setServices(svcs.map(s => ({ ...s, price: String(s.price), pricing_type: (s.pricing_type || 'fixed') as 'fixed' | 'quote' })))
       }
 
       // Try loading work photos
@@ -310,7 +310,9 @@ export default function PublicProfilePage() {
                       <p className={styles.serviceItemName}>{svc.name}</p>
                       <p className={styles.serviceItemDesc}>{svc.description}</p>
                     </div>
-                    <p className={styles.serviceItemPrice} style={{ color: svc.color }}>${svc.price}</p>
+                    <p className={styles.serviceItemPrice} style={{ color: svc.color }}>
+                      {svc.pricing_type === 'quote' ? 'Get Quote' : `$${svc.price}`}
+                    </p>
                   </div>
                 ))
               ) : (
