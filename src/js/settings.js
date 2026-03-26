@@ -1337,12 +1337,12 @@ function handleChangeEmail() {
 /* ── Change Phone ────────────────────────────────────────────────────────── */
 
 function renderAccountPhone() {
-  /* Get current phone from session */
+  /* Get current phone from profile */
   var currentPhone = "—";
-  window.sbAuth.getSession().then(function(session) {
-    if (session && session.user && session.user.phone) {
+  window.db.profile.get().then(function(profile) {
+    if (profile && profile.phone) {
       var el = document.getElementById("currentPhoneDisplay");
-      if (el) el.textContent = session.user.phone;
+      if (el) el.textContent = profile.phone;
     }
   });
 
