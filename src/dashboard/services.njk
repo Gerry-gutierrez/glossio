@@ -53,15 +53,17 @@ extraJs: services.js
     <p class="field-label">Accent Color</p>
     <div id="color-picker" class="color-picker"></div>
 
-    <div class="form-row">
-      <div>
-        <p class="field-label">Service Name</p>
-        <input id="svc-name" class="input" placeholder="e.g. Ceramic Coating">
-      </div>
-      <div>
-        <p class="field-label">Price ($)</p>
-        <input id="svc-price" class="input" placeholder="e.g. 199.99">
-      </div>
+    <p class="field-label">Service Name</p>
+    <input id="svc-name" class="input" placeholder="e.g. Ceramic Coating">
+
+    <p class="field-label">Pricing</p>
+    <div id="pricing-toggle" style="display:flex;background:var(--bg);border:1px solid var(--border-light);border-radius:8px;overflow:hidden;margin-bottom:16px">
+      <button type="button" id="toggle-fixed" class="pricing-toggle-btn pricing-toggle-active" onclick="setPricingType('fixed')">Set Price</button>
+      <button type="button" id="toggle-quote" class="pricing-toggle-btn" onclick="setPricingType('quote')">Request Quote</button>
+    </div>
+    <div id="price-field-wrap">
+      <p class="field-label">Price ($)</p>
+      <input id="svc-price" class="input" placeholder="e.g. 199.99">
     </div>
 
     <p class="field-label">Description</p>

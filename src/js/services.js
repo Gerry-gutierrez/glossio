@@ -17,6 +17,7 @@ let deleteTargetId = null;
 let modalMode = "add"; // "add" or "edit"
 let modalIcon = "🚗";
 let modalColor = "#00C2FF";
+let modalPricingType = "fixed"; // "fixed" or "quote"
 
 /* ── Persistence ─────────────────────────────────────────────────────────── */
 
@@ -72,7 +73,8 @@ function normalizeSvc(s) {
     icon: s.icon || "🚗",
     color: s.color || "#00C2FF",
     is_active: s.is_active !== false,
-    sort_order: s.sort_order || 0
+    sort_order: s.sort_order || 0,
+    pricing_type: s.pricing_type || "fixed"
   };
 }
 
@@ -120,7 +122,7 @@ function saveServicesToLocalStorage() {
 function updateStats() {
   document.getElementById("stat-total").textContent = services.length;
   if (services.length > 0) {
-    const prices = services.map(s => parseFloat(s.price) || 0);
+    const prices = services.filter(s => s.pricing_type !== 'quote').map(s => parseFloat(s.price) || 0);
     document.getElementById("stat-min").textContent = "$" + Math.min(...prices).toFixed(2);
     document.getElementById("stat-max").textContent = "$" + Math.max(...prices).toFixed(2);
   } else {
@@ -159,7 +161,7 @@ function render() {
             <span style="font-size:18px">${svc.icon}</span>
             <span style="font-size:14px;font-weight:600">${svc.name}</span>
           </div>
-          <span style="font-size:15px;font-weight:700;color:var(--success)">$${svc.price}</span>
+          <span style="font-size:15px;font-weight:700;color:${svc.pricing_type === 'quote' ? 'var(--primary)' : 'var(--success)'}">${svc.pricing_type === 'quote' ? 'Request Quote' : '$' + svc.price}</span>
           <span style="font-size:13px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${svc.description || '<span style="color:var(--text-faint);font-style:italic">No description</span>'}</span>
           <div style="text-align:center">
             <button onclick="openEditModal('${svc.id}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-size:12px;color:var(--primary);cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border)'">Edit</button>
@@ -182,17 +184,37 @@ function switchTab(id) {
 
 /* ── Add Modal ───────────────────────────────────────────────────────────── */
 
+function setPricingType(type) {
+  modalPricingType = type;
+  var fixedBtn = document.getElementById("toggle-fixed");
+  var quoteBtn = document.getElementById("toggle-quote");
+  var priceWrap = document.getElementById("price-field-wrap");
+
+  if (type === "quote") {
+    fixedBtn.classList.remove("pricing-toggle-active");
+    quoteBtn.classList.add("pricing-toggle-active");
+    priceWrap.style.display = "none";
+  } else {
+    fixedBtn.classList.add("pricing-toggle-active");
+    quoteBtn.classList.remove("pricing-toggle-active");
+    priceWrap.style.display = "block";
+  }
+  updatePreview();
+}
+
 function openAddModal() {
   modalMode = "add";
   editingId = null;
   modalIcon = "🚗";
   modalColor = "#00C2FF";
+  modalPricingType = "fixed";
   document.getElementById("modal-title").textContent = "Add New Service";
   document.getElementById("modal-submit").textContent = "Add Service";
   document.getElementById("svc-name").value = "";
   document.getElementById("svc-price").value = "";
   document.getElementById("svc-desc").value = "";
   buildPickers();
+  setPricingType("fixed");
   updatePreview();
   document.getElementById("service-modal").style.display = "flex";
 }
@@ -206,12 +228,14 @@ function openEditModal(id) {
   editingId = id;
   modalIcon = svc.icon;
   modalColor = svc.color;
+  modalPricingType = svc.pricing_type || "fixed";
   document.getElementById("modal-title").textContent = "Edit — " + svc.name;
   document.getElementById("modal-submit").textContent = "Save Changes";
   document.getElementById("svc-name").value = svc.name;
   document.getElementById("svc-price").value = svc.price;
   document.getElementById("svc-desc").value = svc.description || "";
   buildPickers();
+  setPricingType(modalPricingType);
   updatePreview();
   document.getElementById("service-modal").style.display = "flex";
 }
@@ -259,7 +283,11 @@ function updatePreview() {
     preview.style.borderLeftColor = modalColor;
     document.getElementById("preview-icon").textContent = modalIcon;
     document.getElementById("preview-name").textContent = name;
-    document.getElementById("preview-price").textContent = price ? "$" + price : "";
+    if (modalPricingType === "quote") {
+      document.getElementById("preview-price").textContent = "Request a Quote";
+    } else {
+      document.getElementById("preview-price").textContent = price ? "$" + price : "";
+    }
     document.getElementById("preview-price").style.color = modalColor;
   } else {
     preview.style.display = "none";
@@ -278,10 +306,11 @@ function submitService() {
   if (modalMode === "add") {
     var svcData = {
       name: name,
-      price: parseFloat(price) || 0,
+      price: modalPricingType === "quote" ? 0 : (parseFloat(price) || 0),
       description: desc,
       icon: modalIcon,
       color: modalColor,
+      pricing_type: modalPricingType,
       is_active: true,
       sort_order: services.length
     };
@@ -312,19 +341,21 @@ function submitService() {
     if (svc) {
       var updates = {
         name: name,
-        price: parseFloat(price) || 0,
+        price: modalPricingType === "quote" ? 0 : (parseFloat(price) || 0),
         description: desc,
         icon: modalIcon,
-        color: modalColor
+        color: modalColor,
+        pricing_type: modalPricingType
       };
 
       /* Update in Supabase */
       window.db.services.update(svc.id, updates).then(function() {
         svc.name = name;
-        svc.price = price || "0.00";
+        svc.price = modalPricingType === "quote" ? "0" : (price || "0.00");
         svc.description = desc;
         svc.icon = modalIcon;
         svc.color = modalColor;
+        svc.pricing_type = modalPricingType;
         saveServicesToLocalStorage();
         closeModal();
         render();
@@ -333,10 +364,11 @@ function submitService() {
         console.error("Failed to update service:", err);
         /* Update locally anyway */
         svc.name = name;
-        svc.price = price || "0.00";
+        svc.price = modalPricingType === "quote" ? "0" : (price || "0.00");
         svc.description = desc;
         svc.icon = modalIcon;
         svc.color = modalColor;
+        svc.pricing_type = modalPricingType;
         saveServicesToLocalStorage();
         closeModal();
         render();
