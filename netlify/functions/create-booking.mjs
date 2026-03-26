@@ -162,7 +162,7 @@ export const handler = async (event) => {
           if (accountSid && authToken && fromNumber) {
             const client = twilio(accountSid, authToken);
             await client.messages.create({
-              body: `📋 New booking request!\n\nClient: ${firstName} ${lastName}\nService: ${service.name}\nDate: ${scheduledDate} at ${scheduledTime}\nPhone: ${phone}\n\nLog in to GlossIO to confirm.`,
+              body: `PENDING APPT: ${firstName} ${lastName}, ${phone}, wants to know if ${scheduledTime} on ${scheduledDate} would work. Please open GlossIO for more info and confirm.`,
               from: fromNumber,
               to: prof.phone,
             });
