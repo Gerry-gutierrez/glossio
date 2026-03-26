@@ -53,7 +53,7 @@ export const handler = async (event) => {
     /* Get active services (is_active may be NULL for older services, treat as active) */
     const { data: services } = await supabase
       .from("services")
-      .select("id, name, description, price, icon, color")
+      .select("id, name, description, price, icon, color, pricing_type")
       .eq("profile_id", profile.id)
       .neq("is_active", false)
       .order("sort_order", { ascending: true });
