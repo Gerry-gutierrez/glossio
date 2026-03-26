@@ -496,21 +496,14 @@ function renderBookingDateGrid() {
 
   var hours = _apiHours || [];
   var blocks = _apiBlocks || [];
-  var avail = _apiAvailability || { advance_booking_days: 30, minimum_notice_hours: 24 };
+  var avail = _apiAvailability || { advance_booking_days: 30 };
   var maxDays = avail.advance_booking_days || 30;
-  var minNoticeHrs = avail.minimum_notice_hours || 24;
   var html = "";
 
-  var nowMs = Date.now();
-
-  for (var i = 1; i <= maxDays; i++) {
+  for (var i = 0; i <= maxDays; i++) {
     var d = new Date();
     d.setDate(d.getDate() + i);
     var dayOfWeek = d.getDay(); // 0=Sun, 6=Sat
-
-    /* Check minimum notice hours — if the start of this day is too soon, skip */
-    var hoursUntil = (d.getTime() - nowMs) / (1000 * 60 * 60);
-    if (hoursUntil < minNoticeHrs) continue;
     var dayHours = null;
     for (var h = 0; h < hours.length; h++) {
       if (hours[h].day_of_week === dayOfWeek) { dayHours = hours[h]; break; }
@@ -581,7 +574,15 @@ function renderBookingTimeGrid(dateStr) {
   var closeH = parseInt(dayHours.close_time.split(":")[0], 10);
   var html = "";
 
+  /* If today, only show times after the current hour */
+  var todayStr = new Date().toISOString().split("T")[0];
+  var isToday = dateStr === todayStr;
+  var currentHour = isToday ? new Date().getHours() : -1;
+
   for (var hr = openH; hr < closeH; hr++) {
+    /* Skip past times if booking for today */
+    if (isToday && hr <= currentHour) continue;
+
     var ampm = hr < 12 ? "AM" : "PM";
     var display = hr === 0 ? 12 : hr > 12 ? hr - 12 : hr;
     var label = display + ":00 " + ampm;

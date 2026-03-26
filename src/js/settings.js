@@ -390,7 +390,7 @@ function renderAvailability() {
   const openDays = DAYS.filter(d => s.hours[d].open);
   const blockCount = s.blocks.length;
   const maxLabel = s.noLimit ? "No limit" : "Max " + s.maxAppts + " appts/day";
-  const advLabel = s.advanceDays + " days ahead · " + s.minHours + "hr min notice";
+  const advLabel = s.advanceDays + " days ahead";
 
   document.getElementById("settings-sub").innerHTML =
     backBtn("hub") +
@@ -650,10 +650,10 @@ function renderAdvance() {
 
   document.getElementById("settings-sub").innerHTML =
     backBtn("availability") +
-    subHeader("Availability & Blocking", "Advance Booking Window", "Control how far ahead clients can schedule and how much notice you need.") +
+    subHeader("Availability & Blocking", "Advance Booking Window", "Control how far ahead clients can schedule.") +
 
     '<div class="stg-card">' +
-      '<div style="margin-bottom:32px">' +
+      '<div style="margin-bottom:24px">' +
         '<p style="margin:0 0 6px;font-size:13px;font-weight:700">How far in advance can clients book?</p>' +
         '<p style="margin:0 0 16px;font-size:12px;color:#666">Clients won\'t be able to book anything beyond this window.</p>' +
         '<div style="display:flex;align-items:center;gap:12px">' +
@@ -662,30 +662,16 @@ function renderAdvance() {
         '</div>' +
         '<div class="stg-preview" style="margin-top:14px;border-color:#FF6B3522"><span>📅</span><p style="margin:0;font-size:12px;color:#FF6B35;font-weight:700">Clients can book up to <strong id="adv-days-preview">' + s.advanceDays + '</strong> days ahead from today</p></div>' +
       '</div>' +
-      '<div style="height:1px;background:#1E1E2E;margin-bottom:28px"></div>' +
-      '<div style="margin-bottom:24px">' +
-        '<p style="margin:0 0 6px;font-size:13px;font-weight:700">What is the minimum notice required?</p>' +
-        '<p style="margin:0 0 16px;font-size:12px;color:#666">Clients can\'t book anything sooner than this from now.</p>' +
-        '<div style="display:flex;align-items:center;gap:12px">' +
-          '<input type="number" class="input" id="min-hours" min="1" max="168" value="' + s.minHours + '" style="width:90px;font-size:22px;font-weight:700;text-align:center;border-color:#FF6B3566">' +
-          '<p style="margin:0;font-size:14px;color:#888">hours minimum notice</p>' +
-        '</div>' +
-        '<div class="stg-preview" style="margin-top:14px;border-color:#FF6B3522"><span>⏱️</span><p style="margin:0;font-size:12px;color:#FF6B35;font-weight:700">Clients must book at least <strong id="min-hrs-preview">' + s.minHours + '</strong> hours before their appointment</p></div>' +
-      '</div>' +
       '<button class="btn btn-gradient" style="background:linear-gradient(135deg,#FF6B35,#A259FF)" onclick="saveAdvance()">Save</button>' +
     '</div>';
 
   document.getElementById("advance-days").addEventListener("input", function() {
     document.getElementById("adv-days-preview").textContent = this.value || "0";
   });
-  document.getElementById("min-hours").addEventListener("input", function() {
-    document.getElementById("min-hrs-preview").textContent = this.value || "0";
-  });
 }
 
 function saveAdvance() {
   settings.advanceDays = parseInt(document.getElementById("advance-days").value) || 1;
-  settings.minHours = parseInt(document.getElementById("min-hours").value) || 1;
   saveSettings();
 
   /* Sync to Supabase availability_settings */
@@ -695,7 +681,6 @@ function saveAdvance() {
       .upsert({
         profile_id: window.__glossio_user_id,
         advance_booking_days: settings.advanceDays,
-        minimum_notice_hours: settings.minHours,
       }, { onConflict: "profile_id" })
       .then(function(res) {
         if (res.error) console.error("Failed to sync advance settings:", res.error);
