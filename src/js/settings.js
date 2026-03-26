@@ -1084,40 +1084,18 @@ function finishCancel() {
 function renderSupport() {
   document.getElementById("settings-sub").innerHTML =
     backBtn("hub") +
-    subHeader("Settings", "Contact Support", "Send a message to the GlossIO team. We'll respond within 24 hours.") +
+    subHeader("Settings", "Support", "We\'re here for you.") +
 
-    '<div id="support-form">' +
-      '<div class="stg-card" style="border-left:3px solid #00C2FF;margin-bottom:20px">' +
-        '<div class="field-label">SUBJECT</div>' +
-        '<input class="input" id="sup-subject" maxlength="80" placeholder="What\'s your issue about?">' +
-        '<p class="char-count"><span id="sup-subject-count">0</span>/80</p>' +
-
-        '<div class="field-label">PRIORITY</div>' +
-        '<div style="display:flex;gap:8px;margin-bottom:18px">' +
-          [
-            { label: "Low", color: "#00E5A0" },
-            { label: "Normal", color: "#00C2FF" },
-            { label: "Urgent", color: "#FF3366" },
-          ].map(p =>
-            '<div class="priority-pick' + (p.label === "Normal" ? ' priority-active' : '') + '" data-priority="' + p.label + '" data-color="' + p.color + '" onclick="pickPriority(\'' + p.label + '\')" style="' + (p.label === "Normal" ? 'background:#00C2FF15;border-color:#00C2FF55;color:#00C2FF' : '') + '"><p style="margin:0;font-size:12px;font-weight:700">' + p.label + '</p></div>'
-          ).join("") +
-        '</div>' +
-
-        '<div class="field-label">MESSAGE</div>' +
-        '<textarea class="input" id="sup-message" rows="5" maxlength="1000" style="resize:vertical" placeholder="Describe your issue in detail..."></textarea>' +
-        '<p class="char-count"><span id="sup-msg-count">0</span>/1000</p>' +
-      '</div>' +
-
-      '<div class="stg-hint" style="background:#00C2FF08;border-color:#00C2FF1A"><span>🛡️</span><p style="color:#00C2FF">For urgent issues you can also email us directly at <strong>support@glossio.app</strong>.</p></div>' +
-      '<button class="btn btn-gradient" style="margin-top:16px" id="sup-send-btn" onclick="sendSupport()">Send Message → support@glossio.app</button>' +
+    '<div class="stg-card" style="border-left:3px solid #00C2FF;padding:32px;text-align:center">' +
+      '<p style="margin:0 0 16px;font-size:16px;color:var(--text);line-height:1.7;font-family:Georgia,serif">' +
+        'Your concerns matter to me. GlossIO is a one-man operation and your feedback is what makes this platform better. If something isn\'t working or you have an idea — I want to hear it.' +
+      '</p>' +
+      '<p style="margin:0 0 24px;font-size:14px;color:var(--text-muted);line-height:1.6">' +
+        'Email me directly and I\'ll get back to you that same day.' +
+      '</p>' +
+      '<a href="mailto:Gerardogtr01@gmail.com" class="btn btn-gradient" style="display:inline-block;text-decoration:none;padding:14px 32px;font-size:15px">Email Me → Gerardogtr01@gmail.com</a>' +
+      '<p style="margin:20px 0 0;font-size:13px;color:var(--text-dim);font-style:italic">— Gerardo Gutierrez, Founder</p>' +
     '</div>';
-
-  document.getElementById("sup-subject").addEventListener("input", function() {
-    document.getElementById("sup-subject-count").textContent = this.value.length;
-  });
-  document.getElementById("sup-message").addEventListener("input", function() {
-    document.getElementById("sup-msg-count").textContent = this.value.length;
-  });
 }
 
 function pickPriority(label) {
