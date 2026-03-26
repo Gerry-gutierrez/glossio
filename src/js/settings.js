@@ -708,26 +708,34 @@ function renderNotifications() {
     backBtn("hub") +
     subHeader("Settings", "Notifications", "Choose how and when GlossIO notifies you.") +
 
-    [
-      { id: "notifications-booking", icon: "🔔", color: "#00C2FF", label: "New Booking Alerts", desc: s.bookingOn ? "On — " + channelLabel(s.bookingSms, s.bookingEmail) : "Off", on: s.bookingOn },
-      { id: "notifications-cancel", icon: "🚫", color: "#FF3366", label: "Cancellation Alerts", desc: s.cancelOn ? "On — " + channelLabel(s.cancelSms, s.cancelEmail) : "Off", on: s.cancelOn },
-      { id: "notifications-reminder", icon: "⏰", color: "#FFD60A", label: "24hr Client Reminder", desc: s.reminderOn ? "On — clients get a text reminder 24hrs before" : "Off", on: s.reminderOn },
-      { id: "notifications-summary", icon: "📊", color: "#00E5A0", label: "Weekly Email Summary", desc: s.summaryOn ? "On — sent every " + s.summaryDay + ", " + summaryItemCount + " items included" : "Off", on: s.summaryOn },
-    ].map(item =>
-      '<div class="stg-nav-card" style="border-left-color:' + item.color + '" onclick="showScreen(\'' + item.id + '\')">' +
-        '<div style="display:flex;gap:14px;align-items:center">' +
-          '<div class="stg-section-icon" style="background:' + item.color + '15;border-color:' + item.color + '33">' + item.icon + '</div>' +
-          '<div>' +
-            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
-              '<p style="margin:0;font-size:15px;font-weight:700">' + item.label + '</p>' +
-              '<span class="stg-meta-badge" style="background:' + (item.on ? item.color + '20' : '#1A1A2E') + ';border-color:' + (item.on ? item.color + '44' : '#2A2A3E') + ';color:' + (item.on ? item.color : '#555') + '">' + (item.on ? "On" : "Off") + '</span>' +
-            '</div>' +
-            '<p style="margin:0;font-size:12px;color:#666">' + item.desc + '</p>' +
+    /* Pending Appointment Alert — functional */
+    '<div class="stg-nav-card" style="border-left-color:#00C2FF" onclick="showScreen(\'notifications-booking\')">' +
+      '<div style="display:flex;gap:14px;align-items:center">' +
+        '<div class="stg-section-icon" style="background:#00C2FF15;border-color:#00C2FF33">🔔</div>' +
+        '<div>' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
+            '<p style="margin:0;font-size:15px;font-weight:700">Pending Appointment Alerts</p>' +
+            '<span class="stg-meta-badge" style="background:' + (s.bookingOn ? '#00C2FF20' : '#1A1A2E') + ';border-color:' + (s.bookingOn ? '#00C2FF44' : '#2A2A3E') + ';color:' + (s.bookingOn ? '#00C2FF' : '#555') + '">' + (s.bookingOn ? "On" : "Off") + '</span>' +
           '</div>' +
+          '<p style="margin:0;font-size:12px;color:#666">' + (s.bookingOn ? "On — SMS alert when a client books" : "Off") + '</p>' +
         '</div>' +
-        '<span style="font-size:18px;color:#444;flex-shrink:0">›</span>' +
-      '</div>'
-    ).join("");
+      '</div>' +
+      '<span style="font-size:18px;color:#444;flex-shrink:0">›</span>' +
+    '</div>' +
+
+    /* Weekly Analytics — coming soon */
+    '<div class="stg-nav-card" style="border-left-color:#00E5A0;opacity:0.5;pointer-events:none">' +
+      '<div style="display:flex;gap:14px;align-items:center">' +
+        '<div class="stg-section-icon" style="background:#00E5A015;border-color:#00E5A033">📊</div>' +
+        '<div>' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
+            '<p style="margin:0;font-size:15px;font-weight:700">Weekly Analytics Summary</p>' +
+            '<span class="stg-meta-badge" style="background:#FFD60A20;border-color:#FFD60A44;color:#FFD60A">Coming Soon</span>' +
+          '</div>' +
+          '<p style="margin:0;font-size:12px;color:#666">Weekly report with revenue, bookings, and client stats</p>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
 }
 
 function renderToggleCard(label, sublabel, isOn, toggleFn, color) {
@@ -754,20 +762,13 @@ function renderNotifBooking() {
   const s = settings;
   document.getElementById("settings-sub").innerHTML =
     backBtn("notifications") +
-    subHeader("Notifications", "New Booking Alerts", "Get notified the moment a client submits a new booking request.") +
+    subHeader("Notifications", "Pending Appointment Alerts", "Get an SMS notification when a client submits a new booking request.") +
 
     '<div class="stg-card" style="border-left:3px solid #00C2FF;margin-bottom:16px">' +
-      renderToggleCard("New Booking Alerts", s.bookingOn ? "Currently enabled" : "Currently disabled", s.bookingOn, "toggleBookingOn()", "#00C2FF") +
-      (s.bookingOn ?
-        '<div style="height:1px;background:#1E1E2E;margin:16px 0"></div>' +
-        '<p style="margin:0 0 4px;font-size:13px;font-weight:700">How would you like to be notified?</p>' +
-        '<p style="margin:0;font-size:12px;color:#666">Select one or both — at least one must be on.</p>' +
-        channelPicker(s.bookingSms, s.bookingEmail, "toggleBookingSms()", "toggleBookingEmail()") +
-        (!s.bookingSms && !s.bookingEmail ? '<p style="margin:10px 0 0;font-size:12px;color:#FF3366;font-weight:700">⚠ Select at least one notification channel.</p>' : '')
-      : '') +
+      renderToggleCard("Pending Appointment Alerts", s.bookingOn ? "Currently enabled — SMS" : "Currently disabled", s.bookingOn, "toggleBookingOn()", "#00C2FF") +
     '</div>' +
 
-    '<div class="stg-hint" style="background:#00C2FF08;border-color:#00C2FF1A"><span>💡</span><p style="color:#00C2FF">You\'ll be notified as soon as a client submits a request — even before you confirm it.</p></div>' +
+    '<div class="stg-hint" style="background:#00C2FF08;border-color:#00C2FF1A"><span>💡</span><p style="color:#00C2FF">You\'ll get a text message to your phone as soon as a client submits a booking request.</p></div>' +
     '<button class="btn btn-gradient" onclick="saveNotifBooking()" style="margin-top:16px">Save</button>';
 }
 
