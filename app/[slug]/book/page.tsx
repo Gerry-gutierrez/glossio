@@ -155,7 +155,7 @@ export default function BookingFlowPage() {
         .order('day_of_week'),
     ])
 
-    if (svcs) setServices(svcs.map(s => ({ ...s, price: String(s.price), pricing_type: (s.pricing_type || 'fixed') as 'fixed' | 'quote' })))
+    if (svcs) setServices(svcs.map((s: Record<string, unknown>) => ({ ...s, price: String(s.price), pricing_type: (s.pricing_type || 'fixed') as 'fixed' | 'quote' })))
     if (hours) setBusinessHours(hours)
     setLoadingData(false)
   }, [supabase, slug])
