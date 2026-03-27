@@ -22,10 +22,10 @@
 /* ── Hero (full viewport) ── */
 
 .pub-hero-full {
-  height: calc(100vh - 53px);
+  min-height: auto;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  padding: 0 24px; text-align: center;
+  padding: 60px 24px 32px; text-align: center;
   position: relative; overflow: hidden;
 }
 
@@ -93,7 +93,7 @@
 /* ── Work Section ── */
 
 .pub-work-section {
-  max-width: 520px; margin: 0 auto; padding: 40px 24px 80px;
+  max-width: 520px; margin: 0 auto; padding: 20px 24px 80px;
 }
 
 /* Divider */
