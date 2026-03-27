@@ -91,6 +91,7 @@ export default function LandingPage() {
           <a href="#why" className={styles.navLink}>For Detailers</a>
         </div>
         <div className={styles.navActions}>
+          <Link href="/admin" className={styles.navLogin}>Admin</Link>
           <Link href="/login" className={styles.navLogin}>Log In</Link>
           <Link href="/signup" className={styles.navCta}>Start Free Trial</Link>
         </div>
