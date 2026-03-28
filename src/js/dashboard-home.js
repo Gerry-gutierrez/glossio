@@ -131,8 +131,10 @@ function _renderDashStats(appts, now, thisMonth, thisYear, getMonth, getYear) {
     if (pendingAppts.length > 0) {
       if (pendingEmpty) pendingEmpty.style.display = "none";
       pendingList.innerHTML = pendingAppts.map(function(a) {
+        var serviceLine = a.service ? '<p class="dash-col-card-service" style="font-size:12px;color:var(--primary);margin-top:4px">🔧 ' + a.service + (a.price ? ' · ' + fmt(a.price) : '') + '</p>' : '';
         return '<div class="dash-col-card" onclick="dashToggleCard(this)" style="cursor:pointer">' +
           '<p class="dash-col-card-name">' + a.client + '</p>' +
+          serviceLine +
           '<p class="dash-col-card-detail">' + (a.vehicle || '') + '</p>' +
           '<p class="dash-col-card-time">' + fmtDate(a.date) + ' · ' + fmtTime(a.time) + '</p>' +
           '<div class="dash-card-actions" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:none;flex-wrap:wrap;gap:6px">' +
@@ -158,10 +160,12 @@ function _renderDashStats(appts, now, thisMonth, thisYear, getMonth, getYear) {
     if (confirmedToday.length > 0) {
       if (confirmedEmpty) confirmedEmpty.style.display = "none";
       confirmedList.innerHTML = confirmedToday.map(function(a) {
+        var serviceLine = a.service ? '<p class="dash-col-card-service" style="font-size:12px;color:var(--success);margin-top:4px">🔧 ' + a.service + (a.price ? ' · ' + fmt(a.price) : '') + '</p>' : '';
         return '<div class="dash-col-card" onclick="dashToggleCard(this)" style="cursor:pointer">' +
           '<p class="dash-col-card-name">' + a.client + '</p>' +
+          serviceLine +
           '<p class="dash-col-card-detail">' + (a.vehicle || '') + '</p>' +
-          '<p class="dash-col-card-time">' + fmtTime(a.time) + ' · ' + fmt(a.price) + '</p>' +
+          '<p class="dash-col-card-time">' + fmtTime(a.time) + '</p>' +
           '<div class="dash-card-actions" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:none;flex-wrap:wrap;gap:6px">' +
             '<button style="' + btnBase + 'background:#00E5A015;border:1px solid #00E5A033;color:#00E5A0" onclick="event.stopPropagation();dashCameThrough(\'' + a.id + '\')">✅ Came Through</button>' +
             '<button style="' + btnBase + 'background:#A259FF15;border:1px solid #A259FF33;color:#A259FF" onclick="event.stopPropagation();dashAdjust(\'' + a.id + '\')">✎ Adjust</button>' +
