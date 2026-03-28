@@ -1,0 +1,268 @@
+---
+layout: layouts/base.njk
+pageTitle: "Admin Dashboard"
+---
+
+<style>
+  .admin-wrap { max-width: 1000px; margin: 0 auto; padding: 40px 20px; }
+  .admin-title { font-size: 28px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .admin-subtitle { font-size: 14px; color: var(--text-muted); margin-bottom: 32px; }
+
+  /* Login gate */
+  .admin-login-box {
+    max-width: 380px; margin: 120px auto; padding: 40px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md);
+    text-align: center;
+  }
+  .admin-login-box h2 { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .admin-login-box p { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
+  .admin-login-box input {
+    width: 100%; padding: 12px 16px; background: var(--bg-input); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text); font-size: 14px; margin-bottom: 16px;
+  }
+  .admin-login-box input:focus { outline: none; border-color: var(--primary); }
+  .admin-login-btn {
+    width: 100%; padding: 12px; background: var(--primary); color: #fff; border: none;
+    border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .admin-login-btn:hover { opacity: 0.85; }
+  .admin-error { color: var(--danger); font-size: 13px; margin-top: 12px; display: none; }
+
+  /* Stats bar */
+  .admin-stats { display: flex; gap: 16px; margin-bottom: 32px; flex-wrap: wrap; }
+  .stat-card {
+    flex: 1; min-width: 140px; padding: 20px; background: var(--bg-card);
+    border: 1px solid var(--border); border-radius: var(--radius-md); text-align: center;
+  }
+  .stat-number { font-size: 32px; font-weight: 700; }
+  .stat-number.active { color: var(--success); }
+  .stat-number.paused { color: var(--text-muted); }
+  .stat-number.total { color: var(--primary); }
+  .stat-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+
+  /* Tabs */
+  .admin-tabs { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 1px solid var(--border); }
+  .admin-tab {
+    padding: 12px 24px; font-size: 14px; font-weight: 600; color: var(--text-muted);
+    cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s;
+    background: none; border-top: none; border-left: none; border-right: none;
+  }
+  .admin-tab:hover { color: var(--text); }
+  .admin-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+  /* Table */
+  .admin-table { width: 100%; border-collapse: collapse; }
+  .admin-table th {
+    text-align: left; padding: 12px 16px; font-size: 11px; font-weight: 600;
+    color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;
+    border-bottom: 1px solid var(--border);
+  }
+  .admin-table td {
+    padding: 14px 16px; font-size: 14px; color: var(--text);
+    border-bottom: 1px solid var(--border);
+  }
+  .admin-table tr:hover td { background: var(--bg-hover); }
+
+  /* Status badges */
+  .badge {
+    display: inline-block; padding: 4px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .badge-trial { background: rgba(0,194,255,0.15); color: var(--primary); }
+  .badge-monthly { background: rgba(162,89,255,0.15); color: var(--secondary); }
+  .badge-annual { background: rgba(0,229,160,0.15); color: var(--success); }
+  .badge-cancelled { background: rgba(255,51,102,0.15); color: var(--danger); }
+  .badge-expired { background: rgba(136,136,136,0.15); color: var(--text-muted); }
+
+  .admin-empty { text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 14px; }
+  .admin-loading { text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 14px; }
+
+  /* Sign out link */
+  .admin-signout {
+    font-size: 13px; color: var(--text-muted); cursor: pointer;
+    background: none; border: none; float: right; margin-top: -48px;
+  }
+  .admin-signout:hover { color: var(--danger); }
+
+  @media (max-width: 600px) {
+    .admin-stats { flex-direction: column; }
+    .admin-table th:nth-child(4), .admin-table td:nth-child(4) { display: none; }
+  }
+</style>
+
+<!-- LOGIN GATE -->
+<div id="adminLogin" class="admin-login-box">
+  <h2>Admin Access</h2>
+  <p>Enter the admin password to continue.</p>
+  <input type="password" id="adminPass" placeholder="Password" autocomplete="off">
+  <button class="admin-login-btn" onclick="adminAuth()">Enter</button>
+  <div class="admin-error" id="adminError">Incorrect password</div>
+</div>
+
+<!-- DASHBOARD (hidden until auth) -->
+<div id="adminDash" style="display:none">
+  <div class="admin-wrap">
+    <h1 class="admin-title">Admin Dashboard</h1>
+    <p class="admin-subtitle">GlossIO platform overview</p>
+    <button class="admin-signout" onclick="adminSignOut()">Sign Out</button>
+
+    <div class="admin-stats">
+      <div class="stat-card">
+        <div class="stat-number total" id="statTotal">—</div>
+        <div class="stat-label">Total Users</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number active" id="statActive">—</div>
+        <div class="stat-label">Active</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number paused" id="statPaused">—</div>
+        <div class="stat-label">Paused</div>
+      </div>
+    </div>
+
+    <div class="admin-tabs">
+      <button class="admin-tab active" data-filter="all" onclick="filterTab(this)">All Users</button>
+      <button class="admin-tab" data-filter="active" onclick="filterTab(this)">Active</button>
+      <button class="admin-tab" data-filter="paused" onclick="filterTab(this)">Paused</button>
+    </div>
+
+    <div id="adminTableWrap">
+      <div class="admin-loading">Loading users...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var ADMIN_PASS_HASH = null; // We'll use a simple check via env
+  var users = [];
+  var currentFilter = 'all';
+
+  /* ── Auth ── */
+  function adminAuth() {
+    var pass = document.getElementById('adminPass').value;
+    // Call the admin-auth function to verify
+    fetch('/.netlify/functions/admin-users?action=auth&pass=' + encodeURIComponent(pass))
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.ok) {
+          sessionStorage.setItem('glossio_admin', '1');
+          sessionStorage.setItem('glossio_admin_pass', pass);
+          showDashboard();
+        } else {
+          document.getElementById('adminError').style.display = 'block';
+        }
+      })
+      .catch(function() {
+        document.getElementById('adminError').style.display = 'block';
+      });
+  }
+  window.adminAuth = adminAuth;
+
+  document.getElementById('adminPass').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') adminAuth();
+  });
+
+  function adminSignOut() {
+    sessionStorage.removeItem('glossio_admin');
+    sessionStorage.removeItem('glossio_admin_pass');
+    document.getElementById('adminDash').style.display = 'none';
+    document.getElementById('adminLogin').style.display = 'block';
+    document.getElementById('adminPass').value = '';
+  }
+  window.adminSignOut = adminSignOut;
+
+  /* ── Show dashboard ── */
+  function showDashboard() {
+    document.getElementById('adminLogin').style.display = 'none';
+    document.getElementById('adminDash').style.display = 'block';
+    loadUsers();
+  }
+
+  /* ── Load users ── */
+  function loadUsers() {
+    var pass = sessionStorage.getItem('glossio_admin_pass') || '';
+    fetch('/.netlify/functions/admin-users?pass=' + encodeURIComponent(pass))
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.error) {
+          document.getElementById('adminTableWrap').innerHTML =
+            '<div class="admin-empty">Access denied</div>';
+          return;
+        }
+        users = data.users || [];
+        updateStats();
+        renderTable();
+      })
+      .catch(function() {
+        document.getElementById('adminTableWrap').innerHTML =
+          '<div class="admin-empty">Failed to load users</div>';
+      });
+  }
+
+  /* ── Stats ── */
+  function updateStats() {
+    var active = 0, paused = 0;
+    users.forEach(function(u) {
+      if (u.status === 'active') active++;
+      else paused++;
+    });
+    document.getElementById('statTotal').textContent = users.length;
+    document.getElementById('statActive').textContent = active;
+    document.getElementById('statPaused').textContent = paused;
+  }
+
+  /* ── Filter tabs ── */
+  function filterTab(btn) {
+    document.querySelectorAll('.admin-tab').forEach(function(t) { t.classList.remove('active'); });
+    btn.classList.add('active');
+    currentFilter = btn.getAttribute('data-filter');
+    renderTable();
+  }
+  window.filterTab = filterTab;
+
+  /* ── Render ── */
+  function renderTable() {
+    var filtered = users;
+    if (currentFilter === 'active') filtered = users.filter(function(u) { return u.status === 'active'; });
+    if (currentFilter === 'paused') filtered = users.filter(function(u) { return u.status !== 'active'; });
+
+    if (filtered.length === 0) {
+      document.getElementById('adminTableWrap').innerHTML =
+        '<div class="admin-empty">No users found</div>';
+      return;
+    }
+
+    var html = '<table class="admin-table"><thead><tr>' +
+      '<th>Business</th><th>Email</th><th>Status</th><th>Plan</th><th>Signed Up</th>' +
+      '</tr></thead><tbody>';
+
+    filtered.forEach(function(u) {
+      var badgeClass = 'badge-' + (u.plan || 'expired').toLowerCase().replace(' ', '');
+      if (badgeClass === 'badge-freetrial') badgeClass = 'badge-trial';
+      var dateStr = u.created_at ? new Date(u.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+      var statusDot = u.status === 'active'
+        ? '<span style="color:var(--success)">● Active</span>'
+        : '<span style="color:var(--text-muted)">● Paused</span>';
+
+      html += '<tr>' +
+        '<td>' + (u.company_name || '—') + '</td>' +
+        '<td style="color:var(--text-muted)">' + (u.email || '—') + '</td>' +
+        '<td>' + statusDot + '</td>' +
+        '<td><span class="badge ' + badgeClass + '">' + (u.plan || 'Expired') + '</span></td>' +
+        '<td style="color:var(--text-muted)">' + dateStr + '</td>' +
+        '</tr>';
+    });
+
+    html += '</tbody></table>';
+    document.getElementById('adminTableWrap').innerHTML = html;
+  }
+
+  /* Auto-login if session exists */
+  if (sessionStorage.getItem('glossio_admin') === '1') {
+    showDashboard();
+  }
+})();
+</script>
