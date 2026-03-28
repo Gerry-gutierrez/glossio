@@ -50,6 +50,7 @@ function loadDashStats() {
 
   /* Load appointments via data layer (waits for auth) */
   _loadDashAppts().then(function(appts) {
+    window._allDashAppts = appts;
     _renderDashStats(appts, now, thisMonth, thisYear, getMonth, getYear);
   });
 }
@@ -394,37 +395,115 @@ function dashCameThrough(id) {
   });
 }
 
+var _dashAdjustServices = [];
+
 function dashAdjust(id) {
-  /* Open a simple modal to adjust date/time */
+  /* Find the appointment from our loaded data */
+  var a = null;
+  if (window._allDashAppts) {
+    a = window._allDashAppts.find(function(ap) { return ap.id === id; });
+  }
+
   var existing = document.getElementById('dash-adjust-modal');
   if (existing) existing.remove();
 
-  var modal = document.createElement('div');
-  modal.id = 'dash-adjust-modal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center';
-  modal.innerHTML =
-    '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:28px;width:360px;max-width:90vw">' +
-      '<h3 style="margin:0 0 16px;font-size:16px;font-weight:700">Adjust Appointment</h3>' +
-      '<label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:4px">Date</label>' +
-      '<input type="date" id="dash-adj-date" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);margin-bottom:12px;font-size:14px">' +
-      '<label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:4px">Time</label>' +
-      '<input type="time" id="dash-adj-time" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);margin-bottom:16px;font-size:14px">' +
-      '<div style="display:flex;gap:10px">' +
-        '<button onclick="dashSaveAdjust(\'' + id + '\')" style="flex:1;padding:10px;border:none;border-radius:8px;background:#00C2FF;color:#fff;font-weight:700;cursor:pointer;font-size:14px">Save</button>' +
-        '<button onclick="document.getElementById(\'dash-adjust-modal\').remove()" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--text);font-weight:600;cursor:pointer;font-size:14px">Cancel</button>' +
-      '</div>' +
-    '</div>';
-  document.body.appendChild(modal);
-  modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
+  /* Load detailer's services, then build the modal */
+  var loadSvc = (window.db && window.db.services) ? window.db.services.list() : Promise.resolve([]);
+  loadSvc.then(function(svcList) {
+    _dashAdjustServices = svcList || [];
+
+    var currentNames = (a && a.service ? a.service : "").split(/\s*\+\s*/).map(function(s) { return s.trim().toLowerCase(); }).filter(Boolean);
+
+    var svcRows = _dashAdjustServices.map(function(svc, idx) {
+      var isChecked = currentNames.some(function(cn) { return cn === (svc.name || "").toLowerCase(); });
+      var isQuote = !svc.price || svc.price <= 0 || svc.pricing_type === "quote";
+      var displayPrice = isChecked && isQuote ? "" : (svc.price ? svc.price.toFixed(2) : "");
+      return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06)">' +
+        '<input type="checkbox" id="dadj-svc-' + idx + '" ' + (isChecked ? "checked" : "") + ' onchange="dashUpdateTotal()" style="width:18px;height:18px;accent-color:#A78BFA;cursor:pointer;flex-shrink:0" />' +
+        '<label for="dadj-svc-' + idx + '" style="flex:1;font-size:14px;cursor:pointer;color:var(--text)">' + (svc.name || "Service") + '</label>' +
+        '<div style="display:flex;align-items:center;gap:4px">' +
+          '<span style="color:var(--text-dim);font-size:13px">$</span>' +
+          '<input type="number" id="dadj-price-' + idx + '" value="' + displayPrice + '" placeholder="' + (isQuote ? "Quote" : "0") + '" min="0" step="0.01" onchange="dashUpdateTotal()" style="width:80px;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;text-align:right;box-sizing:border-box" />' +
+        '</div>' +
+      '</div>';
+    }).join("");
+
+    var modal = document.createElement('div');
+    modal.id = 'dash-adjust-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto';
+    modal.innerHTML =
+      '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:28px;width:100%;max-width:460px;color:var(--text);max-height:90vh;overflow-y:auto">' +
+        '<h3 style="margin:0 0 4px;font-size:18px;font-weight:700">Adjust Appointment</h3>' +
+        '<p style="margin:0 0 20px;font-size:13px;color:var(--text-dim)">' + (a ? a.client : '') + '</p>' +
+
+        '<label style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);display:block;margin-bottom:8px">Services</label>' +
+        '<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:4px 14px;margin-bottom:8px">' +
+          (svcRows || '<p style="padding:12px 0;color:var(--text-dim);font-size:13px">No services found.</p>') +
+        '</div>' +
+        '<div style="text-align:right;margin-bottom:16px">' +
+          '<span style="font-size:12px;color:var(--text-dim)">Total: </span>' +
+          '<span id="dash-adjust-total" style="font-size:15px;font-weight:700;color:#00E5A0">$0.00</span>' +
+        '</div>' +
+
+        '<label style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);display:block;margin-bottom:6px">Date</label>' +
+        '<input type="date" id="dash-adj-date" value="' + (a ? a.date : '') + '" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;margin-bottom:16px;box-sizing:border-box">' +
+
+        '<label style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);display:block;margin-bottom:6px">Time</label>' +
+        '<input type="time" id="dash-adj-time" value="' + (a ? a.time || '' : '') + '" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;margin-bottom:16px;box-sizing:border-box">' +
+
+        '<label style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);display:block;margin-bottom:6px">Notes</label>' +
+        '<textarea id="dash-adj-notes" rows="3" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;margin-bottom:20px;resize:vertical;box-sizing:border-box">' + (a ? a.notes || '' : '') + '</textarea>' +
+
+        '<div style="display:flex;gap:10px">' +
+          '<button onclick="dashSaveAdjust(\'' + id + '\')" style="flex:1;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,#A78BFA,#7C3AED);color:#fff;font-weight:700;font-size:14px;cursor:pointer">Save Changes</button>' +
+          '<button onclick="document.getElementById(\'dash-adjust-modal\').remove()" style="flex:1;padding:12px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text);font-weight:600;font-size:14px;cursor:pointer">Cancel</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(modal);
+    modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
+    dashUpdateTotal();
+  });
+}
+
+function dashUpdateTotal() {
+  var total = 0;
+  _dashAdjustServices.forEach(function(svc, idx) {
+    var cb = document.getElementById("dadj-svc-" + idx);
+    var priceInput = document.getElementById("dadj-price-" + idx);
+    if (cb && cb.checked && priceInput) {
+      total += parseFloat(priceInput.value) || 0;
+    }
+  });
+  var el = document.getElementById("dash-adjust-total");
+  if (el) el.textContent = "$" + total.toFixed(2);
 }
 
 function dashSaveAdjust(id) {
+  /* Build service name + total from checkboxes */
+  var selectedNames = [];
+  var totalPrice = 0;
+  _dashAdjustServices.forEach(function(svc, idx) {
+    var cb = document.getElementById("dadj-svc-" + idx);
+    var priceInput = document.getElementById("dadj-price-" + idx);
+    if (cb && cb.checked) {
+      selectedNames.push(svc.name || "Service");
+      totalPrice += parseFloat(priceInput.value) || 0;
+    }
+  });
+
+  var newService = selectedNames.join(" + ");
   var date = document.getElementById('dash-adj-date').value;
   var time = document.getElementById('dash-adj-time').value;
-  if (!date && !time) return;
+  var notes = document.getElementById('dash-adj-notes').value;
+
   var fields = {};
+  if (newService) { fields.service_name = newService; }
+  if (totalPrice > 0) { fields.price = totalPrice; }
   if (date) { fields.appt_date = date; fields.scheduled_date = date; }
   if (time) { fields.appt_time = time; fields.scheduled_time = time; }
+  fields.notes = notes;
+  fields.detailer_notes = notes;
+
   if (window.db && window.db.appointments) {
     window.db.appointments.update(id, fields).then(function() {
       document.getElementById('dash-adjust-modal').remove();
