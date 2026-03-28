@@ -131,7 +131,7 @@ function _renderDashStats(appts, now, thisMonth, thisYear, getMonth, getYear) {
     if (pendingAppts.length > 0) {
       if (pendingEmpty) pendingEmpty.style.display = "none";
       pendingList.innerHTML = pendingAppts.map(function(a) {
-        var serviceLine = a.service ? '<p class="dash-col-card-service" style="font-size:12px;color:var(--primary);margin-top:4px">🔧 ' + a.service + (a.price ? ' · ' + fmt(a.price) : '') + '</p>' : '';
+        var serviceLine = a.service ? '<p class="dash-col-card-service" style="font-size:12px;color:var(--primary);margin-top:4px">' + a.service + (a.price ? ' · ' + fmt(a.price) : '') + '</p>' : '';
         return '<div class="dash-col-card" onclick="dashToggleCard(this)" style="cursor:pointer">' +
           '<p class="dash-col-card-name">' + a.client + '</p>' +
           serviceLine +
@@ -160,7 +160,7 @@ function _renderDashStats(appts, now, thisMonth, thisYear, getMonth, getYear) {
     if (confirmedToday.length > 0) {
       if (confirmedEmpty) confirmedEmpty.style.display = "none";
       confirmedList.innerHTML = confirmedToday.map(function(a) {
-        var serviceLine = a.service ? '<p class="dash-col-card-service" style="font-size:12px;color:var(--success);margin-top:4px">🔧 ' + a.service + (a.price ? ' · ' + fmt(a.price) : '') + '</p>' : '';
+        var serviceLine = a.service ? '<p class="dash-col-card-service" style="font-size:12px;color:var(--success);margin-top:4px">' + a.service + (a.price ? ' · ' + fmt(a.price) : '') + '</p>' : '';
         return '<div class="dash-col-card" onclick="dashToggleCard(this)" style="cursor:pointer">' +
           '<p class="dash-col-card-name">' + a.client + '</p>' +
           serviceLine +
