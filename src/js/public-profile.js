@@ -84,6 +84,9 @@ function doRender(p, photos, services) {
   var location = [city, state].filter(Boolean).join(", ");
   var bio = p.bio || "Professional auto detailing with attention to every detail.";
   var initial = name.charAt(0).toUpperCase();
+  var avatarHtml = (p.avatar_url)
+    ? '<img src="' + esc(p.avatar_url) + '" alt="' + esc(name) + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">'
+    : initial;
 
   var container = document.getElementById("pub-content");
   if (!container) return;
@@ -101,7 +104,7 @@ function doRender(p, photos, services) {
     /* ── HERO ── */
     '<section class="pub-hero-full">' +
       '<div class="pub-glow"></div>' +
-      '<div class="pub-avatar-ring">' + initial + '</div>' +
+      '<div class="pub-avatar-ring" style="overflow:hidden">' + avatarHtml + '</div>' +
       '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
         '<h1 class="pub-name" style="margin:0">' + esc(name) + '</h1>' +
         '<span class="pub-pro-badge">&#10003; PRO</span>' +

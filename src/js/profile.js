@@ -537,7 +537,7 @@ function renderPreview() {
 
       /* Hero */
       '<div style="text-align:center;padding:48px 24px 40px">' +
-        '<div style="width:118px;height:118px;border-radius:50%;background:linear-gradient(135deg,#00C2FF,#A259FF);display:flex;align-items:center;justify-content:center;font-size:52px;margin:0 auto 18px;box-shadow:0 0 0 4px #0A0A0F,0 0 0 7px #00C2FF55">' + escHtml(p.displayName[0]) + '</div>' +
+        '<div style="width:118px;height:118px;border-radius:50%;background:linear-gradient(135deg,#00C2FF,#A259FF);display:flex;align-items:center;justify-content:center;font-size:52px;margin:0 auto 18px;box-shadow:0 0 0 4px #0A0A0F,0 0 0 7px #00C2FF55;overflow:hidden">' + (avatarUrl ? '<img src="' + avatarUrl + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">' : escHtml(p.displayName[0])) + '</div>' +
         '<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px">' +
           '<h1 style="margin:0;font-size:26px;font-weight:700">' + escHtml(p.displayName) + '</h1>' +
           '<span style="background:#00C2FF22;border:1px solid #00C2FF55;border-radius:20px;font-size:10px;color:#00C2FF;font-weight:700;padding:2px 9px">✓ PRO</span>' +
