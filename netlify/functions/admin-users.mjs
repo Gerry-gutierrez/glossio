@@ -20,7 +20,7 @@ export const handler = async (event) => {
   const pass = params.pass || "";
 
   /* ── Password check ── */
-  const ADMIN_PASS = process.env.ADMIN_PASSWORD || "";
+  const ADMIN_PASS = process.env.ADMIN_SECRET_KEY || "";
   if (!ADMIN_PASS || pass !== ADMIN_PASS) {
     /* If action=auth, return ok/fail for the login gate */
     if (params.action === "auth") {
