@@ -49,6 +49,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [signingOut, setSigningOut] = useState(false)
   const [copied, setCopied] = useState(false)
   const [businessName, setBusinessName] = useState('Your Business')
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [slug, setSlug] = useState('')
   const [planLabel, setPlanLabel] = useState('Loading...')
 
@@ -60,12 +61,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       // Try profiles table first
       const { data } = await supabase
         .from('profiles')
-        .select('company_name, slug, subscription_status')
+        .select('company_name, slug, subscription_status, avatar_url')
         .eq('id', user.id)
         .single()
 
       if (data) {
         setBusinessName(data.company_name || 'Your Business')
+        setAvatarUrl(data.avatar_url || null)
         setSlug(data.slug || '')
         const status = data.subscription_status
         setPlanLabel(
@@ -134,7 +136,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* User card */}
         <div className={styles.userCard}>
           <div className={styles.userAvatar}>
-            {businessName.charAt(0).toUpperCase()}
+            {avatarUrl ? (
+              <img src={avatarUrl} alt={businessName} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+            ) : (
+              businessName.charAt(0).toUpperCase()
+            )}
           </div>
           <div style={{ overflow: 'hidden' }}>
             <p className={styles.userName}>{businessName}</p>

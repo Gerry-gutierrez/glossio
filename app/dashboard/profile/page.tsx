@@ -75,7 +75,9 @@ export default function ProfilePage() {
   const [previewMode, setPreviewMode] = useState(false)
   const [saved, setSaved] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
 
   // Load photos and profile from Supabase on mount
   const loadData = useCallback(async () => {
@@ -145,6 +147,30 @@ export default function ProfilePage() {
   }, [loadData])
 
   const initials = profile.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingAvatar(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/upload-avatar', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (res.ok && data.avatarUrl) {
+        setProfile(prev => ({ ...prev, avatarUrl: data.avatarUrl }))
+        setEditDraft(prev => ({ ...prev, avatarUrl: data.avatarUrl }))
+      } else {
+        alert(data.error || 'Upload failed')
+      }
+    } catch (err) {
+      console.error('Avatar upload failed:', err)
+      alert('Upload failed. Please try again.')
+    } finally {
+      setUploadingAvatar(false)
+      if (avatarInputRef.current) avatarInputRef.current.value = ''
+    }
+  }
 
   const toggleRemoveSelect = (id: string | number) => {
     setSelectedToRemove(prev =>
@@ -297,10 +323,22 @@ export default function ProfilePage() {
             )}
           </div>
           {!previewMode && (
-            <button className={styles.avatarEditBtn} title="Change profile photo">
-              <CameraSvg />
+            <button
+              className={styles.avatarEditBtn}
+              title="Change profile photo"
+              onClick={() => avatarInputRef.current?.click()}
+              disabled={uploadingAvatar}
+            >
+              {uploadingAvatar ? <span className={styles.avatarSpinner} /> : <CameraSvg />}
             </button>
           )}
+          <input
+            ref={avatarInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            style={{ display: 'none' }}
+            onChange={handleAvatarUpload}
+          />
         </div>
 
         {/* Name + Badge */}
