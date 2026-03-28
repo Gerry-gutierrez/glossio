@@ -169,7 +169,7 @@ async function serve(req, res) {
 }
 
 http.createServer(serve).listen(PORT, function () {
-  console.log("GlossIO serving on port " + PORT + " | ADMIN_SECRET_KEY set: " + !!process.env.ADMIN_SECRET_KEY);
+  console.log("GlossIO serving on port " + PORT);
   console.log("  Static site: /_site");
   console.log("  API: /.netlify/functions/*");
 });
