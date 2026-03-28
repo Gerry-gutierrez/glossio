@@ -60,8 +60,9 @@ export const handler = async (event) => {
     const now = new Date();
     const mapped = (users || []).map((u) => {
       var trialActive = u.trial_ends_at && new Date(u.trial_ends_at) > now;
-      var isActive = u.is_pro || trialActive;
-      var plan = u.is_pro ? (u.subscription_status === "active" ? "Monthly" : "Paid") : (trialActive ? "Free Trial" : "Expired");
+      var isCancelled = u.subscription_status === "canceled";
+      var isActive = (u.is_pro && !isCancelled) || trialActive;
+      var plan = isCancelled ? "Cancelled" : (u.is_pro ? (u.subscription_status === "active" ? "Monthly" : "Paid") : (trialActive ? "Free Trial" : "Expired"));
       return {
         id: u.id,
         company_name: u.company_name || "",
