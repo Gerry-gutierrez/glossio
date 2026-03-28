@@ -29,10 +29,17 @@
         nameEl.textContent = profile.company_name;
       }
 
-      /* Update avatar initial */
+      /* Update avatar — show image if available, otherwise initial */
       var avatarEl = document.querySelector(".user-avatar");
-      if (avatarEl && profile.company_name) {
-        avatarEl.textContent = profile.company_name.charAt(0).toUpperCase();
+      if (avatarEl) {
+        if (profile.avatar_url) {
+          avatarEl.textContent = "";
+          avatarEl.style.backgroundImage = "url(" + profile.avatar_url + ")";
+          avatarEl.style.backgroundSize = "cover";
+          avatarEl.style.backgroundPosition = "center";
+        } else if (profile.company_name) {
+          avatarEl.textContent = profile.company_name.charAt(0).toUpperCase();
+        }
       }
 
       /* Update plan badge */
