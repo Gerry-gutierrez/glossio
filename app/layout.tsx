@@ -8,6 +8,9 @@ export const metadata: Metadata = {
   },
   description: 'Stop losing clients in the DMs. GlossIO helps auto detailers manage bookings, clients, and payments in one place.',
   keywords: ['auto detailing', 'booking software', 'detailer CRM', 'mobile detailing'],
+  icons: {
+    icon: '/favicon.svg',
+  },
   openGraph: {
     title: 'GlossIO — Auto Detailing Business Software',
     description: 'Stop losing clients in the DMs.',
