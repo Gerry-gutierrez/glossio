@@ -92,7 +92,8 @@ pageTitle: "Admin Dashboard"
 
   @media (max-width: 600px) {
     .admin-stats { flex-direction: column; }
-    .admin-table th:nth-child(4), .admin-table td:nth-child(4) { display: none; }
+    .admin-table th:nth-child(3), .admin-table td:nth-child(3),
+    .admin-table th:nth-child(5), .admin-table td:nth-child(5) { display: none; }
   }
 </style>
 
@@ -259,7 +260,7 @@ pageTitle: "Admin Dashboard"
     }
 
     var html = '<table class="admin-table"><thead><tr>' +
-      '<th>Business</th><th>Email</th><th>Status</th><th>Plan</th><th>Signed Up</th>' +
+      '<th>Business</th><th>Email</th><th>Phone</th><th>Status</th><th>Plan</th><th>Signed Up</th>' +
       '</tr></thead><tbody>';
 
     filtered.forEach(function(u) {
@@ -273,6 +274,7 @@ pageTitle: "Admin Dashboard"
       html += '<tr>' +
         '<td>' + (u.company_name || '—') + '</td>' +
         '<td style="color:var(--text-muted)">' + (u.email || '—') + '</td>' +
+        '<td style="color:var(--text-muted)">' + (u.phone || '—') + '</td>' +
         '<td>' + statusDot + '</td>' +
         '<td><span class="badge ' + badgeClass + '">' + (u.plan || 'Expired') + '</span></td>' +
         '<td style="color:var(--text-muted)">' + dateStr + '</td>' +

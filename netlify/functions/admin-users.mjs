@@ -48,7 +48,7 @@ export const handler = async (event) => {
   try {
     const { data: users, error } = await supabase
       .from("profiles")
-      .select("id, company_name, email, slug, created_at, is_pro, trial_ends_at, subscription_status")
+      .select("id, company_name, email, phone, slug, created_at, is_pro, trial_ends_at, subscription_status")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -67,6 +67,7 @@ export const handler = async (event) => {
         id: u.id,
         company_name: u.company_name || "",
         email: u.email || "",
+        phone: u.phone || "",
         slug: u.slug || "",
         created_at: u.created_at,
         status: isActive ? "active" : "paused",
