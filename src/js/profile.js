@@ -19,6 +19,8 @@ let photos = [];
 let nextPhotoId = 100;
 let removeMode = false;
 let previewMode = false;
+let avatarUrl = null;
+let uploadingAvatar = false;
 
 function escHtml(str) {
   const d = document.createElement("div");
@@ -52,6 +54,7 @@ function loadProfile() {
         profile.tagline = sbProfile.tagline || profile.tagline;
         profile.instagram = sbProfile.instagram_handle || profile.instagram;
         profile.bio = sbProfile.bio || profile.bio;
+        avatarUrl = sbProfile.avatar_url || null;
         /* Split location column into city/state */
         if (sbProfile.location) {
           var parts = sbProfile.location.split(",").map(function(s) { return s.trim(); });
@@ -187,7 +190,15 @@ function renderProfile() {
 
     /* Profile Hero */
     '<div class="profile-hero">' +
-      '<div class="profile-avatar-large">' + escHtml(p.displayName[0]) + '</div>' +
+      '<div style="position:relative;flex-shrink:0">' +
+        '<div class="profile-avatar-large">' +
+          (avatarUrl ? '<img src="' + avatarUrl + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">' : escHtml(p.displayName[0])) +
+        '</div>' +
+        '<button class="avatar-upload-btn" onclick="document.getElementById(\'avatar-file-input\').click()" title="Change profile photo">' +
+          (uploadingAvatar ? '<span class="avatar-spinner"></span>' : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>') +
+        '</button>' +
+        '<input type="file" id="avatar-file-input" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="handleAvatarUpload(this)">' +
+      '</div>' +
       '<div>' +
         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
           '<p class="profile-name-large">' + escHtml(p.displayName) + '</p>' +
@@ -615,6 +626,52 @@ function loadProfileSlug() {
   }).catch(function() {
     if (display) display.textContent = "Unable to load link — please refresh";
   });
+}
+
+/* ── Avatar Upload ────────────────────────────────────────────────────────── */
+
+function handleAvatarUpload(input) {
+  var file = input.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) {
+    showProfileToast("Image must be under 2 MB");
+    return;
+  }
+  uploadingAvatar = true;
+  renderProfile();
+
+  var userId = window.__glossio_user_id;
+  if (!userId || !window.db || !window.db.isOnline()) {
+    showProfileToast("Unable to upload — please try again");
+    uploadingAvatar = false;
+    renderProfile();
+    return;
+  }
+
+  var ext = file.name.split(".").pop() || "jpg";
+  var path = userId + "/avatar." + ext;
+
+  /* Upload new avatar (upsert overwrites old) */
+  window.db.storage.upload("work-photos", path, file)
+    .then(function() {
+      var publicUrl = window.db.storage.getPublicUrl("work-photos", path) + "?v=" + Date.now();
+      avatarUrl = publicUrl;
+      /* Update profile in Supabase */
+      return window.db.profile.update({ avatar_url: publicUrl });
+    })
+    .then(function() {
+      uploadingAvatar = false;
+      renderProfile();
+      showProfileToast("Profile photo updated!");
+    })
+    .catch(function(err) {
+      console.error("Avatar upload failed:", err);
+      uploadingAvatar = false;
+      renderProfile();
+      showProfileToast("Upload failed — please try again");
+    });
+
+  input.value = "";
 }
 
 /* ── Init ─────────────────────────────────────────────────────────────────── */
