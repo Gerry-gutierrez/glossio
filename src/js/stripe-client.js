@@ -37,6 +37,28 @@
       });
     },
 
+    /** Fetch invoices from Stripe */
+    getInvoices: function() {
+      return window.db.profile.get().then(function(profile) {
+        if (!profile || !profile.stripe_customer_id) {
+          return [];
+        }
+        return window.api.call("stripe-invoices", { customerId: profile.stripe_customer_id });
+      }).then(function(data) {
+        return (data && data.invoices) || [];
+      }).catch(function() { return []; });
+    },
+
+    /** Cancel subscription via Stripe */
+    cancelSubscription: function() {
+      return window.db.profile.get().then(function(profile) {
+        if (!profile || !profile.stripe_customer_id) {
+          throw new Error("No billing account found");
+        }
+        return window.api.call("stripe-cancel", { customerId: profile.stripe_customer_id });
+      });
+    },
+
     /** Open Stripe Billing Portal */
     openPortal: function() {
       return window.db.profile.get().then(function(profile) {

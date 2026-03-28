@@ -1008,6 +1008,24 @@ function openStripePortal() {
 }
 
 function renderBillingHistory() {
+  /* Show loading state */
+  document.getElementById("settings-sub").innerHTML =
+    backBtn("billing") +
+    subHeader("Subscription & Billing", "Billing History", "All past charges and invoices for your GlossIO account.") +
+    '<div class="stg-card" style="padding:40px 20px;text-align:center"><p style="margin:0;font-size:13px;color:#555">Loading invoices...</p></div>';
+
+  /* Fetch real invoices from Stripe */
+  if (window.glossioStripe && window.glossioStripe.getInvoices) {
+    window.glossioStripe.getInvoices().then(function(invoices) {
+      BILLING_HISTORY = invoices;
+      _renderBillingHistoryUI();
+    });
+  } else {
+    _renderBillingHistoryUI();
+  }
+}
+
+function _renderBillingHistoryUI() {
   var hasHistory = BILLING_HISTORY.length > 0;
   document.getElementById("settings-sub").innerHTML =
     backBtn("billing") +
@@ -1015,18 +1033,19 @@ function renderBillingHistory() {
 
     (hasHistory ?
       '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px">' +
-        BILLING_HISTORY.map(item =>
-          '<div class="stg-card" style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px">' +
+        BILLING_HISTORY.map(function(item) {
+          var viewBtn = item.url ? ' <a href="' + item.url + '" target="_blank" style="font-size:11px;color:#00C2FF;text-decoration:none;margin-left:8px">View →</a>' : '';
+          return '<div class="stg-card" style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px">' +
             '<div style="display:flex;align-items:center;gap:12px">' +
               '<div style="width:40px;height:40px;border-radius:10px;background:' + (item.status === "Trial" ? "#FFD60A10" : "#00E5A010") + ';border:1px solid ' + (item.status === "Trial" ? "#FFD60A33" : "#00E5A033") + ';display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🧾</div>' +
-              '<div><p style="margin:0 0 3px;font-size:13px;font-weight:700">' + item.desc + '</p><p style="margin:0;font-size:11px;color:#555">' + item.date + ' · ' + item.invoice + '</p></div>' +
+              '<div><p style="margin:0 0 3px;font-size:13px;font-weight:700">' + item.desc + '</p><p style="margin:0;font-size:11px;color:#555">' + item.date + ' · ' + item.invoice + viewBtn + '</p></div>' +
             '</div>' +
             '<div style="text-align:right;flex-shrink:0">' +
               '<p style="margin:0 0 4px;font-size:14px;font-weight:700">' + item.amount + '</p>' +
               '<span class="stg-meta-badge" style="background:' + (item.status === "Trial" ? "#FFD60A15" : "#00E5A015") + ';border-color:' + (item.status === "Trial" ? "#FFD60A33" : "#00E5A033") + ';color:' + (item.status === "Trial" ? "#FFD60A" : "#00E5A0") + '">' + item.status + '</span>' +
             '</div>' +
-          '</div>'
-        ).join("") +
+          '</div>';
+        }).join("") +
       '</div>'
     :
       '<div class="stg-card" style="padding:40px 20px;text-align:center">' +
@@ -1062,13 +1081,47 @@ function renderBillingCancel() {
 }
 
 function confirmCancel() {
+  /* Show loading while we cancel with Stripe */
+  document.getElementById("cancel-step-1").innerHTML =
+    '<div class="stg-card" style="padding:48px 32px;text-align:center">' +
+      '<p style="font-size:13px;color:#555">Cancelling your subscription...</p>' +
+    '</div>';
+
+  if (window.glossioStripe && window.glossioStripe.cancelSubscription) {
+    window.glossioStripe.cancelSubscription().then(function(data) {
+      if (data && data.ok) {
+        var accessUntil = data.cancelAt || PLAN.trialEnds;
+        _showCancelledUI(accessUntil);
+      } else {
+        _showCancelError(data && data.error ? data.error : "Something went wrong");
+      }
+    }).catch(function(err) {
+      _showCancelError(err.message || "Failed to cancel. Please try again.");
+    });
+  } else {
+    /* Fallback if Stripe client not loaded */
+    _showCancelError("Billing system not available. Please contact support.");
+  }
+}
+
+function _showCancelledUI(accessUntil) {
   document.getElementById("cancel-step-1").innerHTML =
     '<div class="stg-card" style="padding:48px 32px;text-align:center">' +
       '<div style="width:80px;height:80px;border-radius:50%;background:#FF336610;border:2px solid #FF336633;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:36px">😔</div>' +
       '<h2 style="font-size:22px;font-weight:700;margin:0 0 10px">Subscription Cancelled</h2>' +
-      '<p style="font-size:13px;color:#666;margin:0 0 20px;line-height:1.7">Your GlossIO Pro subscription has been cancelled. You\'ll keep full access until <strong style="color:#FFD60A">' + PLAN.trialEnds + '</strong>.</p>' +
-      '<div class="stg-hint"><span>💡</span><p>Changed your mind? You can reactivate anytime before <strong style="color:#F0EDE8">' + PLAN.trialEnds + '</strong>.</p></div>' +
+      '<p style="font-size:13px;color:#666;margin:0 0 20px;line-height:1.7">Your GlossIO Pro subscription has been cancelled. You\'ll keep full access until <strong style="color:#FFD60A">' + accessUntil + '</strong>.</p>' +
+      '<div class="stg-hint"><span>💡</span><p>Changed your mind? You can reactivate anytime from the Subscription & Billing page.</p></div>' +
       '<button class="btn btn-gradient" style="margin-top:20px" onclick="finishCancel()">← Back to Settings</button>' +
+    '</div>';
+}
+
+function _showCancelError(msg) {
+  document.getElementById("cancel-step-1").innerHTML =
+    '<div class="stg-card" style="padding:48px 32px;text-align:center">' +
+      '<div style="width:80px;height:80px;border-radius:50%;background:#FF336610;border:2px solid #FF336633;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:36px">⚠️</div>' +
+      '<h2 style="font-size:22px;font-weight:700;margin:0 0 10px">Cancellation Failed</h2>' +
+      '<p style="font-size:13px;color:#666;margin:0 0 20px;line-height:1.7">' + msg + '</p>' +
+      '<button class="btn btn-gradient" style="margin-top:20px" onclick="showScreen(\'billing\')">← Back</button>' +
     '</div>';
 }
 
