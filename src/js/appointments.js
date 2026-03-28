@@ -405,6 +405,9 @@ function openAdjustModal(id) {
       <h3 style="margin:0 0 20px;font-size:18px;font-weight:700">Adjust Appointment</h3>
       <p style="margin:0 0 16px;font-size:13px;color:var(--text-dim, #888)">${a.client} · ${a.service}</p>
 
+      <label style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim, #888);display:block;margin-bottom:6px">Services</label>
+      <input type="text" id="adjust-service" value="${a.service || ''}" placeholder="e.g. Buff & Wax + Interior Clean" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border, #2a2a3e);background:var(--input-bg, #0d0d1a);color:var(--text, #fff);font-size:14px;margin-bottom:16px;box-sizing:border-box" />
+
       <label style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim, #888);display:block;margin-bottom:6px">Date</label>
       <input type="date" id="adjust-date" value="${a.date}" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border, #2a2a3e);background:var(--input-bg, #0d0d1a);color:var(--text, #fff);font-size:14px;margin-bottom:16px;box-sizing:border-box" />
 
@@ -433,10 +436,12 @@ function saveAdjustment(id) {
   const a = appointments.find(ap => ap.id === id);
   if (!a) return;
 
+  const newService = document.getElementById("adjust-service").value.trim();
   const newDate = document.getElementById("adjust-date").value;
   const newTime = document.getElementById("adjust-time").value;
   const newNotes = document.getElementById("adjust-notes").value;
 
+  a.service = newService || a.service;
   a.date = newDate || a.date;
   a.time = newTime || a.time;
   a.notes = newNotes;
@@ -444,6 +449,7 @@ function saveAdjustment(id) {
   /* Persist to Supabase */
   if (window.db && window.db.appointments) {
     window.db.appointments.update(id, {
+      service_name: a.service,
       appt_date: a.date,
       appt_time: a.time,
       scheduled_date: a.date,
