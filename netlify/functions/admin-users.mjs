@@ -48,7 +48,7 @@ export const handler = async (event) => {
   try {
     const { data: users, error } = await supabase
       .from("profiles")
-      .select("id, company_name, email, slug, created_at, is_pro")
+      .select("id, company_name, email, slug, created_at, is_pro, trial_ends_at, subscription_status")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -57,15 +57,21 @@ export const handler = async (event) => {
     }
 
     /* Map to the shape the admin dashboard expects */
-    const mapped = (users || []).map((u) => ({
-      id: u.id,
-      company_name: u.company_name || "",
-      email: u.email || "",
-      slug: u.slug || "",
-      created_at: u.created_at,
-      status: u.is_pro ? "active" : "paused",
-      plan: u.is_pro ? "Monthly" : "Free Trial",
-    }));
+    const now = new Date();
+    const mapped = (users || []).map((u) => {
+      var trialActive = u.trial_ends_at && new Date(u.trial_ends_at) > now;
+      var isActive = u.is_pro || trialActive;
+      var plan = u.is_pro ? (u.subscription_status === "active" ? "Monthly" : "Paid") : (trialActive ? "Free Trial" : "Expired");
+      return {
+        id: u.id,
+        company_name: u.company_name || "",
+        email: u.email || "",
+        slug: u.slug || "",
+        created_at: u.created_at,
+        status: isActive ? "active" : "paused",
+        plan: plan,
+      };
+    });
 
     return {
       statusCode: 200,
