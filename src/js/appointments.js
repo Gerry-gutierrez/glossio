@@ -389,6 +389,8 @@ function deleteAppt(id) {
 
 /* ── Adjust Modal ───────────────────────────────────────────────────────── */
 
+var _adjustServices = []; /* detailer's full service list for the adjust modal */
+
 function openAdjustModal(id) {
   const a = appointments.find(ap => ap.id === id);
   if (!a) return;
@@ -397,34 +399,85 @@ function openAdjustModal(id) {
   const existing = document.getElementById("adjust-modal");
   if (existing) existing.remove();
 
-  const modal = document.createElement("div");
-  modal.id = "adjust-modal";
-  modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px";
-  modal.innerHTML = `
-    <div style="background:var(--card-bg, #1a1a2e);border:1px solid var(--border, #2a2a3e);border-radius:16px;padding:28px;width:100%;max-width:420px;color:var(--text, #fff)">
-      <h3 style="margin:0 0 20px;font-size:18px;font-weight:700">Adjust Appointment</h3>
-      <p style="margin:0 0 16px;font-size:13px;color:var(--text-dim, #888)">${a.client} · ${a.service}</p>
+  /* Load detailer's services, then render the modal */
+  var loadServices = (window.db && window.db.services)
+    ? window.db.services.list()
+    : Promise.resolve([]);
 
-      <label style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim, #888);display:block;margin-bottom:6px">Services</label>
-      <input type="text" id="adjust-service" value="${a.service || ''}" placeholder="e.g. Buff & Wax + Interior Clean" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border, #2a2a3e);background:var(--input-bg, #0d0d1a);color:var(--text, #fff);font-size:14px;margin-bottom:16px;box-sizing:border-box" />
+  loadServices.then(function(svcList) {
+    _adjustServices = svcList || [];
 
-      <label style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim, #888);display:block;margin-bottom:6px">Date</label>
-      <input type="date" id="adjust-date" value="${a.date}" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border, #2a2a3e);background:var(--input-bg, #0d0d1a);color:var(--text, #fff);font-size:14px;margin-bottom:16px;box-sizing:border-box" />
+    /* Figure out which services are currently selected on this appointment */
+    var currentNames = (a.service || "").split(/\s*\+\s*/).map(function(s) { return s.trim().toLowerCase(); }).filter(Boolean);
 
-      <label style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim, #888);display:block;margin-bottom:6px">Time</label>
-      <input type="time" id="adjust-time" value="${a.time || ''}" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border, #2a2a3e);background:var(--input-bg, #0d0d1a);color:var(--text, #fff);font-size:14px;margin-bottom:16px;box-sizing:border-box" />
+    var svcRows = _adjustServices.map(function(svc, idx) {
+      var isChecked = currentNames.some(function(cn) {
+        return cn === (svc.name || "").toLowerCase();
+      });
+      var isQuote = !svc.price || svc.price <= 0 || svc.pricing_type === "quote";
+      var displayPrice = isChecked && isQuote ? "" : (svc.price ? svc.price.toFixed(2) : "");
+      return `
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06)">
+          <input type="checkbox" id="adj-svc-${idx}" ${isChecked ? "checked" : ""} onchange="updateAdjustTotal()" style="width:18px;height:18px;accent-color:#A78BFA;cursor:pointer;flex-shrink:0" />
+          <label for="adj-svc-${idx}" style="flex:1;font-size:14px;cursor:pointer;color:var(--text, #fff)">${svc.name || "Service"}</label>
+          <div style="display:flex;align-items:center;gap:4px">
+            <span style="color:var(--text-dim, #888);font-size:13px">$</span>
+            <input type="number" id="adj-price-${idx}" value="${displayPrice}" placeholder="${isQuote ? 'Quote' : '0'}" min="0" step="0.01" onchange="updateAdjustTotal()" style="width:80px;padding:6px 8px;border-radius:6px;border:1px solid var(--border, #2a2a3e);background:var(--input-bg, #0d0d1a);color:var(--text, #fff);font-size:13px;text-align:right;box-sizing:border-box" />
+          </div>
+        </div>`;
+    }).join("");
 
-      <label style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim, #888);display:block;margin-bottom:6px">Notes</label>
-      <textarea id="adjust-notes" rows="3" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border, #2a2a3e);background:var(--input-bg, #0d0d1a);color:var(--text, #fff);font-size:14px;margin-bottom:20px;resize:vertical;box-sizing:border-box">${a.notes || ''}</textarea>
+    const modal = document.createElement("div");
+    modal.id = "adjust-modal";
+    modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;overflow-y:auto";
+    modal.innerHTML = `
+      <div style="background:var(--card-bg, #1a1a2e);border:1px solid var(--border, #2a2a3e);border-radius:16px;padding:28px;width:100%;max-width:460px;color:var(--text, #fff);max-height:90vh;overflow-y:auto">
+        <h3 style="margin:0 0 4px;font-size:18px;font-weight:700">Adjust Appointment</h3>
+        <p style="margin:0 0 20px;font-size:13px;color:var(--text-dim, #888)">${a.client}</p>
 
-      <div style="display:flex;gap:10px">
-        <button onclick="saveAdjustment('${a.id}')" style="flex:1;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,#A78BFA,#7C3AED);color:#fff;font-weight:700;font-size:14px;cursor:pointer">Save Changes</button>
-        <button onclick="closeAdjustModal()" style="flex:1;padding:12px;border-radius:10px;border:1px solid var(--border, #2a2a3e);background:transparent;color:var(--text, #fff);font-weight:600;font-size:14px;cursor:pointer">Cancel</button>
+        <label style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim, #888);display:block;margin-bottom:8px">Services</label>
+        <div style="background:var(--input-bg, #0d0d1a);border:1px solid var(--border, #2a2a3e);border-radius:10px;padding:4px 14px;margin-bottom:8px">
+          ${svcRows || '<p style="padding:12px 0;color:var(--text-dim,#888);font-size:13px">No services found. Add services in the Services tab first.</p>'}
+        </div>
+        <div style="text-align:right;margin-bottom:16px">
+          <span style="font-size:12px;color:var(--text-dim, #888)">Total: </span>
+          <span id="adjust-total" style="font-size:15px;font-weight:700;color:#00E5A0">$0.00</span>
+        </div>
+
+        <label style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim, #888);display:block;margin-bottom:6px">Date</label>
+        <input type="date" id="adjust-date" value="${a.date}" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border, #2a2a3e);background:var(--input-bg, #0d0d1a);color:var(--text, #fff);font-size:14px;margin-bottom:16px;box-sizing:border-box" />
+
+        <label style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim, #888);display:block;margin-bottom:6px">Time</label>
+        <input type="time" id="adjust-time" value="${a.time || ''}" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border, #2a2a3e);background:var(--input-bg, #0d0d1a);color:var(--text, #fff);font-size:14px;margin-bottom:16px;box-sizing:border-box" />
+
+        <label style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim, #888);display:block;margin-bottom:6px">Notes</label>
+        <textarea id="adjust-notes" rows="3" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border, #2a2a3e);background:var(--input-bg, #0d0d1a);color:var(--text, #fff);font-size:14px;margin-bottom:20px;resize:vertical;box-sizing:border-box">${a.notes || ''}</textarea>
+
+        <div style="display:flex;gap:10px">
+          <button onclick="saveAdjustment('${a.id}')" style="flex:1;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,#A78BFA,#7C3AED);color:#fff;font-weight:700;font-size:14px;cursor:pointer">Save Changes</button>
+          <button onclick="closeAdjustModal()" style="flex:1;padding:12px;border-radius:10px;border:1px solid var(--border, #2a2a3e);background:transparent;color:var(--text, #fff);font-weight:600;font-size:14px;cursor:pointer">Cancel</button>
+        </div>
       </div>
-    </div>
-  `;
-  modal.addEventListener("click", function(e) { if (e.target === modal) closeAdjustModal(); });
-  document.body.appendChild(modal);
+    `;
+    modal.addEventListener("click", function(e) { if (e.target === modal) closeAdjustModal(); });
+    document.body.appendChild(modal);
+
+    /* Calculate initial total */
+    updateAdjustTotal();
+  });
+}
+
+function updateAdjustTotal() {
+  var total = 0;
+  _adjustServices.forEach(function(svc, idx) {
+    var cb = document.getElementById("adj-svc-" + idx);
+    var priceInput = document.getElementById("adj-price-" + idx);
+    if (cb && cb.checked && priceInput) {
+      total += parseFloat(priceInput.value) || 0;
+    }
+  });
+  var el = document.getElementById("adjust-total");
+  if (el) el.textContent = "$" + total.toFixed(2);
 }
 
 function closeAdjustModal() {
@@ -436,12 +489,25 @@ function saveAdjustment(id) {
   const a = appointments.find(ap => ap.id === id);
   if (!a) return;
 
-  const newService = document.getElementById("adjust-service").value.trim();
+  /* Build service name + total from checkboxes */
+  var selectedNames = [];
+  var totalPrice = 0;
+  _adjustServices.forEach(function(svc, idx) {
+    var cb = document.getElementById("adj-svc-" + idx);
+    var priceInput = document.getElementById("adj-price-" + idx);
+    if (cb && cb.checked) {
+      selectedNames.push(svc.name || "Service");
+      totalPrice += parseFloat(priceInput.value) || 0;
+    }
+  });
+
+  var newService = selectedNames.join(" + ") || a.service;
   const newDate = document.getElementById("adjust-date").value;
   const newTime = document.getElementById("adjust-time").value;
   const newNotes = document.getElementById("adjust-notes").value;
 
-  a.service = newService || a.service;
+  a.service = newService;
+  a.price = totalPrice;
   a.date = newDate || a.date;
   a.time = newTime || a.time;
   a.notes = newNotes;
@@ -450,6 +516,7 @@ function saveAdjustment(id) {
   if (window.db && window.db.appointments) {
     window.db.appointments.update(id, {
       service_name: a.service,
+      price: totalPrice,
       appt_date: a.date,
       appt_time: a.time,
       scheduled_date: a.date,
