@@ -589,10 +589,222 @@ function renderCalendar() {
   `;
 }
 
+/* ── Create Appointment Modal ─────────────────────────────────────────────── */
+
+var caStep = "choose";
+var caClients = [];
+var caServices = [];
+var caSelectedClient = null;
+
+function openCreateAppt() {
+  caStep = "choose";
+  caSelectedClient = null;
+  caSetStep("choose");
+  document.getElementById("create-appt-modal").style.display = "flex";
+
+  // Load clients and services
+  if (window.db) {
+    if (window.db.clients) {
+      window.db.clients.list().then(function(data) { caClients = data || []; });
+    }
+    if (window.db.services) {
+      window.db.services.list().then(function(data) { caServices = data || []; });
+    }
+  }
+}
+
+function closeCreateAppt() {
+  document.getElementById("create-appt-modal").style.display = "none";
+}
+
+function caSetStep(step) {
+  caStep = step;
+  document.getElementById("ca-step-choose").style.display = step === "choose" ? "block" : "none";
+  document.getElementById("ca-step-existing").style.display = step === "existing" ? "block" : "none";
+  document.getElementById("ca-step-new").style.display = step === "new" ? "block" : "none";
+  document.getElementById("ca-step-schedule").style.display = (step === "existing" && caSelectedClient) || step === "new" || step === "schedule" ? "block" : "none";
+
+  document.getElementById("create-appt-title").textContent =
+    step === "choose" ? "Create Appointment" : step === "existing" ? "Existing Client" : "New Client";
+
+  if (step === "existing") {
+    caRenderClientList();
+  }
+  if (step === "new") {
+    document.getElementById("ca-submit-btn").textContent = "Add Client & Schedule";
+    caRenderServices();
+  }
+}
+
+function caRenderClientList() {
+  var search = (document.getElementById("ca-client-search").value || "").toLowerCase();
+  var list = document.getElementById("ca-client-list");
+  var filtered = caClients.filter(function(c) {
+    var name = (c.first_name || "") + " " + (c.last_name || "") + " " + (c.phone || "") + " " + (c.email || "");
+    return name.toLowerCase().indexOf(search) >= 0;
+  });
+
+  if (filtered.length === 0) {
+    list.innerHTML = '<p style="color:var(--text-faint);font-size:13px;text-align:center;padding:20px">No clients found.</p>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(function(c) {
+    var vehicle = [c.vehicle_year, c.vehicle_make, c.vehicle_model].filter(Boolean).join(" ");
+    return '<button class="client-pick-btn" onclick="caSelectClient(\'' + c.id + '\')">' +
+      '<div class="client-pick-avatar">' + (c.first_name || "?")[0] + '</div>' +
+      '<div style="flex:1;min-width:0;text-align:left">' +
+        '<p style="margin:0;font-size:14px;font-weight:600">' + (c.first_name || "") + ' ' + (c.last_name || "") + '</p>' +
+        '<p style="margin:0;font-size:12px;color:var(--text-dim)">' + (vehicle || c.phone || "") + '</p>' +
+      '</div></button>';
+  }).join("");
+}
+
+function caFilterClients() { caRenderClientList(); }
+
+function caSelectClient(id) {
+  caSelectedClient = caClients.find(function(c) { return String(c.id) === String(id); });
+  if (!caSelectedClient) return;
+
+  document.getElementById("ca-selected-info").innerHTML =
+    '<button class="back-link" onclick="caDeselectClient()">← Pick different client</button>' +
+    '<p style="margin:0 0 16px;font-size:14px;color:var(--text-dim)">For <strong style="color:var(--text)">' +
+    caSelectedClient.first_name + ' ' + (caSelectedClient.last_name || '') + '</strong>' +
+    (caSelectedClient.phone ? ' · ' + caSelectedClient.phone : '') + '</p>';
+
+  document.getElementById("ca-step-existing").style.display = "none";
+  document.getElementById("ca-step-schedule").style.display = "block";
+  document.getElementById("ca-submit-btn").textContent = "Schedule Appointment";
+  caRenderServices();
+}
+
+function caDeselectClient() {
+  caSelectedClient = null;
+  document.getElementById("ca-step-existing").style.display = "block";
+  document.getElementById("ca-step-schedule").style.display = "none";
+  caRenderClientList();
+}
+
+function caRenderServices() {
+  var grid = document.getElementById("ca-service-grid");
+  if (!caServices || caServices.length === 0) {
+    grid.innerHTML = '<p style="color:#FFD60A;font-size:13px">No services found. Add services in the Services tab first.</p>';
+    return;
+  }
+  grid.innerHTML = caServices.map(function(svc) {
+    return '<button class="sched-svc-btn" data-id="' + svc.id + '" data-price="' + (svc.price || 0) + '" onclick="caSelectService(this)">' +
+      '<span style="font-size:20px">' + (svc.icon || "🔧") + '</span>' +
+      '<span style="font-size:13px;font-weight:600">' + svc.name + '</span>' +
+      '<span style="font-size:12px;color:' + (svc.color || "#00C2FF") + '">' +
+      (svc.pricing_type === "quote" ? "Quote" : "$" + svc.price) + '</span></button>';
+  }).join("");
+}
+
+function caSelectService(btn) {
+  document.querySelectorAll("#ca-service-grid .sched-svc-btn").forEach(function(b) { b.classList.remove("sched-svc-active"); });
+  btn.classList.add("sched-svc-active");
+}
+
+function caSubmit() {
+  var activeBtn = document.querySelector("#ca-service-grid .sched-svc-btn.sched-svc-active");
+  var date = document.getElementById("ca-date").value;
+  var time = document.getElementById("ca-time").value;
+  var notes = document.getElementById("ca-notes").value.trim();
+  var errEl = document.getElementById("ca-error");
+
+  if (!activeBtn || !date || !time) {
+    errEl.textContent = "Please select a service, date, and time.";
+    return;
+  }
+
+  var isNew = caStep === "new";
+  var firstName, lastName, phone, email, vehicleYear, vehicleMake, vehicleModel, howHeard;
+
+  if (isNew) {
+    firstName = document.getElementById("ca-first").value.trim();
+    lastName = document.getElementById("ca-last").value.trim();
+    phone = document.getElementById("ca-phone").value.trim();
+    email = document.getElementById("ca-email").value.trim();
+    var vehicle = document.getElementById("ca-vehicle").value.trim();
+    howHeard = document.getElementById("ca-source").value;
+
+    if (!firstName) { errEl.textContent = "Please enter the client's first name."; return; }
+    if (!phone) { errEl.textContent = "Please enter a phone number."; return; }
+
+    var vParts = vehicle.split(" ");
+    vehicleYear = vParts.length >= 3 && /^\d{4}$/.test(vParts[0]) ? vParts[0] : "";
+    vehicleMake = vehicleYear ? (vParts[1] || "") : (vParts[0] || "");
+    vehicleModel = vehicleYear ? vParts.slice(2).join(" ") : vParts.slice(1).join(" ");
+  } else {
+    if (!caSelectedClient) { errEl.textContent = "Please select a client."; return; }
+    firstName = caSelectedClient.first_name;
+    lastName = caSelectedClient.last_name || "";
+    phone = caSelectedClient.phone || "";
+    email = caSelectedClient.email || "";
+  }
+
+  errEl.textContent = "";
+  var submitBtn = document.getElementById("ca-submit-btn");
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Creating...";
+
+  var slug = "";
+  if (window.db && window.db.profile) { slug = window.db.profile.slug || ""; }
+
+  var body = {
+    slug: slug,
+    serviceId: activeBtn.dataset.id,
+    firstName: firstName,
+    lastName: lastName,
+    phone: phone,
+    email: email,
+    scheduledDate: date,
+    scheduledTime: time,
+    notes: notes,
+    price: parseFloat(activeBtn.dataset.price) || 0
+  };
+
+  if (isNew) {
+    body.vehicleYear = vehicleYear;
+    body.vehicleMake = vehicleMake;
+    body.vehicleModel = vehicleModel;
+    body.howHeard = howHeard;
+  }
+
+  fetch("/api/appointments", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  }).then(function(res) { return res.json(); })
+    .then(function(result) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = isNew ? "Add Client & Schedule" : "Schedule Appointment";
+      if (result.error) {
+        errEl.textContent = result.error;
+      } else {
+        closeCreateAppt();
+        loadAppts().then(function() { renderAppts(); });
+      }
+    })
+    .catch(function() {
+      submitBtn.disabled = false;
+      submitBtn.textContent = isNew ? "Add Client & Schedule" : "Schedule Appointment";
+      errEl.textContent = "Something went wrong. Please try again.";
+    });
+}
+
 /* ── Init ─────────────────────────────────────────────────────────────────── */
 
 document.addEventListener("DOMContentLoaded", function() {
   loadAppts().then(function() {
     renderAppts();
   });
+
+  // Close create modal on overlay click
+  var createModal = document.getElementById("create-appt-modal");
+  if (createModal) {
+    createModal.addEventListener("click", function(e) {
+      if (e.target === createModal) closeCreateAppt();
+    });
+  }
 });
