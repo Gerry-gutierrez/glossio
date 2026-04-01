@@ -237,7 +237,13 @@ function _fmtDetailDate(dateStr) {
 function _renderClientDetail(c, detail, history) {
 
   detail.innerHTML = `
-    <button class="back-btn" onclick="hideDetail()">← Back to Clients</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <button class="back-btn" onclick="hideDetail()" style="margin-bottom:0">← Back to Clients</button>
+      <button class="btn" style="font-size:13px;padding:6px 14px;background:linear-gradient(135deg,rgba(0,194,255,0.12),rgba(162,89,255,0.12));border:1px solid rgba(0,194,255,0.25);color:#00C2FF;font-weight:600;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:6px" onclick="openScheduleModal(clients.find(function(x){return String(x.id)==='${c.id}'}) || {firstName:'${c.firstName}',lastName:'${c.lastName}',phone:'${c.phone || ""}',email:'${c.email || ""}'})">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg>
+        Schedule Appointment
+      </button>
+    </div>
 
     <div class="detail-grid">
       <div>
@@ -440,6 +446,202 @@ function addClient() {
     closeAddClient();
     renderList();
   }
+}
+
+/* ── Add Client & Schedule ────────────────────────────────────────────────── */
+
+var pendingScheduleClient = null;
+
+function addClientAndSchedule() {
+  var first = document.getElementById("ac-first").value.trim();
+  if (!first) return;
+
+  var last = document.getElementById("ac-last").value.trim();
+  var phone = document.getElementById("ac-phone").value.trim();
+  var email = document.getElementById("ac-email").value.trim();
+  var vehicle = document.getElementById("ac-vehicle").value.trim();
+  var source = document.getElementById("ac-source").value;
+  var notes = document.getElementById("ac-notes").value.trim();
+
+  var vParts = vehicle.split(" ");
+  var vYear = vParts.length >= 3 && /^\d{4}$/.test(vParts[0]) ? vParts[0] : "";
+  var vMake = vYear ? (vParts[1] || "") : (vParts[0] || "");
+  var vModel = vYear ? vParts.slice(2).join(" ") : vParts.slice(1).join(" ");
+
+  var now = new Date();
+  var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var since = months[now.getMonth()] + " " + now.getFullYear();
+
+  var newClient = {
+    id: nextClientId++, firstName: first, lastName: last || "",
+    phone: phone, email: email, vehicle: vehicle, source: source,
+    since: since, lastVisit: "—", totalSpent: 0, visits: 0,
+    status: "never_came", notes: notes, history: []
+  };
+
+  if (window.db && window.db.clients) {
+    window.db.clients.create({
+      first_name: first, last_name: last || "", phone: phone, email: email,
+      vehicle_year: vYear, vehicle_make: vMake, vehicle_model: vModel,
+      source: source, notes: notes, status: "never_came"
+    }).then(function(row) {
+      if (row && row.id) newClient.id = row.id;
+      clients.push(newClient);
+      saveClients();
+      closeAddClient();
+      renderList();
+      openScheduleModal(newClient);
+    }).catch(function() {
+      clients.push(newClient);
+      saveClients();
+      closeAddClient();
+      renderList();
+      openScheduleModal(newClient);
+    });
+  } else {
+    clients.push(newClient);
+    saveClients();
+    closeAddClient();
+    renderList();
+    openScheduleModal(newClient);
+  }
+}
+
+function openScheduleModal(client) {
+  pendingScheduleClient = client;
+  var modal = document.getElementById("schedule-modal");
+  if (!modal) { createScheduleModal(); modal = document.getElementById("schedule-modal"); }
+
+  document.getElementById("sched-client-name").textContent = client.firstName + " " + client.lastName;
+  document.getElementById("sched-date").value = "";
+  document.getElementById("sched-time").value = "";
+  document.getElementById("sched-notes").value = "";
+  document.getElementById("sched-error").textContent = "";
+
+  // Load services
+  var grid = document.getElementById("sched-service-grid");
+  grid.innerHTML = '<p style="color:var(--text-faint);font-size:13px">Loading services...</p>';
+
+  if (window.db && window.db.services) {
+    window.db.services.list().then(function(svcs) {
+      if (!svcs || svcs.length === 0) {
+        grid.innerHTML = '<p style="color:#FFD60A;font-size:13px">No services found. Add services in the Services tab first.</p>';
+        return;
+      }
+      grid.innerHTML = "";
+      svcs.forEach(function(svc) {
+        var btn = document.createElement("button");
+        btn.className = "sched-svc-btn";
+        btn.dataset.id = svc.id;
+        btn.dataset.price = svc.price || "0";
+        btn.innerHTML = '<span style="font-size:20px">' + (svc.icon || "🔧") + '</span>' +
+          '<span style="font-size:13px;font-weight:600">' + svc.name + '</span>' +
+          '<span style="font-size:12px;color:' + (svc.color || "#00C2FF") + '">' +
+          (svc.pricing_type === "quote" ? "Quote" : "$" + svc.price) + '</span>';
+        btn.onclick = function() {
+          grid.querySelectorAll(".sched-svc-btn").forEach(function(b) { b.classList.remove("sched-svc-active"); });
+          btn.classList.add("sched-svc-active");
+        };
+        grid.appendChild(btn);
+      });
+    });
+  }
+
+  modal.style.display = "flex";
+}
+
+function closeScheduleModal() {
+  document.getElementById("schedule-modal").style.display = "none";
+  pendingScheduleClient = null;
+}
+
+function submitSchedule() {
+  var activeBtn = document.querySelector(".sched-svc-btn.sched-svc-active");
+  var date = document.getElementById("sched-date").value;
+  var time = document.getElementById("sched-time").value;
+  var notes = document.getElementById("sched-notes").value.trim();
+  var errEl = document.getElementById("sched-error");
+
+  if (!activeBtn || !date || !time) {
+    errEl.textContent = "Please select a service, date, and time.";
+    return;
+  }
+
+  var client = pendingScheduleClient;
+  if (!client) return;
+
+  errEl.textContent = "";
+  var submitBtn = document.getElementById("sched-submit-btn");
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Scheduling...";
+
+  // Get slug from profile
+  var slug = "";
+  if (window.db && window.db.profile) {
+    slug = window.db.profile.slug || "";
+  }
+
+  fetch("/api/appointments", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      slug: slug,
+      serviceId: activeBtn.dataset.id,
+      firstName: client.firstName,
+      lastName: client.lastName,
+      phone: client.phone,
+      email: client.email,
+      scheduledDate: date,
+      scheduledTime: time,
+      notes: notes,
+      price: parseFloat(activeBtn.dataset.price) || 0
+    })
+  }).then(function(res) { return res.json(); })
+    .then(function(result) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Schedule Appointment";
+      if (result.error) {
+        errEl.textContent = result.error;
+      } else {
+        closeScheduleModal();
+        renderList();
+      }
+    })
+    .catch(function() {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Schedule Appointment";
+      errEl.textContent = "Something went wrong. Please try again.";
+    });
+}
+
+function createScheduleModal() {
+  var modal = document.createElement("div");
+  modal.id = "schedule-modal";
+  modal.className = "modal-overlay";
+  modal.style.display = "none";
+  modal.onclick = function(e) { if (e.target === modal) closeScheduleModal(); };
+  modal.innerHTML =
+    '<div class="modal-box" style="max-width:480px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">' +
+        '<h2 style="margin:0;font-size:20px;font-weight:700">Schedule Appointment</h2>' +
+        '<button class="modal-close" onclick="closeScheduleModal()">✕</button>' +
+      '</div>' +
+      '<p style="margin:0 0 20px;font-size:14px;color:var(--text-dim)">For <strong id="sched-client-name" style="color:var(--text)"></strong></p>' +
+      '<p class="field-label">Service</p>' +
+      '<div id="sched-service-grid" class="sched-service-grid"></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px">' +
+        '<div><p class="field-label">Date</p><input id="sched-date" type="date" class="input"></div>' +
+        '<div><p class="field-label">Time</p><input id="sched-time" type="time" class="input"></div>' +
+      '</div>' +
+      '<p class="field-label" style="margin-top:16px">Notes (optional)</p>' +
+      '<textarea id="sched-notes" class="input" style="height:60px;resize:vertical" placeholder="Any notes for this appointment..."></textarea>' +
+      '<p id="sched-error" style="color:#FF3366;font-size:13px;margin:12px 0 0"></p>' +
+      '<div style="display:flex;gap:10px;margin-top:20px">' +
+        '<button class="btn btn-ghost" onclick="closeScheduleModal()">Cancel</button>' +
+        '<button id="sched-submit-btn" class="btn btn-primary" style="flex:1" onclick="submitSchedule()">Schedule Appointment</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(modal);
 }
 
 /* ── Init ─────────────────────────────────────────────────────────────────── */

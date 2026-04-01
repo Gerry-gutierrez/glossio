@@ -479,6 +479,139 @@
   opacity: 0.9;
 }
 
+/* ─── Schedule Appointment Modal ───────────────────────────────────────── */
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modalBox {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.modalCloseBtn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 22px;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+.modalCloseBtn:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.fieldLabel {
+  margin: 0 0 6px;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+}
+
+.serviceGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.serviceOption {
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+  color: var(--text);
+}
+
+.serviceOption:hover {
+  border-color: var(--border-light);
+}
+
+.serviceOptionActive {
+  background: rgba(0, 194, 255, 0.06);
+  border-color: var(--primary);
+}
+
+.modalInput {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 13px;
+  padding: 10px 14px;
+  outline: none;
+  font-family: var(--font-serif);
+  box-sizing: border-box;
+}
+
+.modalInput:focus {
+  border-color: var(--primary);
+}
+
+.modalCancelBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 20px;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.modalSubmitBtn {
+  flex: 1;
+  background: linear-gradient(135deg, #00C2FF, #A259FF);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 20px;
+  min-height: 44px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.modalSubmitBtn:hover {
+  opacity: 0.9;
+}
+
+.modalSubmitBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* ─── Responsive ──────────────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {

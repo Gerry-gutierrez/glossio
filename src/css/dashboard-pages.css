@@ -688,6 +688,28 @@
   margin-top: 32px; font-size: 12px; color: var(--text-faint);
 }
 
+/* ─── Schedule Modal ──────────────────────────────────────────────────────── */
+
+.sched-service-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
+}
+
+.sched-svc-btn {
+  background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 12px; cursor: pointer;
+  display: flex; flex-direction: column; gap: 4px;
+  align-items: flex-start; text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+  color: var(--text); font-family: var(--font-serif);
+}
+
+.sched-svc-btn:hover { border-color: var(--border-light); }
+
+.sched-svc-active {
+  background: rgba(0, 194, 255, 0.06);
+  border-color: var(--primary) !important;
+}
+
 /* ─── Responsive ──────────────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {
