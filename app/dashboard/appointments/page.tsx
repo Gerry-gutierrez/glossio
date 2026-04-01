@@ -11,6 +11,9 @@ interface Appointment {
   notes: string; isNew: boolean
 }
 
+type ServiceOption = { id: string; name: string; price: string; icon: string; color: string; pricing_type: 'fixed' | 'quote' }
+type ClientOption = { id: string; first_name: string; last_name: string; phone: string; email: string; vehicle_year: string; vehicle_make: string; vehicle_model: string }
+
 const STATUS_STYLES: Record<string, { bg: string; border: string; color: string; label: string }> = {
   pending: { bg: 'rgba(255,214,10,0.08)', border: 'rgba(255,214,10,0.2)', color: '#FFD60A', label: 'Pending' },
   confirmed: { bg: 'rgba(0,194,255,0.08)', border: 'rgba(0,194,255,0.2)', color: '#00C2FF', label: 'Confirmed' },
@@ -38,11 +41,265 @@ function TrendingSvg() {
   return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>
 }
 
+function PlusSvg() {
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+}
+
+function UsersSvg() {
+  return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>
+}
+
+function UserPlusSvg() {
+  return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /><line x1="20" y1="8" x2="20" y2="14" /><line x1="23" y1="11" x2="17" y2="11" /></svg>
+}
+
+function SearchSvg2() {
+  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+}
+
+function CreateApptModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const [step, setStep] = useState<'choose' | 'existing' | 'new'>('choose')
+  const [clients, setClients] = useState<ClientOption[]>([])
+  const [services, setServices] = useState<ServiceOption[]>([])
+  const [search, setSearch] = useState('')
+  const [selectedClient, setSelectedClient] = useState<ClientOption | null>(null)
+  const [selectedService, setSelectedService] = useState('')
+  const [date, setDate] = useState('')
+  const [time, setTime] = useState('')
+  const [apptNotes, setApptNotes] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
+
+  // New client fields
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
+  const [vehicle, setVehicle] = useState('')
+  const [source, setSource] = useState('Instagram')
+
+  useEffect(() => {
+    async function loadData() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const [clientsRes, servicesRes] = await Promise.all([
+        supabase.from('clients').select('id, first_name, last_name, phone, email, vehicle_year, vehicle_make, vehicle_model').eq('profile_id', user.id).order('created_at', { ascending: false }),
+        supabase.from('services').select('id, name, price, icon, color, pricing_type').eq('profile_id', user.id).order('sort_order'),
+      ])
+      if (clientsRes.data) setClients(clientsRes.data)
+      if (servicesRes.data) setServices(servicesRes.data.map(s => ({ ...s, price: String(s.price), pricing_type: (s.pricing_type || 'fixed') as 'fixed' | 'quote' })))
+    }
+    loadData()
+  }, [])
+
+  const filteredClients = clients.filter(c => {
+    const q = search.toLowerCase()
+    return `${c.first_name} ${c.last_name} ${c.phone} ${c.email}`.toLowerCase().includes(q)
+  })
+
+  const handleSubmit = async () => {
+    if (!selectedService || !date || !time) { setError('Please select a service, date, and time.'); return }
+    if (step === 'existing' && !selectedClient) { setError('Please select a client.'); return }
+    if (step === 'new' && !firstName) { setError('Please enter the client\'s first name.'); return }
+    if (step === 'new' && !phone) { setError('Please enter a phone number.'); return }
+
+    setSubmitting(true)
+    setError('')
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { setError('Not authenticated'); setSubmitting(false); return }
+      const { data: profile } = await supabase.from('profiles').select('slug').eq('id', user.id).single()
+      if (!profile?.slug) { setError('Profile not found'); setSubmitting(false); return }
+
+      const svc = services.find(s => s.id === selectedService)
+      const price = svc ? parseFloat(svc.price) || 0 : 0
+
+      const body = step === 'existing' ? {
+        slug: profile.slug, serviceId: selectedService,
+        firstName: selectedClient!.first_name, lastName: selectedClient!.last_name,
+        phone: selectedClient!.phone, email: selectedClient!.email,
+        scheduledDate: date, scheduledTime: time, notes: apptNotes, price,
+      } : {
+        slug: profile.slug, serviceId: selectedService,
+        firstName, lastName, phone, email,
+        vehicleYear: vehicle.match(/^\d{4}/) ? vehicle.split(' ')[0] : '',
+        vehicleMake: vehicle.match(/^\d{4}/) ? (vehicle.split(' ')[1] || '') : (vehicle.split(' ')[0] || ''),
+        vehicleModel: vehicle.match(/^\d{4}/) ? vehicle.split(' ').slice(2).join(' ') : vehicle.split(' ').slice(1).join(' '),
+        howHeard: source, scheduledDate: date, scheduledTime: time, notes: apptNotes, price,
+      }
+
+      const res = await fetch('/api/appointments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      const result = await res.json()
+      if (!res.ok) { setError(result.error || 'Failed to create appointment'); setSubmitting(false); return }
+      onCreated()
+    } catch {
+      setError('Something went wrong.')
+      setSubmitting(false)
+    }
+  }
+
+  const today = new Date().toISOString().split('T')[0]
+
+  return (
+    <div className={styles.modalOverlay} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className={styles.modalBox}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>
+            {step === 'choose' ? 'Create Appointment' : step === 'existing' ? 'Existing Client' : 'New Client'}
+          </h2>
+          <button onClick={onClose} className={styles.modalCloseBtn}>&times;</button>
+        </div>
+
+        {/* Step 1: Choose */}
+        {step === 'choose' && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            <button onClick={() => setStep('existing')} className={styles.choiceCard}>
+              <UsersSvg />
+              <span style={{ fontSize: 15, fontWeight: 700 }}>Existing Client</span>
+              <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>Pick from your client list</span>
+            </button>
+            <button onClick={() => setStep('new')} className={styles.choiceCard}>
+              <UserPlusSvg />
+              <span style={{ fontSize: 15, fontWeight: 700 }}>New Client</span>
+              <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>Create a new client</span>
+            </button>
+          </div>
+        )}
+
+        {/* Step 2a: Existing client picker */}
+        {step === 'existing' && !selectedClient && (
+          <>
+            <button onClick={() => setStep('choose')} className={styles.backLink}>&larr; Back</button>
+            <div className={styles.clientSearchBox}>
+              <SearchSvg2 />
+              <input className={styles.clientSearchInput} placeholder="Search clients..." value={search} onChange={e => setSearch(e.target.value)} />
+            </div>
+            <div className={styles.clientPickerList}>
+              {filteredClients.length === 0 && <p style={{ color: 'var(--text-faint)', fontSize: 13, textAlign: 'center', padding: 20 }}>No clients found.</p>}
+              {filteredClients.map(c => (
+                <button key={c.id} onClick={() => setSelectedClient(c)} className={styles.clientPickerItem}>
+                  <div className={styles.clientPickerAvatar}>{c.first_name[0]}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{c.first_name} {c.last_name}</p>
+                    <p style={{ margin: 0, fontSize: 12, color: 'var(--text-dim)' }}>
+                      {[c.vehicle_year, c.vehicle_make, c.vehicle_model].filter(Boolean).join(' ') || c.phone}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Step 2b: New client form */}
+        {step === 'new' && (
+          <>
+            <button onClick={() => setStep('choose')} className={styles.backLink}>&larr; Back</button>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div>
+                <p className={styles.fieldLabel}>First Name</p>
+                <input className={styles.modalInput} placeholder="e.g. Marcus" value={firstName} onChange={e => setFirstName(e.target.value)} />
+              </div>
+              <div>
+                <p className={styles.fieldLabel}>Last Name</p>
+                <input className={styles.modalInput} placeholder="e.g. T." value={lastName} onChange={e => setLastName(e.target.value)} />
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
+              <div>
+                <p className={styles.fieldLabel}>Phone</p>
+                <input className={styles.modalInput} placeholder="(239) 555-0101" value={phone} onChange={e => setPhone(e.target.value)} />
+              </div>
+              <div>
+                <p className={styles.fieldLabel}>Email</p>
+                <input className={styles.modalInput} placeholder="email@example.com" value={email} onChange={e => setEmail(e.target.value)} />
+              </div>
+            </div>
+            <p className={styles.fieldLabel} style={{ marginTop: 12 }}>Vehicle</p>
+            <input className={styles.modalInput} placeholder="e.g. 2021 BMW M3" value={vehicle} onChange={e => setVehicle(e.target.value)} />
+            <p className={styles.fieldLabel} style={{ marginTop: 12 }}>Source</p>
+            <select className={styles.modalInput} value={source} onChange={e => setSource(e.target.value)} style={{ cursor: 'pointer' }}>
+              <option value="Instagram">Instagram</option>
+              <option value="TikTok">TikTok</option>
+              <option value="Facebook">Facebook</option>
+              <option value="Word of Mouth">Word of Mouth</option>
+              <option value="Google">Google</option>
+              <option value="Other">Other</option>
+            </select>
+          </>
+        )}
+
+        {/* Schedule section — shown after client is selected or for new client */}
+        {((step === 'existing' && selectedClient) || step === 'new') && (
+          <>
+            {step === 'existing' && selectedClient && (
+              <>
+                <button onClick={() => setSelectedClient(null)} className={styles.backLink}>&larr; Pick different client</button>
+                <p style={{ margin: '0 0 16px', fontSize: 14, color: 'var(--text-dim)' }}>
+                  For <strong style={{ color: 'var(--text)' }}>{selectedClient.first_name} {selectedClient.last_name}</strong>
+                  {selectedClient.phone && <> &middot; {selectedClient.phone}</>}
+                </p>
+              </>
+            )}
+
+            {step === 'new' && <div style={{ borderTop: '1px solid var(--border)', margin: '20px 0', paddingTop: 20 }}><p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 700, color: 'var(--primary)' }}>Appointment Details</p></div>}
+
+            {services.length === 0 ? (
+              <p style={{ color: 'var(--gold)', fontSize: 13 }}>No services found. Add services in the Services tab first.</p>
+            ) : (
+              <>
+                <p className={styles.fieldLabel}>Service</p>
+                <div className={styles.serviceGrid}>
+                  {services.map(svc => (
+                    <button key={svc.id} onClick={() => setSelectedService(svc.id)}
+                      className={`${styles.serviceOption} ${selectedService === svc.id ? styles.serviceOptionActive : ''}`}
+                      style={{ borderColor: selectedService === svc.id ? svc.color : undefined }}>
+                      <span style={{ fontSize: 20 }}>{svc.icon}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600 }}>{svc.name}</span>
+                      <span style={{ fontSize: 12, color: svc.color }}>{svc.pricing_type === 'quote' ? 'Quote' : `$${svc.price}`}</span>
+                    </button>
+                  ))}
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 16 }}>
+                  <div>
+                    <p className={styles.fieldLabel}>Date</p>
+                    <input type="date" className={styles.modalInput} value={date} onChange={e => setDate(e.target.value)} min={today} />
+                  </div>
+                  <div>
+                    <p className={styles.fieldLabel}>Time</p>
+                    <input type="time" className={styles.modalInput} value={time} onChange={e => setTime(e.target.value)} />
+                  </div>
+                </div>
+
+                <p className={styles.fieldLabel} style={{ marginTop: 16 }}>Notes (optional)</p>
+                <textarea className={styles.modalInput} style={{ height: 60, resize: 'vertical' }} value={apptNotes} onChange={e => setApptNotes(e.target.value)} placeholder="Any notes..." />
+              </>
+            )}
+
+            {error && <p style={{ color: '#FF3366', fontSize: 13, margin: '12px 0 0' }}>{error}</p>}
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+              <button onClick={onClose} className={styles.modalCancelBtn}>Cancel</button>
+              <button onClick={handleSubmit} disabled={submitting || services.length === 0} className={styles.modalSubmitBtn}>
+                {submitting ? 'Creating...' : step === 'new' ? 'Add Client & Schedule' : 'Schedule Appointment'}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 const fmtMoney = (n: number) => `$${n.toFixed(2)}`
 
 export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [filter, setFilter] = useState('all')
+  const [showCreate, setShowCreate] = useState(false)
 
   const loadAppointments = useCallback(async () => {
     const supabase = createClient()
@@ -115,11 +372,20 @@ export default function AppointmentsPage() {
 
   return (
     <>
+      {showCreate && (
+        <CreateApptModal
+          onClose={() => setShowCreate(false)}
+          onCreated={() => { setShowCreate(false); loadAppointments() }}
+        />
+      )}
       <div className={styles.header}>
         <div>
           <p className={styles.headerLabel}>Detailer Dashboard</p>
           <h1 className={styles.headerTitle}>Appointments</h1>
         </div>
+        <button onClick={() => setShowCreate(true)} className={styles.createApptBtn}>
+          <PlusSvg /> Create Appointment
+        </button>
       </div>
 
       {/* Revenue Cards */}

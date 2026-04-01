@@ -305,6 +305,238 @@
   margin: 0;
 }
 
+/* ─── Create Appointment ──────────────────────────────────────────────── */
+
+.createApptBtn {
+  background: linear-gradient(135deg, #00C2FF, #A259FF);
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 20px;
+  min-height: 44px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+
+.createApptBtn:hover { opacity: 0.9; }
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modalBox {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.modalCloseBtn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 22px;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+.modalCloseBtn:hover { background: rgba(255, 255, 255, 0.05); }
+
+.choiceCard {
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 28px 20px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s;
+  color: var(--text);
+}
+
+.choiceCard:hover {
+  border-color: var(--primary);
+  background: rgba(0, 194, 255, 0.04);
+}
+
+.backLink {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.clientSearchBox {
+  background: var(--bg);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 9px 14px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.clientSearchInput {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 13px;
+  font-family: var(--font-serif);
+  width: 100%;
+}
+
+.clientPickerList {
+  max-height: 280px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.clientPickerItem {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  transition: border-color 0.15s;
+  color: var(--text);
+  width: 100%;
+}
+
+.clientPickerItem:hover { border-color: var(--primary); }
+
+.clientPickerAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  background: linear-gradient(135deg, rgba(0, 194, 255, 0.13), rgba(162, 89, 255, 0.13));
+  border: 1px solid rgba(0, 194, 255, 0.2);
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.fieldLabel {
+  margin: 0 0 6px;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+}
+
+.serviceGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.serviceOption {
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+  color: var(--text);
+}
+
+.serviceOption:hover { border-color: var(--border-light); }
+
+.serviceOptionActive {
+  background: rgba(0, 194, 255, 0.06);
+  border-color: var(--primary);
+}
+
+.modalInput {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 13px;
+  padding: 10px 14px;
+  outline: none;
+  font-family: var(--font-serif);
+  box-sizing: border-box;
+}
+
+.modalInput:focus { border-color: var(--primary); }
+
+.modalCancelBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 20px;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.modalSubmitBtn {
+  flex: 1;
+  background: linear-gradient(135deg, #00C2FF, #A259FF);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 20px;
+  min-height: 44px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.modalSubmitBtn:hover { opacity: 0.9; }
+.modalSubmitBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
 /* ─── Responsive ──────────────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {
