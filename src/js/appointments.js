@@ -701,19 +701,18 @@ function caRenderServices() {
 }
 
 function caSelectService(btn) {
-  document.querySelectorAll("#ca-service-grid .sched-svc-btn").forEach(function(b) { b.classList.remove("sched-svc-active"); });
-  btn.classList.add("sched-svc-active");
+  btn.classList.toggle("sched-svc-active");
 }
 
 function caSubmit() {
-  var activeBtn = document.querySelector("#ca-service-grid .sched-svc-btn.sched-svc-active");
+  var activeBtns = document.querySelectorAll("#ca-service-grid .sched-svc-btn.sched-svc-active");
   var date = document.getElementById("ca-date").value;
   var time = document.getElementById("ca-time").value;
   var notes = document.getElementById("ca-notes").value.trim();
   var errEl = document.getElementById("ca-error");
 
-  if (!activeBtn || !date || !time) {
-    errEl.textContent = "Please select a service, date, and time.";
+  if (activeBtns.length === 0 || !date || !time) {
+    errEl.textContent = "Please select at least one service, date, and time.";
     return;
   }
 
@@ -725,16 +724,13 @@ function caSubmit() {
     lastName = document.getElementById("ca-last").value.trim();
     phone = document.getElementById("ca-phone").value.trim();
     email = document.getElementById("ca-email").value.trim();
-    var vehicle = document.getElementById("ca-vehicle").value.trim();
+    vehicleYear = document.getElementById("ca-vyear").value.trim();
+    vehicleMake = document.getElementById("ca-vmake").value.trim();
+    vehicleModel = document.getElementById("ca-vmodel").value.trim();
     howHeard = document.getElementById("ca-source").value;
 
     if (!firstName) { errEl.textContent = "Please enter the client's first name."; return; }
     if (!phone) { errEl.textContent = "Please enter a phone number."; return; }
-
-    var vParts = vehicle.split(" ");
-    vehicleYear = vParts.length >= 3 && /^\d{4}$/.test(vParts[0]) ? vParts[0] : "";
-    vehicleMake = vehicleYear ? (vParts[1] || "") : (vParts[0] || "");
-    vehicleModel = vehicleYear ? vParts.slice(2).join(" ") : vParts.slice(1).join(" ");
   } else {
     if (!caSelectedClient) { errEl.textContent = "Please select a client."; return; }
     firstName = caSelectedClient.first_name;
@@ -748,12 +744,24 @@ function caSubmit() {
   submitBtn.disabled = true;
   submitBtn.textContent = "Creating...";
 
-  /* Get profileId directly — more reliable than slug */
   var profileId = window.__glossio_user_id || "";
+
+  /* Build service names and total price from selected services */
+  var serviceNames = [];
+  var totalPrice = 0;
+  var firstServiceId = "";
+  activeBtns.forEach(function(btn) {
+    if (!firstServiceId) firstServiceId = btn.dataset.id;
+    var svc = caServices.find(function(s) { return s.id === btn.dataset.id; });
+    if (svc) serviceNames.push(svc.name);
+    totalPrice += parseFloat(btn.dataset.price) || 0;
+  });
 
   var body = {
     profileId: profileId,
-    serviceId: activeBtn.dataset.id,
+    serviceId: firstServiceId,
+    serviceName: serviceNames.join(" + "),
+    servicePrice: totalPrice,
     firstName: firstName,
     lastName: lastName,
     phone: phone,
@@ -761,7 +769,7 @@ function caSubmit() {
     scheduledDate: date,
     scheduledTime: time,
     notes: notes,
-    price: parseFloat(activeBtn.dataset.price) || 0
+    price: totalPrice
   };
 
   if (isNew) {

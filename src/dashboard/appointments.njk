@@ -131,8 +131,11 @@ extraJs: appointments.js
         <div><p class="field-label">Phone</p><input id="ca-phone" class="input" placeholder="(239) 555-0101"></div>
         <div><p class="field-label">Email</p><input id="ca-email" class="input" placeholder="email@example.com"></div>
       </div>
-      <p class="field-label">Vehicle</p>
-      <input id="ca-vehicle" class="input" placeholder="e.g. 2021 BMW M3">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+        <div><p class="field-label">Year</p><input id="ca-vyear" class="input" placeholder="e.g. 2021"></div>
+        <div><p class="field-label">Make</p><input id="ca-vmake" class="input" placeholder="e.g. BMW"></div>
+        <div><p class="field-label">Model</p><input id="ca-vmodel" class="input" placeholder="e.g. M3"></div>
+      </div>
       <p class="field-label" style="margin-top:12px">Source</p>
       <select id="ca-source" class="input" style="cursor:pointer">
         <option value="Instagram">Instagram</option>
