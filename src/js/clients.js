@@ -575,17 +575,13 @@ function submitSchedule() {
   submitBtn.disabled = true;
   submitBtn.textContent = "Scheduling...";
 
-  // Get slug from profile (async)
-  var slugPromise = (window.db && window.db.profile)
-    ? window.db.profile.get().then(function(p) { return (p && p.slug) || ""; })
-    : Promise.resolve("");
+  var profileId = window.__glossio_user_id || "";
 
-  slugPromise.then(function(slug) {
-    fetch("/api/appointments", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        slug: slug,
+  fetch("/api/appointments", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      profileId: profileId,
         serviceId: activeBtn.dataset.id,
         firstName: client.firstName,
         lastName: client.lastName,
@@ -612,7 +608,6 @@ function submitSchedule() {
         submitBtn.textContent = "Schedule Appointment";
         errEl.textContent = "Something went wrong. Please try again.";
       });
-  }); /* end slugPromise.then */
 }
 
 function createScheduleModal() {

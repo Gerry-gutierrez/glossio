@@ -748,15 +748,11 @@ function caSubmit() {
   submitBtn.disabled = true;
   submitBtn.textContent = "Creating...";
 
-  /* Fetch slug from profile before submitting */
-  var slugPromise = (window.db && window.db.profile)
-    ? window.db.profile.get().then(function(p) { return (p && p.slug) || ""; })
-    : Promise.resolve("");
-
-  slugPromise.then(function(slug) {
+  /* Get profileId directly — more reliable than slug */
+  var profileId = window.__glossio_user_id || "";
 
   var body = {
-    slug: slug,
+    profileId: profileId,
     serviceId: activeBtn.dataset.id,
     firstName: firstName,
     lastName: lastName,
@@ -796,7 +792,6 @@ function caSubmit() {
       errEl.textContent = "Something went wrong. Please try again.";
     });
 
-  }); /* end slugPromise.then */
 }
 
 /* ── Init ─────────────────────────────────────────────────────────────────── */

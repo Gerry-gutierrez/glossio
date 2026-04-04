@@ -15,6 +15,7 @@ export async function POST(request: Request) {
 
     const {
       slug,
+      profileId: directProfileId,
       serviceId,
       firstName,
       lastName,
@@ -32,25 +33,32 @@ export async function POST(request: Request) {
     } = body
 
     // Validate required fields
-    if (!slug || !serviceId || !firstName || !phone || !scheduledDate || !scheduledTime) {
+    if ((!slug && !directProfileId) || !serviceId || !firstName || !phone || !scheduledDate || !scheduledTime) {
       return NextResponse.json(
-        { error: 'Missing required fields: slug, serviceId, firstName, phone, scheduledDate, scheduledTime' },
+        { error: 'Missing required fields: slug or profileId, serviceId, firstName, phone, scheduledDate, scheduledTime' },
         { status: 400 }
       )
     }
 
-    // Look up profile by slug
-    const { data: profile, error: profileError } = await getSupabaseAdmin()
-      .from('profiles')
-      .select('id')
-      .eq('slug', slug)
-      .single()
+    // Resolve profileId — either passed directly (detailer-side) or looked up by slug (public booking)
+    let profileId = directProfileId
 
-    if (profileError || !profile) {
-      return NextResponse.json({ error: 'Detailer profile not found' }, { status: 404 })
+    if (!profileId && slug) {
+      const { data: profile, error: profileError } = await getSupabaseAdmin()
+        .from('profiles')
+        .select('id')
+        .eq('slug', slug)
+        .single()
+
+      if (profileError || !profile) {
+        return NextResponse.json({ error: 'Detailer profile not found' }, { status: 404 })
+      }
+      profileId = profile.id
     }
 
-    const profileId = profile.id
+    if (!profileId) {
+      return NextResponse.json({ error: 'Could not resolve profile' }, { status: 400 })
+    }
 
     // Upsert client by phone + profile_id
     // First check if client exists
