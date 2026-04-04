@@ -577,7 +577,7 @@ function submitSchedule() {
 
   var profileId = window.__glossio_user_id || "";
 
-  fetch("/api/appointments", {
+  fetch("/.netlify/functions/create-booking", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

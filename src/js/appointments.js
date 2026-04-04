@@ -771,7 +771,7 @@ function caSubmit() {
     body.howHeard = howHeard;
   }
 
-  fetch("/api/appointments", {
+  fetch("/.netlify/functions/create-booking", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body)

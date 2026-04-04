@@ -13,14 +13,14 @@ export const handler = async (event) => {
   }
 
   const {
-    slug, serviceId, serviceName, servicePrice,
+    slug, profileId: directProfileId, serviceId, serviceName, servicePrice,
     firstName, lastName, email, phone,
     vehicleYear, vehicleMake, vehicleModel,
-    notes, scheduledDate, scheduledTime
+    notes, scheduledDate, scheduledTime, howHeard
   } = body;
 
   /* ── Validate required fields ── */
-  if (!slug || !serviceId || !firstName || !lastName || !phone || !scheduledDate || !scheduledTime) {
+  if ((!slug && !directProfileId) || !serviceId || !firstName || !phone || !scheduledDate || !scheduledTime) {
     return {
       statusCode: 400,
       body: JSON.stringify({ error: "Missing required fields: name, phone, service, date, and time are required." })
@@ -30,34 +30,46 @@ export const handler = async (event) => {
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   try {
-    /* ── Look up profile by slug ── */
-    let { data: profile, error: profileErr } = await supabase
-      .from("profiles")
-      .select("id, company_name")
-      .eq("slug", slug)
-      .single();
+    /* ── Resolve profile — either by direct ID (detailer-side) or slug (public booking) ── */
+    let profile = null;
 
-    /* Fallback: if slug column is empty, try matching by derived slug from company_name */
-    if (profileErr || !profile) {
-      const { data: allProfiles } = await supabase
+    if (directProfileId) {
+      const { data } = await supabase
         .from("profiles")
-        .select("id, company_name, slug");
+        .select("id, company_name")
+        .eq("id", directProfileId)
+        .single();
+      profile = data;
+    }
 
-      if (allProfiles) {
-        profile = allProfiles.find(function(p) {
-          var derived = (p.company_name || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
-          return derived === slug;
-        });
+    if (!profile && slug) {
+      let { data, error: profileErr } = await supabase
+        .from("profiles")
+        .select("id, company_name")
+        .eq("slug", slug)
+        .single();
 
-        /* If found, persist the slug so future lookups are direct */
-        if (profile && !profile.slug) {
-          await supabase.from("profiles").update({ slug: slug }).eq("id", profile.id);
+      if (profileErr || !data) {
+        const { data: allProfiles } = await supabase
+          .from("profiles")
+          .select("id, company_name, slug");
+
+        if (allProfiles) {
+          data = allProfiles.find(function(p) {
+            var derived = (p.company_name || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
+            return derived === slug;
+          });
+
+          if (data && !data.slug) {
+            await supabase.from("profiles").update({ slug: slug }).eq("id", data.id);
+          }
         }
       }
+      profile = data;
     }
 
     if (!profile) {
-      return { statusCode: 404, body: JSON.stringify({ error: "Detailer not found", debug_slug: slug }) };
+      return { statusCode: 404, body: JSON.stringify({ error: "Detailer not found" }) };
     }
 
     /* ── Look up the service to get the price ── */
@@ -94,8 +106,7 @@ export const handler = async (event) => {
       return { statusCode: 404, body: JSON.stringify({ error: "Service not found" }) };
     }
 
-    /* ── Find existing client (if any) — don't create yet ── */
-    /* Clients are only created when the detailer marks "Came Through" */
+    /* ── Find or create client ── */
     let clientId = null;
     const { data: existingClient } = await supabase
       .from("clients")
@@ -106,6 +117,24 @@ export const handler = async (event) => {
 
     if (existingClient) {
       clientId = existingClient.id;
+    } else if (directProfileId) {
+      /* Detailer-side creation: create the client now */
+      const { data: newClient } = await supabase
+        .from("clients")
+        .insert({
+          profile_id: profile.id,
+          first_name: firstName,
+          last_name: lastName || "",
+          email: email || null,
+          phone: phone,
+          vehicle_year: vehicleYear || null,
+          vehicle_make: vehicleMake || null,
+          vehicle_model: vehicleModel || null,
+          source: howHeard || null,
+        })
+        .select("id")
+        .single();
+      if (newClient) clientId = newClient.id;
     }
 
     /* ── Create the appointment ── */
