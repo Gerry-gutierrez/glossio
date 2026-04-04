@@ -575,43 +575,44 @@ function submitSchedule() {
   submitBtn.disabled = true;
   submitBtn.textContent = "Scheduling...";
 
-  // Get slug from profile
-  var slug = "";
-  if (window.db && window.db.profile) {
-    slug = window.db.profile.slug || "";
-  }
+  // Get slug from profile (async)
+  var slugPromise = (window.db && window.db.profile)
+    ? window.db.profile.get().then(function(p) { return (p && p.slug) || ""; })
+    : Promise.resolve("");
 
-  fetch("/api/appointments", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      slug: slug,
-      serviceId: activeBtn.dataset.id,
-      firstName: client.firstName,
-      lastName: client.lastName,
-      phone: client.phone,
-      email: client.email,
-      scheduledDate: date,
-      scheduledTime: time,
-      notes: notes,
-      price: parseFloat(activeBtn.dataset.price) || 0
-    })
-  }).then(function(res) { return res.json(); })
-    .then(function(result) {
-      submitBtn.disabled = false;
-      submitBtn.textContent = "Schedule Appointment";
-      if (result.error) {
-        errEl.textContent = result.error;
-      } else {
-        closeScheduleModal();
-        renderList();
-      }
-    })
-    .catch(function() {
-      submitBtn.disabled = false;
-      submitBtn.textContent = "Schedule Appointment";
-      errEl.textContent = "Something went wrong. Please try again.";
-    });
+  slugPromise.then(function(slug) {
+    fetch("/api/appointments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        slug: slug,
+        serviceId: activeBtn.dataset.id,
+        firstName: client.firstName,
+        lastName: client.lastName,
+        phone: client.phone,
+        email: client.email,
+        scheduledDate: date,
+        scheduledTime: time,
+        notes: notes,
+        price: parseFloat(activeBtn.dataset.price) || 0
+      })
+    }).then(function(res) { return res.json(); })
+      .then(function(result) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Schedule Appointment";
+        if (result.error) {
+          errEl.textContent = result.error;
+        } else {
+          closeScheduleModal();
+          renderList();
+        }
+      })
+      .catch(function() {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Schedule Appointment";
+        errEl.textContent = "Something went wrong. Please try again.";
+      });
+  }); /* end slugPromise.then */
 }
 
 function createScheduleModal() {

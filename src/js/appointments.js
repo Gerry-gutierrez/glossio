@@ -748,8 +748,12 @@ function caSubmit() {
   submitBtn.disabled = true;
   submitBtn.textContent = "Creating...";
 
-  var slug = "";
-  if (window.db && window.db.profile) { slug = window.db.profile.slug || ""; }
+  /* Fetch slug from profile before submitting */
+  var slugPromise = (window.db && window.db.profile)
+    ? window.db.profile.get().then(function(p) { return (p && p.slug) || ""; })
+    : Promise.resolve("");
+
+  slugPromise.then(function(slug) {
 
   var body = {
     slug: slug,
@@ -791,6 +795,8 @@ function caSubmit() {
       submitBtn.textContent = isNew ? "Add Client & Schedule" : "Schedule Appointment";
       errEl.textContent = "Something went wrong. Please try again.";
     });
+
+  }); /* end slugPromise.then */
 }
 
 /* ── Init ─────────────────────────────────────────────────────────────────── */
