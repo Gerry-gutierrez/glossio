@@ -277,7 +277,61 @@ function updateApptStatus(id, newStatus) {
 
 function confirmAppt(id) { updateApptStatus(id, "confirmed"); }
 function cancelAppt(id) { updateApptStatus(id, "cancelled"); }
-function missAppt(id) { updateApptStatus(id, "missed"); }
+function missAppt(id) {
+  updateApptStatus(id, "missed");
+
+  /* Auto-create/update flaker client on no-show */
+  const a = appointments.find(ap => ap.id === id);
+  if (!a) return;
+
+  const nameParts = (a.client || "").split(" ");
+  const firstName = nameParts[0] || "Unknown";
+  const lastName = nameParts.slice(1).join(" ") || "";
+  const now = new Date();
+  const dateStr = a.date || now.toISOString().split("T")[0];
+
+  if (window.db && window.db.clients) {
+    window.db.clients.list().then(function(allClients) {
+      var match = allClients.find(function(c) {
+        return (a.phone && c.phone === a.phone) || (a.email && c.email === a.email);
+      });
+      if (match) {
+        var newCount = (parseInt(match.no_show_count) || 0) + 1;
+        window.db.clients.update(match.id, {
+          no_show_count: newCount,
+          status: "flaker"
+        }).then(function() {
+          console.log("Flaker bumped: no_show_count=" + newCount);
+        }).catch(function(err) {
+          console.error("Flaker update failed:", err);
+        });
+      } else {
+        window.db.clients.create({
+          first_name: firstName,
+          last_name: lastName,
+          phone: a.phone || "",
+          email: a.email || "",
+          vehicle_year: (a.vehicle || "").split(" ")[0] || null,
+          vehicle_make: (a.vehicle || "").split(" ")[1] || null,
+          vehicle_model: (a.vehicle || "").split(" ").slice(2).join(" ") || null,
+          source: "booking_link",
+          status: "flaker",
+          visits: 0,
+          total_spent: 0,
+          last_visit: dateStr,
+          no_show_count: 1,
+          notes: "No-show on " + dateStr
+        }).then(function() {
+          console.log("Flaker client created");
+        }).catch(function(err) {
+          console.error("Flaker create failed:", err);
+        });
+      }
+    }).catch(function(err) {
+      console.error("Client list fetch failed:", err);
+    });
+  }
+}
 
 function completeAppt(id) {
   updateApptStatus(id, "complete");

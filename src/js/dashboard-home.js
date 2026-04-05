@@ -345,10 +345,63 @@ function dashToggleCard(el) {
 function dashAction(id, newStatus) {
   if (window.db && window.db.appointments) {
     window.db.appointments.update(id, { status: newStatus }).then(function() {
-      showDashToast(newStatus === 'confirmed' ? 'Appointment confirmed!' : newStatus === 'cancelled' ? 'Appointment cancelled' : 'Status updated');
+      var msg = newStatus === 'confirmed' ? 'Appointment confirmed!' :
+                newStatus === 'cancelled' ? 'Appointment cancelled' :
+                newStatus === 'missed' ? 'Marked as No-Show' : 'Status updated';
+      showDashToast(msg);
+      if (newStatus === 'missed') { dashFlagFlaker(id); }
       loadDashStats(); /* Refresh the dashboard */
     });
   }
+}
+
+function dashFlagFlaker(id) {
+  if (!window.db || !window.db.appointments) return;
+  window.db.appointments.get(id).then(function(a) {
+    if (!a) return;
+    var phone = a.client_phone || '';
+    var firstName = a.client_first_name || '';
+    var lastName = a.client_last_name || '';
+    var dateStr = a.appt_date || a.scheduled_date || new Date().toISOString().split('T')[0];
+    var uid = window.__glossio_user_id;
+    if (!uid || !phone || !window.sbClient) return;
+    window.sbClient.from('clients')
+      .select('id, no_show_count')
+      .eq('profile_id', uid)
+      .eq('phone', phone)
+      .single()
+      .then(function(r) {
+        if (r.data) {
+          var newCount = (parseInt(r.data.no_show_count) || 0) + 1;
+          window.sbClient.from('clients').update({
+            no_show_count: newCount,
+            status: 'flaker'
+          }).eq('id', r.data.id).then(function() {
+            console.log('Flaker bumped: ' + newCount);
+          });
+        } else {
+          window.sbClient.from('clients').insert({
+            profile_id: uid,
+            first_name: firstName,
+            last_name: lastName,
+            phone: phone,
+            email: a.client_email || null,
+            vehicle_year: a.vehicle_year || null,
+            vehicle_make: a.vehicle_make || null,
+            vehicle_model: a.vehicle_model || null,
+            source: 'booking_link',
+            status: 'flaker',
+            visits: 0,
+            total_spent: 0,
+            last_visit: dateStr,
+            no_show_count: 1,
+            notes: 'No-show on ' + dateStr
+          }).then(function() {
+            console.log('Flaker client created');
+          });
+        }
+      });
+  });
 }
 
 function dashCameThrough(id) {

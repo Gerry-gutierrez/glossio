@@ -35,6 +35,7 @@ function loadClients() {
           totalSpent: parseFloat(c.total_spent) || parseFloat(c.totalSpent) || 0,
           visits: parseInt(c.total_visits) || parseInt(c.visits) || parseInt(c.visit_count) || 0,
           status: c.status || ((parseInt(c.total_visits) || 0) > 0 ? "active" : "never_came"),
+          noShowCount: parseInt(c.no_show_count) || 0,
           notes: c.notes || "",
           history: c.history || []
         };
@@ -82,7 +83,8 @@ function getFilteredClients() {
     .filter(c => {
       const matchSearch = (c.firstName + " " + c.lastName + " " + c.phone + " " + c.vehicle + " " + c.email + " " + c.source)
         .toLowerCase().includes(search);
-      const matchFilter = currentFilter === "all" || c.status === currentFilter;
+      const matchFilter = currentFilter === "all" || c.status === currentFilter ||
+        (currentFilter === "flaker" && (c.noShowCount || 0) > 0);
       return matchSearch && matchFilter;
     })
     .sort((a, b) => {
@@ -149,8 +151,12 @@ function renderList() {
   noResults.style.display = "none";
   list.innerHTML = filtered.map(c => {
     const isActive = c.status === "active";
-    const statusColor = isActive ? "#00E5A0" : "#FFD60A";
-    const statusLabel = isActive ? "Came Through" : "Never Came";
+    const isFlaker = c.status === "flaker" || (c.noShowCount || 0) > 0;
+    const statusColor = isFlaker ? "#FF8C42" : (isActive ? "#00E5A0" : "#FFD60A");
+    const statusLabel = isFlaker ? "⚠ Flaker" : (isActive ? "Came Through" : "Never Came");
+    const flakerBadge = (c.noShowCount || 0) > 0
+      ? `<span class="client-status-badge" style="background:#FF8C4215;color:#FF8C42;border:1px solid #FF8C4233;margin-left:6px">⚠ ${c.noShowCount} no-show${c.noShowCount > 1 ? 's' : ''}</span>`
+      : '';
     return `
       <div class="client-row" style="border-left:3px solid ${statusColor}" onclick="showDetail('${c.id}')">
         <div class="client-avatar" style="background:linear-gradient(135deg, ${statusColor}22, ${statusColor}11);border:1.5px solid ${statusColor}33;color:${statusColor}">
@@ -159,7 +165,7 @@ function renderList() {
         <div class="client-info">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
             <p class="client-row-name">${c.firstName} ${c.lastName}</p>
-            <span class="client-status-badge" style="background:${statusColor}15;color:${statusColor};border:1px solid ${statusColor}33">${statusLabel}</span>
+            <span class="client-status-badge" style="background:${statusColor}15;color:${statusColor};border:1px solid ${statusColor}33">${statusLabel}</span>${flakerBadge && !isFlaker ? flakerBadge : ''}${isFlaker && c.noShowCount > 1 ? `<span class="client-status-badge" style="background:#FF8C4215;color:#FF8C42;border:1px solid #FF8C4233;margin-left:6px">${c.noShowCount}x</span>` : ''}
           </div>
           <p class="client-row-detail">${c.vehicle || "No vehicle"} · via ${c.source || "Unknown"}</p>
         </div>
