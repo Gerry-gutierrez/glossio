@@ -239,7 +239,7 @@
   var clients = {
     list: afterAuth(function() {
       if (sb() && userId()) {
-        return sb().from("client_stats").select("*")
+        return sb().from("clients").select("*")
           .eq("profile_id", userId())
           .then(function(r) { return r.data || []; });
       }
@@ -248,7 +248,7 @@
 
     get: afterAuth(function(id) {
       if (sb() && userId()) {
-        return sb().from("client_stats").select("*")
+        return sb().from("clients").select("*")
           .eq("id", id).eq("profile_id", userId()).single()
           .then(function(r) { return r.data; });
       }
