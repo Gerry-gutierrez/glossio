@@ -33,9 +33,15 @@ function fmtDate(dateStr) {
 /* Format time as "3:00 PM" */
 function fmtTime(timeStr) {
   if (!timeStr) return "";
+  var upper = String(timeStr).toUpperCase();
+  if (/\b(AM|PM)\b/.test(upper)) {
+    var cleaned = upper.replace(/\s*(AM|PM)\s*/g, "").trim();
+    var suffix = upper.indexOf("PM") !== -1 ? "PM" : "AM";
+    return cleaned + " " + suffix;
+  }
   var parts = timeStr.split(":");
   var h = parseInt(parts[0], 10);
-  var min = parts[1] || "00";
+  var min = (parts[1] || "00").replace(/\D/g, "").padStart(2, "0").slice(0, 2);
   var ampm = h >= 12 ? "PM" : "AM";
   if (h === 0) h = 12;
   else if (h > 12) h -= 12;
