@@ -141,6 +141,8 @@ function _renderDashStats(appts, now, thisMonth, thisYear, getMonth, getYear) {
           '<div class="dash-card-actions" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:none;flex-wrap:wrap;gap:6px">' +
             '<button style="' + btnBase + 'background:#00C2FF15;border:1px solid #00C2FF33;color:#00C2FF" onclick="event.stopPropagation();dashAction(\'' + a.id + '\',\'confirmed\')">✓ Confirm</button>' +
             '<button style="' + btnBase + 'background:#A259FF15;border:1px solid #A259FF33;color:#A259FF" onclick="event.stopPropagation();dashAdjust(\'' + a.id + '\')">✎ Adjust</button>' +
+            '<button style="' + btnBase + 'background:#00E5A015;border:1px solid #00E5A033;color:#00E5A0" onclick="event.stopPropagation();dashCameThrough(\'' + a.id + '\')">✅ Came Through</button>' +
+            '<button style="' + btnBase + 'background:#FF8C4215;border:1px solid #FF8C4233;color:#FF8C42" onclick="event.stopPropagation();dashAction(\'' + a.id + '\',\'missed\')">⚠ No-Show</button>' +
             '<button style="' + btnBase + 'background:#FF336615;border:1px solid #FF336633;color:#FF3366" onclick="event.stopPropagation();dashAction(\'' + a.id + '\',\'cancelled\')">✗ Cancel</button>' +
           '</div>' +
         '</div>';
@@ -170,6 +172,7 @@ function _renderDashStats(appts, now, thisMonth, thisYear, getMonth, getYear) {
           '<div class="dash-card-actions" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:none;flex-wrap:wrap;gap:6px">' +
             '<button style="' + btnBase + 'background:#00E5A015;border:1px solid #00E5A033;color:#00E5A0" onclick="event.stopPropagation();dashCameThrough(\'' + a.id + '\')">✅ Came Through</button>' +
             '<button style="' + btnBase + 'background:#A259FF15;border:1px solid #A259FF33;color:#A259FF" onclick="event.stopPropagation();dashAdjust(\'' + a.id + '\')">✎ Adjust</button>' +
+            '<button style="' + btnBase + 'background:#FF8C4215;border:1px solid #FF8C4233;color:#FF8C42" onclick="event.stopPropagation();dashAction(\'' + a.id + '\',\'missed\')">⚠ No-Show</button>' +
             '<button style="' + btnBase + 'background:#FF336615;border:1px solid #FF336633;color:#FF3366" onclick="event.stopPropagation();dashAction(\'' + a.id + '\',\'cancelled\')">✗ Cancel</button>' +
           '</div>' +
         '</div>';
