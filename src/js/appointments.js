@@ -12,7 +12,7 @@ const APPT_STATUS = {
 };
 
 let appointments = [];
-let apptFilter = "all";
+let apptFilter = "pending";
 let apptView = "list";
 let nextApptId = 1;
 let expandedApptId = null;
