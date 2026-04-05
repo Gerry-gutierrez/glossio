@@ -41,6 +41,7 @@ extraJs: appointments.js
   <div class="status-card" onclick="setApptFilter('pending')"><p class="status-card-value" style="color:#FFD60A" id="count-pending">0</p><p class="status-card-label">Awaiting Confirm</p></div>
   <div class="status-card" onclick="setApptFilter('confirmed')"><p class="status-card-value" style="color:#00C2FF" id="count-confirmed">0</p><p class="status-card-label">Confirmed</p></div>
   <div class="status-card" onclick="setApptFilter('complete')"><p class="status-card-value" style="color:#00E5A0" id="count-complete">0</p><p class="status-card-label">Complete</p></div>
+  <div class="status-card" onclick="setApptFilter('missed')"><p class="status-card-value" style="color:#FF8C42" id="count-missed">0</p><p class="status-card-label">No-Shows</p></div>
   <div class="status-card" onclick="setApptFilter('cancelled')"><p class="status-card-value" style="color:#FF3366" id="count-cancelled">0</p><p class="status-card-label">Cancelled</p></div>
 </div>
 
@@ -69,6 +70,7 @@ extraJs: appointments.js
   <button class="filter-tab" data-filter="pending" onclick="setApptFilter('pending')">Pending (0)</button>
   <button class="filter-tab" data-filter="confirmed" onclick="setApptFilter('confirmed')">Confirmed (0)</button>
   <button class="filter-tab" data-filter="complete" onclick="setApptFilter('complete')">Complete (0)</button>
+  <button class="filter-tab" data-filter="missed" onclick="setApptFilter('missed')">Missed (0)</button>
 </div>
 
 <!-- List View -->

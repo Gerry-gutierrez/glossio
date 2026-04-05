@@ -8,6 +8,7 @@ const APPT_STATUS = {
   confirmed: { color: "#00C2FF", bg: "#00C2FF15", border: "#00C2FF33", label: "Confirmed" },
   complete:  { color: "#00E5A0", bg: "#00E5A015", border: "#00E5A033", label: "Complete" },
   cancelled: { color: "#FF3366", bg: "#FF336615", border: "#FF336633", label: "Cancelled" },
+  missed:    { color: "#FF8C42", bg: "#FF8C4215", border: "#FF8C4233", label: "Missed" },
 };
 
 let appointments = [];
@@ -112,11 +113,14 @@ function updateApptStats() {
   const confirmed = appointments.filter(a => a.status === "confirmed").length;
   const complete = appointments.filter(a => a.status === "complete").length;
   const cancelled = appointments.filter(a => a.status === "cancelled").length;
+  const missed = appointments.filter(a => a.status === "missed").length;
 
   document.getElementById("count-pending").textContent = pending;
   document.getElementById("count-confirmed").textContent = confirmed;
   document.getElementById("count-complete").textContent = complete;
   document.getElementById("count-cancelled").textContent = cancelled;
+  var missedEl = document.getElementById("count-missed");
+  if (missedEl) missedEl.textContent = missed;
 
   document.getElementById("leg-pending").textContent = pending;
   document.getElementById("leg-confirmed").textContent = confirmed;
@@ -219,16 +223,20 @@ function renderAppts() {
                 <button class="action-btn" style="background:#00C2FF15;border-color:#00C2FF33;color:#00C2FF" onclick="confirmAppt('${a.id}')">✓ Confirm</button>
                 <button class="action-btn" style="background:#A78BFA15;border-color:#A78BFA33;color:#A78BFA" onclick="openAdjustModal('${a.id}')">✎ Adjust</button>
                 <button class="action-btn" style="background:#00E5A015;border-color:#00E5A033;color:#00E5A0" onclick="completeAppt('${a.id}')">✅ Came Through</button>
+                <button class="action-btn" style="background:#FF8C4215;border-color:#FF8C4233;color:#FF8C42" onclick="missAppt('${a.id}')">⚠ No-Show</button>
                 <button class="action-btn" style="background:#FF336615;border-color:#FF336633;color:#FF3366" onclick="cancelAppt('${a.id}')">✗ Cancel</button>
               ` : ''}
               ${a.status === "confirmed" ? `
                 <button class="action-btn" style="background:#A78BFA15;border-color:#A78BFA33;color:#A78BFA" onclick="openAdjustModal('${a.id}')">✎ Adjust</button>
                 <button class="action-btn" style="background:#00E5A015;border-color:#00E5A033;color:#00E5A0" onclick="completeAppt('${a.id}')">✅ Came Through</button>
+                <button class="action-btn" style="background:#FF8C4215;border-color:#FF8C4233;color:#FF8C42" onclick="missAppt('${a.id}')">⚠ No-Show</button>
                 <button class="action-btn" style="background:#FF336615;border-color:#FF336633;color:#FF3366" onclick="cancelAppt('${a.id}')">✗ Cancel</button>
               ` : ''}
               ${a.status === "complete" ? `<span style="font-size:12px;color:var(--text-faint)">Done ✓</span>
                 <button class="action-btn" style="background:#FF336615;border-color:#FF336633;color:#FF3366" onclick="deleteAppt('${a.id}')">🗑 Delete</button>` : ''}
               ${a.status === "cancelled" ? `<span style="font-size:12px;color:var(--text-faint)">Cancelled</span>
+                <button class="action-btn" style="background:#FF336615;border-color:#FF336633;color:#FF3366" onclick="deleteAppt('${a.id}')">🗑 Delete</button>` : ''}
+              ${a.status === "missed" ? `<span style="font-size:12px;color:var(--text-faint)">No-Show ⚠</span>
                 <button class="action-btn" style="background:#FF336615;border-color:#FF336633;color:#FF3366" onclick="deleteAppt('${a.id}')">🗑 Delete</button>` : ''}
             </div>
           </div>
@@ -263,6 +271,7 @@ function updateApptStatus(id, newStatus) {
 
 function confirmAppt(id) { updateApptStatus(id, "confirmed"); }
 function cancelAppt(id) { updateApptStatus(id, "cancelled"); }
+function missAppt(id) { updateApptStatus(id, "missed"); }
 
 function completeAppt(id) {
   updateApptStatus(id, "complete");
