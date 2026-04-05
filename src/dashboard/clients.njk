@@ -93,8 +93,11 @@ extraJs: clients.js
         <input id="ac-email" class="input" placeholder="email@example.com">
       </div>
     </div>
-    <p class="field-label">Vehicle</p>
-    <input id="ac-vehicle" class="input" placeholder="e.g. 2021 BMW M3">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+      <div><p class="field-label">Year</p><input id="ac-vyear" class="input" placeholder="e.g. 2021"></div>
+      <div><p class="field-label">Make</p><input id="ac-vmake" class="input" placeholder="e.g. BMW"></div>
+      <div><p class="field-label">Model</p><input id="ac-vmodel" class="input" placeholder="e.g. M3"></div>
+    </div>
     <p class="field-label">Source</p>
     <select id="ac-source" class="input" style="cursor:pointer">
       <option value="Instagram">Instagram</option>

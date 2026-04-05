@@ -364,7 +364,9 @@ function openAddClient() {
   document.getElementById("ac-last").value = "";
   document.getElementById("ac-phone").value = "";
   document.getElementById("ac-email").value = "";
-  document.getElementById("ac-vehicle").value = "";
+  document.getElementById("ac-vyear").value = "";
+  document.getElementById("ac-vmake").value = "";
+  document.getElementById("ac-vmodel").value = "";
   document.getElementById("ac-source").value = "Instagram";
   document.getElementById("ac-notes").value = "";
   document.getElementById("add-client-modal").style.display = "flex";
@@ -385,15 +387,12 @@ function addClient() {
 
   const phone = document.getElementById("ac-phone").value.trim();
   const email = document.getElementById("ac-email").value.trim();
-  const vehicle = document.getElementById("ac-vehicle").value.trim();
+  const vYear = document.getElementById("ac-vyear").value.trim();
+  const vMake = document.getElementById("ac-vmake").value.trim();
+  const vModel = document.getElementById("ac-vmodel").value.trim();
+  const vehicle = [vYear, vMake, vModel].filter(Boolean).join(" ");
   const source = document.getElementById("ac-source").value;
   const notes = document.getElementById("ac-notes").value.trim();
-
-  /* Parse vehicle into year/make/model for Supabase */
-  const vParts = vehicle.split(" ");
-  const vYear = vParts.length >= 3 && /^\d{4}$/.test(vParts[0]) ? vParts[0] : "";
-  const vMake = vYear ? (vParts[1] || "") : (vParts[0] || "");
-  const vModel = vYear ? vParts.slice(2).join(" ") : vParts.slice(1).join(" ");
 
   const newClient = {
     id: nextClientId++,
@@ -459,14 +458,12 @@ function addClientAndSchedule() {
   var last = document.getElementById("ac-last").value.trim();
   var phone = document.getElementById("ac-phone").value.trim();
   var email = document.getElementById("ac-email").value.trim();
-  var vehicle = document.getElementById("ac-vehicle").value.trim();
+  var vYear = document.getElementById("ac-vyear").value.trim();
+  var vMake = document.getElementById("ac-vmake").value.trim();
+  var vModel = document.getElementById("ac-vmodel").value.trim();
+  var vehicle = [vYear, vMake, vModel].filter(Boolean).join(" ");
   var source = document.getElementById("ac-source").value;
   var notes = document.getElementById("ac-notes").value.trim();
-
-  var vParts = vehicle.split(" ");
-  var vYear = vParts.length >= 3 && /^\d{4}$/.test(vParts[0]) ? vParts[0] : "";
-  var vMake = vYear ? (vParts[1] || "") : (vParts[0] || "");
-  var vModel = vYear ? vParts.slice(2).join(" ") : vParts.slice(1).join(" ");
 
   var now = new Date();
   var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
