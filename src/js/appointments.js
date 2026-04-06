@@ -30,6 +30,9 @@ function getDateRangeBounds() {
   if (dateRange === "mtd") {
     from = new Date(now.getFullYear(), now.getMonth(), 1);
     to = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  } else if (dateRange === "next_month") {
+    from = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    to = new Date(now.getFullYear(), now.getMonth() + 2, 0);
   } else if (dateRange === "last_month") {
     from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     to = new Date(now.getFullYear(), now.getMonth(), 0);
