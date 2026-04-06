@@ -866,13 +866,25 @@ function caSelectService(btn) {
 
 function caSubmit() {
   var activeBtns = document.querySelectorAll("#ca-service-grid .sched-svc-btn.sched-svc-active");
-  var date = document.getElementById("ca-date").value;
-  var time = document.getElementById("ca-time").value;
+  var dateEl = document.getElementById("ca-date");
+  var timeEl = document.getElementById("ca-time");
+  var date = dateEl ? dateEl.value : "";
+  var time = timeEl ? timeEl.value : "";
   var notes = document.getElementById("ca-notes").value.trim();
   var errEl = document.getElementById("ca-error");
 
-  if (activeBtns.length === 0 || !date || !time) {
-    errEl.textContent = "Please select at least one service, date, and time.";
+  console.log("[caSubmit] services=" + activeBtns.length + " date='" + date + "' time='" + time + "'");
+
+  if (activeBtns.length === 0) {
+    errEl.textContent = "Please select at least one service.";
+    return;
+  }
+  if (!date) {
+    errEl.textContent = "Please select a date.";
+    return;
+  }
+  if (!time) {
+    errEl.textContent = "Please select a time.";
     return;
   }
 
