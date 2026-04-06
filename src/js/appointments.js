@@ -425,51 +425,49 @@ function completeAppt(id) {
     (a.phone && c.phone === a.phone) || (a.email && c.email === a.email)
   );
 
-  /* Update client in Supabase via data layer (auth-wrapped, RLS-safe) */
-  if (window.db && window.db.clients) {
-    window.db.clients.list().then(function(allClients) {
-      var match = allClients.find(function(c) {
-        return a.phone && (c.phone === a.phone);
+  /* Create/update client in Supabase directly (more reliable than db layer) */
+  var uid = window.__glossio_user_id;
+  if (uid && window.sbClient) {
+    console.log("[completeAppt] phone=" + a.phone + " email=" + a.email + " name=" + firstName + " " + lastName);
+    window.sbClient.from("clients")
+      .select("id, visits, total_spent, no_show_count")
+      .eq("profile_id", uid)
+      .eq("phone", a.phone)
+      .maybeSingle()
+      .then(function(r) {
+        if (r.data) {
+          var newVisits = (parseInt(r.data.visits) || 0) + 1;
+          var newSpent = (parseFloat(r.data.total_spent) || 0) + (a.price || 0);
+          window.sbClient.from("clients").update({
+            visits: newVisits,
+            total_spent: newSpent,
+            last_visit: dateStr,
+            status: "active"
+          }).eq("id", r.data.id).then(function() {
+            console.log("Client updated: visits=" + newVisits);
+          });
+        } else {
+          window.sbClient.from("clients").insert({
+            profile_id: uid,
+            first_name: firstName,
+            last_name: lastName,
+            phone: a.phone || "",
+            email: a.email || "",
+            vehicle_year: (a.vehicle || "").split(" ")[0] || null,
+            vehicle_make: (a.vehicle || "").split(" ")[1] || null,
+            vehicle_model: (a.vehicle || "").split(" ").slice(2).join(" ") || null,
+            source: "booking_link",
+            status: "active",
+            visits: 1,
+            total_spent: a.price || 0,
+            last_visit: dateStr,
+            no_show_count: 0,
+            notes: ""
+          }).then(function(ins) {
+            console.log("New client created:", ins.error ? ins.error.message : "OK");
+          });
+        }
       });
-      if (match) {
-        /* Update existing client: bump visits, total_spent, status */
-        var newVisits = (parseInt(match.visits || match.visit_count) || 0) + 1;
-        var newSpent = (parseFloat(match.total_spent) || 0) + (a.price || 0);
-        window.db.clients.update(match.id, {
-          visits: newVisits,
-          total_spent: newSpent,
-          last_visit: dateStr,
-          status: "active"
-        }).then(function() {
-          console.log("Client updated via db layer: visits=" + newVisits + ", status=active");
-        }).catch(function(err) {
-          console.error("Client update failed:", err);
-        });
-      } else {
-        /* Create new client */
-        window.db.clients.create({
-          first_name: firstName,
-          last_name: lastName,
-          phone: a.phone || "",
-          email: a.email || "",
-          vehicle_year: (a.vehicle || "").split(" ")[0] || null,
-          vehicle_make: (a.vehicle || "").split(" ")[1] || null,
-          vehicle_model: (a.vehicle || "").split(" ").slice(2).join(" ") || null,
-          source: "booking_link",
-          status: "active",
-          visits: 1,
-          total_spent: a.price || 0,
-          last_visit: dateStr,
-          notes: ""
-        }).then(function() {
-          console.log("New client created via db layer");
-        }).catch(function(err) {
-          console.error("Client create failed:", err);
-        });
-      }
-    }).catch(function(err) {
-      console.error("Client list fetch failed:", err);
-    });
   }
 
   /* Also update localStorage for offline fallback */
