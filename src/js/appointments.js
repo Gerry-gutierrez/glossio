@@ -245,10 +245,11 @@ function renderAppts() {
   emptyEl.style.display = "none";
 
   const searchVal = (document.getElementById("appt-search")?.value || "").toLowerCase();
+  const skipDateFilter = apptFilter === "pending" || apptFilter === "confirmed";
   const filtered = appointments.filter(a => {
     const matchFilter = apptFilter === "all" || a.status === apptFilter;
     const matchSearch = !searchVal || (a.client + " " + a.vehicle + " " + a.service + " " + a.phone + " " + a.email).toLowerCase().includes(searchVal);
-    const matchDate = isInDateRange(a.date);
+    const matchDate = skipDateFilter || isInDateRange(a.date);
     return matchFilter && matchSearch && matchDate;
   });
 
@@ -674,16 +675,17 @@ function renderCalendar() {
   const searchVal = (document.getElementById("appt-search")?.value || "").toLowerCase();
 
   /* Apply same filters as list view: status + search + date range */
+  const calSkipDate = apptFilter === "pending" || apptFilter === "confirmed";
   const calAppts = appointments.filter(a => {
     const matchFilter = apptFilter === "all" || a.status === apptFilter;
     const matchSearch = !searchVal || (a.client + " " + a.vehicle + " " + a.service + " " + (a.phone||"") + " " + (a.email||"")).toLowerCase().includes(searchVal);
-    const matchDate = isInDateRange(a.date);
+    const matchDate = calSkipDate || isInDateRange(a.date);
     return matchFilter && matchSearch && matchDate;
   });
 
   /* Figure out which months to render based on date range */
   var months = [];
-  var bounds = getDateRangeBounds();
+  var bounds = calSkipDate ? null : getDateRangeBounds();
   if (bounds) {
     var startParts = bounds.from.split("-");
     var endParts = bounds.to.split("-");
