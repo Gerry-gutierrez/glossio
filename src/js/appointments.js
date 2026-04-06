@@ -669,15 +669,37 @@ function saveAdjustment(id) {
 
 function renderCalendar() {
   const calEl = document.getElementById("appt-calendar-view");
-  const now = new Date();
-  const thisMonth = now.getMonth();
-  const thisYear = now.getFullYear();
+  const searchVal = (document.getElementById("appt-search")?.value || "").toLowerCase();
 
-  // Show current month and next month
-  const months = [
-    { month: thisMonth, year: thisYear },
-    { month: (thisMonth + 1) % 12, year: thisMonth === 11 ? thisYear + 1 : thisYear },
-  ];
+  /* Apply same filters as list view: status + search + date range */
+  const calAppts = appointments.filter(a => {
+    const matchFilter = apptFilter === "all" || a.status === apptFilter;
+    const matchSearch = !searchVal || (a.client + " " + a.vehicle + " " + a.service + " " + (a.phone||"") + " " + (a.email||"")).toLowerCase().includes(searchVal);
+    const matchDate = isInDateRange(a.date);
+    return matchFilter && matchSearch && matchDate;
+  });
+
+  /* Figure out which months to render based on date range */
+  var months = [];
+  var bounds = getDateRangeBounds();
+  if (bounds) {
+    var startParts = bounds.from.split("-");
+    var endParts = bounds.to.split("-");
+    var sYear = parseInt(startParts[0]), sMonth = parseInt(startParts[1]) - 1;
+    var eYear = parseInt(endParts[0]), eMonth = parseInt(endParts[1]) - 1;
+    var y = sYear, m = sMonth;
+    while (y < eYear || (y === eYear && m <= eMonth)) {
+      months.push({ month: m, year: y });
+      m++;
+      if (m > 11) { m = 0; y++; }
+    }
+  } else {
+    var now = new Date();
+    months = [
+      { month: now.getMonth(), year: now.getFullYear() },
+      { month: (now.getMonth() + 1) % 12, year: now.getMonth() === 11 ? now.getFullYear() + 1 : now.getFullYear() },
+    ];
+  }
 
   const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
@@ -691,11 +713,12 @@ function renderCalendar() {
 
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = `${m.year}-${String(monthNum).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-      const dayAppts = appointments.filter(a => a.date === dateStr);
+      const dayAppts = calAppts.filter(a => a.date === dateStr);
       const hasPending = dayAppts.some(a => a.status === "pending");
       const hasConfirmed = dayAppts.some(a => a.status === "confirmed");
       const hasComplete = dayAppts.some(a => a.status === "complete");
-      const dotColor = hasPending ? "#FFD60A" : hasConfirmed ? "#00C2FF" : hasComplete ? "#00E5A0" : null;
+      const hasMissed = dayAppts.some(a => a.status === "missed");
+      const dotColor = hasPending ? "#FFD60A" : hasConfirmed ? "#00C2FF" : hasComplete ? "#00E5A0" : hasMissed ? "#FF8C42" : "#FF3366";
       const hasAny = dayAppts.length > 0;
 
       cells += `
@@ -717,7 +740,7 @@ function renderCalendar() {
   // Legend
   calEl.innerHTML += `
     <div class="cal-legend">
-      ${Object.entries(APPT_STATUS).filter(([k]) => k !== 'cancelled').map(([, cfg]) => `
+      ${Object.entries(APPT_STATUS).map(([, cfg]) => `
         <div class="legend-item"><div class="legend-dot-sq" style="background:${cfg.color}33;border-color:${cfg.color}55"></div><span>${cfg.label}</span></div>
       `).join("")}
     </div>
