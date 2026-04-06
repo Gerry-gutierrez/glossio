@@ -228,6 +228,7 @@ function setApptFilter(f) {
 
 function renderAppts() {
   updateApptStats();
+  if (apptView === "calendar") renderCalendar();
 
   const listEl = document.getElementById("appt-list-view");
   const emptyEl = document.getElementById("appt-empty");
@@ -316,8 +317,6 @@ function renderAppts() {
       </div>
     `;
   }).join("");
-
-  if (apptView === "calendar") renderCalendar();
 }
 
 /* ── Expand/Collapse ─────────────────────────────────────────────────────── */
