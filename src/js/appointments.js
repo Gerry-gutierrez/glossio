@@ -128,10 +128,6 @@ function updateApptStats() {
   var missedEl = document.getElementById("count-missed");
   if (missedEl) missedEl.textContent = missed;
 
-  document.getElementById("leg-pending").textContent = pending;
-  document.getElementById("leg-confirmed").textContent = confirmed;
-  document.getElementById("leg-complete").textContent = complete;
-
   document.getElementById("appt-summary").textContent = appointments.length + " total appointments";
 
   // Update filter tab counts
@@ -180,7 +176,12 @@ function renderAppts() {
 
   emptyEl.style.display = "none";
 
-  const filtered = apptFilter === "all" ? appointments : appointments.filter(a => a.status === apptFilter);
+  const searchVal = (document.getElementById("appt-search")?.value || "").toLowerCase();
+  const filtered = appointments.filter(a => {
+    const matchFilter = apptFilter === "all" || a.status === apptFilter;
+    const matchSearch = !searchVal || (a.client + " " + a.vehicle + " " + a.service + " " + a.phone + " " + a.email).toLowerCase().includes(searchVal);
+    return matchFilter && matchSearch;
+  });
 
   if (filtered.length === 0) {
     listEl.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--text-faint)"><p style="font-size:16px">No ' + apptFilter + ' appointments.</p></div>';

@@ -57,20 +57,20 @@ extraJs: appointments.js
   </div>
 </div>
 
-<!-- Status legend -->
-<div class="appt-legend">
-  <div class="legend-item"><div class="legend-dot" style="background:#FFD60A"></div><span>Pending (<span id="leg-pending">0</span>)</span></div>
-  <div class="legend-item"><div class="legend-dot" style="background:#00C2FF"></div><span>Confirmed (<span id="leg-confirmed">0</span>)</span></div>
-  <div class="legend-item"><div class="legend-dot" style="background:#00E5A0"></div><span>Complete (<span id="leg-complete">0</span>)</span></div>
-</div>
-
-<!-- Filter Tabs -->
-<div class="filter-tabs" id="filter-tabs">
-  <button class="filter-tab filter-tab-active" data-filter="pending" onclick="setApptFilter('pending')">Pending (0)</button>
-  <button class="filter-tab" data-filter="confirmed" onclick="setApptFilter('confirmed')">Confirmed (0)</button>
-  <button class="filter-tab" data-filter="complete" onclick="setApptFilter('complete')">Complete (0)</button>
-  <button class="filter-tab" data-filter="missed" onclick="setApptFilter('missed')">Missed (0)</button>
-  <button class="filter-tab" data-filter="all" onclick="setApptFilter('all')">All (0)</button>
+<!-- Search + Filter Tabs -->
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+  <div style="position:relative;flex:0 0 220px">
+    <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-faint);font-size:13px">🔍</span>
+    <input id="appt-search" type="text" placeholder="Search by name, vehicle..." style="width:100%;padding:8px 10px 8px 32px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none" oninput="renderAppts()">
+  </div>
+  <div class="filter-tabs" id="filter-tabs" style="margin-bottom:0">
+    <button class="filter-tab filter-tab-active" data-filter="pending" onclick="setApptFilter('pending')">Pending (0)</button>
+    <button class="filter-tab" data-filter="confirmed" onclick="setApptFilter('confirmed')">Confirmed (0)</button>
+    <button class="filter-tab" data-filter="complete" onclick="setApptFilter('complete')">Complete (0)</button>
+    <button class="filter-tab" data-filter="missed" onclick="setApptFilter('missed')">Missed (0)</button>
+    <button class="filter-tab" data-filter="cancelled" onclick="setApptFilter('cancelled')">Cancelled (0)</button>
+    <button class="filter-tab" data-filter="all" onclick="setApptFilter('all')">All (0)</button>
+  </div>
 </div>
 
 <!-- List View -->
