@@ -57,12 +57,29 @@ extraJs: appointments.js
   </div>
 </div>
 
-<!-- Search + Filter Tabs -->
-<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+<!-- Date Range + Search + Filter Tabs -->
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
   <div style="position:relative;flex:0 0 220px">
     <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-faint);font-size:13px">🔍</span>
     <input id="appt-search" type="text" placeholder="Search by name, vehicle..." style="width:100%;padding:8px 10px 8px 32px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none" oninput="renderAppts()">
   </div>
+  <div class="filter-tabs" id="date-range-tabs" style="margin-bottom:0">
+    <button class="filter-tab filter-tab-active" data-range="mtd" onclick="setDateRange('mtd')">This Month</button>
+    <button class="filter-tab" data-range="last_month" onclick="setDateRange('last_month')">Last Month</button>
+    <button class="filter-tab" data-range="90d" onclick="setDateRange('90d')">90 Days</button>
+    <button class="filter-tab" data-range="1y" onclick="setDateRange('1y')">1 Year</button>
+    <button class="filter-tab" data-range="custom" onclick="toggleCustomRange()">Custom</button>
+  </div>
+</div>
+<!-- Custom date range row (hidden by default) -->
+<div id="custom-range-row" style="display:none;margin-bottom:10px;gap:10px;align-items:center;flex-wrap:wrap">
+  <label style="font-size:12px;color:var(--text-muted)">From</label>
+  <input id="range-from" type="date" style="padding:6px 10px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px" onchange="applyCustomRange()">
+  <label style="font-size:12px;color:var(--text-muted)">To</label>
+  <input id="range-to" type="date" style="padding:6px 10px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px" onchange="applyCustomRange()">
+</div>
+<!-- Status Filter Tabs -->
+<div style="margin-bottom:12px">
   <div class="filter-tabs" id="filter-tabs" style="margin-bottom:0">
     <button class="filter-tab filter-tab-active" data-filter="pending" onclick="setApptFilter('pending')">Pending (0)</button>
     <button class="filter-tab" data-filter="confirmed" onclick="setApptFilter('confirmed')">Confirmed (0)</button>

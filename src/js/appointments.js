@@ -16,8 +16,71 @@ let apptFilter = "pending";
 let apptView = "list";
 let nextApptId = 1;
 let expandedApptId = null;
+let dateRange = "mtd";
+let customFrom = null;
+let customTo = null;
 
 function fmt(n) { return "$" + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
+
+/* ── Date Range Helpers ─────────────────────────────────────────────────── */
+
+function getDateRangeBounds() {
+  var now = new Date();
+  var from, to;
+  if (dateRange === "mtd") {
+    from = new Date(now.getFullYear(), now.getMonth(), 1);
+    to = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  } else if (dateRange === "last_month") {
+    from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    to = new Date(now.getFullYear(), now.getMonth(), 0);
+  } else if (dateRange === "90d") {
+    from = new Date(now.getTime() - 90 * 86400000);
+    to = now;
+  } else if (dateRange === "1y") {
+    from = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+    to = now;
+  } else if (dateRange === "custom" && customFrom && customTo) {
+    from = new Date(customFrom + "T00:00:00");
+    to = new Date(customTo + "T23:59:59");
+  } else {
+    return null;
+  }
+  var pad = function(d) {
+    return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+  };
+  return { from: pad(from), to: pad(to) };
+}
+
+function setDateRange(r) {
+  dateRange = r;
+  var customRow = document.getElementById("custom-range-row");
+  if (customRow) customRow.style.display = "none";
+  document.querySelectorAll("#date-range-tabs .filter-tab").forEach(function(btn) {
+    btn.classList.toggle("filter-tab-active", btn.dataset.range === r);
+  });
+  renderAppts();
+}
+
+function toggleCustomRange() {
+  dateRange = "custom";
+  var customRow = document.getElementById("custom-range-row");
+  if (customRow) customRow.style.display = customRow.style.display === "flex" ? "none" : "flex";
+  document.querySelectorAll("#date-range-tabs .filter-tab").forEach(function(btn) {
+    btn.classList.toggle("filter-tab-active", btn.dataset.range === "custom");
+  });
+}
+
+function applyCustomRange() {
+  customFrom = document.getElementById("range-from")?.value || null;
+  customTo = document.getElementById("range-to")?.value || null;
+  if (customFrom && customTo) renderAppts();
+}
+
+function isInDateRange(apptDate) {
+  var bounds = getDateRangeBounds();
+  if (!bounds) return true;
+  return apptDate >= bounds.from && apptDate <= bounds.to;
+}
 
 /* Format date as "Apr 2, 2026" */
 function fmtDate(dateStr) {
@@ -115,11 +178,12 @@ function updateApptStats() {
   document.getElementById("rev-proj-detail").textContent = projThisMonth.length + (projThisMonth.length === 1 ? " job" : " jobs") + " remaining";
   document.getElementById("rev-next-detail").textContent = projNextMonth.length + (projNextMonth.length === 1 ? " job" : " jobs") + " booked ahead";
 
-  const pending = appointments.filter(a => a.status === "pending").length;
-  const confirmed = appointments.filter(a => a.status === "confirmed").length;
-  const complete = appointments.filter(a => a.status === "complete").length;
-  const cancelled = appointments.filter(a => a.status === "cancelled").length;
-  const missed = appointments.filter(a => a.status === "missed").length;
+  const ranged = appointments.filter(a => isInDateRange(a.date));
+  const pending = ranged.filter(a => a.status === "pending").length;
+  const confirmed = ranged.filter(a => a.status === "confirmed").length;
+  const complete = ranged.filter(a => a.status === "complete").length;
+  const cancelled = ranged.filter(a => a.status === "cancelled").length;
+  const missed = ranged.filter(a => a.status === "missed").length;
 
   document.getElementById("count-pending").textContent = pending;
   document.getElementById("count-confirmed").textContent = confirmed;
@@ -128,13 +192,13 @@ function updateApptStats() {
   var missedEl = document.getElementById("count-missed");
   if (missedEl) missedEl.textContent = missed;
 
-  document.getElementById("appt-summary").textContent = appointments.length + " total appointments";
+  document.getElementById("appt-summary").textContent = ranged.length + " appointments in range";
 
-  // Update filter tab counts
+  // Update filter tab counts (scoped to date range)
   document.querySelectorAll("#filter-tabs .filter-tab").forEach(btn => {
     const f = btn.dataset.filter;
-    let count = appointments.length;
-    if (f !== "all") count = appointments.filter(a => a.status === f).length;
+    let count = ranged.length;
+    if (f !== "all") count = ranged.filter(a => a.status === f).length;
     const label = f === "all" ? "All" : (APPT_STATUS[f]?.label || f);
     btn.textContent = label + " (" + count + ")";
     btn.classList.toggle("filter-tab-active", f === apptFilter);
@@ -180,7 +244,8 @@ function renderAppts() {
   const filtered = appointments.filter(a => {
     const matchFilter = apptFilter === "all" || a.status === apptFilter;
     const matchSearch = !searchVal || (a.client + " " + a.vehicle + " " + a.service + " " + a.phone + " " + a.email).toLowerCase().includes(searchVal);
-    return matchFilter && matchSearch;
+    const matchDate = isInDateRange(a.date);
+    return matchFilter && matchSearch && matchDate;
   });
 
   if (filtered.length === 0) {
