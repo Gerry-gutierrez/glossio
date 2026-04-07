@@ -913,6 +913,9 @@ function caSubmit() {
     lastName = caSelectedClient.last_name || "";
     phone = caSelectedClient.phone || "";
     email = caSelectedClient.email || "";
+    vehicleYear = caSelectedClient.vehicle_year || "";
+    vehicleMake = caSelectedClient.vehicle_make || "";
+    vehicleModel = caSelectedClient.vehicle_model || "";
   }
 
   errEl.textContent = "";
@@ -948,10 +951,10 @@ function caSubmit() {
     price: totalPrice
   };
 
+  body.vehicleYear = vehicleYear;
+  body.vehicleMake = vehicleMake;
+  body.vehicleModel = vehicleModel;
   if (isNew) {
-    body.vehicleYear = vehicleYear;
-    body.vehicleMake = vehicleMake;
-    body.vehicleModel = vehicleModel;
     body.howHeard = howHeard;
   }
 
