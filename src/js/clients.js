@@ -179,7 +179,7 @@ function renderList() {
             <p style="margin:0;font-size:10px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.1em">Spent</p>
           </div>
           <div style="text-align:center">
-            <p style="margin:0 0 2px;font-size:13px;font-weight:600;color:var(--text-muted)">${c.lastVisit || "—"}</p>
+            <p style="margin:0 0 2px;font-size:13px;font-weight:600;color:var(--text-muted)">${_fmtUSDate(c.lastVisit)}</p>
             <p style="margin:0;font-size:10px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.1em">Last Visit</p>
           </div>
         </div>
@@ -228,6 +228,13 @@ function showDetail(id) {
       _renderClientDetail(c, detail, clientAppts);
     });
   }
+}
+
+function _fmtUSDate(dateStr) {
+  if (!dateStr) return "—";
+  var parts = dateStr.split("-");
+  if (parts.length < 3) return dateStr;
+  return parseInt(parts[1],10) + "/" + parseInt(parts[2],10) + "/" + parts[0];
 }
 
 function _fmtDetailDate(dateStr) {
