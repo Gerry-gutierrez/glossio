@@ -267,10 +267,13 @@ function _renderClientDetail(c, detail, history) {
         <div class="detail-card" style="margin-bottom:20px">
           <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px">
             <div class="client-avatar-lg">${c.firstName[0]}</div>
-            <div>
+            <div style="flex:1">
               <h2 style="margin:0 0 4px;font-size:22px;font-weight:700">${c.firstName} ${c.lastName}</h2>
               <p style="margin:0;font-size:13px;color:var(--text-dim)">Client since ${c.since || "Recently"}</p>
             </div>
+            <button onclick="openEditClient('${c.id}')" style="background:none;border:none;cursor:pointer;padding:6px;border-radius:6px;color:var(--text-dim);transition:color 0.2s" title="Edit client info">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
           </div>
           ${[
             { icon: "📱", label: "Phone", value: c.phone || "—" },
@@ -371,6 +374,183 @@ function deleteClient(id) {
     window.db.clients.remove(id);
   }
   saveClients();
+}
+
+/* ── Edit Client ───────────────────────────────────────────────────────── */
+
+function openEditClient(id) {
+  var c = clients.find(function(cl) { return String(cl.id) === String(id); });
+  if (!c) return;
+
+  var modal = document.getElementById("edit-client-modal");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "edit-client-modal";
+    modal.className = "modal-overlay";
+    document.body.appendChild(modal);
+  }
+
+  modal.style.display = "flex";
+  modal.innerHTML = `
+    <div class="modal-box" style="max-width:480px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+        <h2 style="margin:0;font-size:20px;font-weight:700">Edit Client</h2>
+        <button class="modal-close" onclick="closeEditClient()">✕</button>
+      </div>
+      <div class="form-row">
+        <div><p class="field-label">First Name</p><input id="ec-first" class="input" value="${c.firstName}"></div>
+        <div><p class="field-label">Last Name</p><input id="ec-last" class="input" value="${c.lastName}"></div>
+      </div>
+      <div class="form-row">
+        <div><p class="field-label">Phone</p><input id="ec-phone" class="input" value="${c.phone}"></div>
+        <div><p class="field-label">Email</p><input id="ec-email" class="input" value="${c.email}"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+        <div><p class="field-label">Year</p><input id="ec-vyear" class="input" value="${c.vehicleYear}"></div>
+        <div><p class="field-label">Make</p><input id="ec-vmake" class="input" value="${c.vehicleMake}"></div>
+        <div><p class="field-label">Model</p><input id="ec-vmodel" class="input" value="${c.vehicleModel}"></div>
+      </div>
+      <p id="ec-error" style="color:#FF3366;font-size:13px;margin:12px 0 0;display:none"></p>
+      <div style="display:flex;gap:10px;margin-top:20px">
+        <button class="btn btn-ghost" onclick="closeEditClient()">Cancel</button>
+        <button id="ec-save-btn" class="btn btn-primary" style="flex:1" onclick="saveEditClient('${c.id}')">Save Changes</button>
+      </div>
+    </div>
+  `;
+}
+
+function closeEditClient() {
+  var modal = document.getElementById("edit-client-modal");
+  if (modal) modal.style.display = "none";
+}
+
+function saveEditClient(id) {
+  var first = document.getElementById("ec-first").value.trim();
+  var last = document.getElementById("ec-last").value.trim();
+  var phone = document.getElementById("ec-phone").value.trim();
+  var email = document.getElementById("ec-email").value.trim();
+  var vYear = document.getElementById("ec-vyear").value.trim();
+  var vMake = document.getElementById("ec-vmake").value.trim();
+  var vModel = document.getElementById("ec-vmodel").value.trim();
+
+  if (!first) {
+    var errEl = document.getElementById("ec-error");
+    errEl.textContent = "First name is required.";
+    errEl.style.display = "block";
+    return;
+  }
+
+  var c = clients.find(function(cl) { return String(cl.id) === String(id); });
+  if (!c) return;
+
+  var oldPhone = c.phone;
+  var oldEmail = c.email;
+
+  // Update local client object
+  c.firstName = first;
+  c.lastName = last;
+  c.phone = phone;
+  c.email = email;
+  c.vehicleYear = vYear;
+  c.vehicleMake = vMake;
+  c.vehicleModel = vModel;
+  c.vehicle = [vYear, vMake, vModel].filter(Boolean).join(" ");
+  saveClients();
+
+  // Update Supabase clients table
+  var clientFields = {
+    first_name: first,
+    last_name: last,
+    phone: phone,
+    email: email,
+    vehicle_year: vYear || null,
+    vehicle_make: vMake || null,
+    vehicle_model: vModel || null
+  };
+
+  var saveBtn = document.getElementById("ec-save-btn");
+  saveBtn.disabled = true;
+  saveBtn.textContent = "Saving...";
+
+  var clientUpdateDone = false;
+  var apptsUpdateDone = false;
+
+  function finishSave() {
+    if (!clientUpdateDone || !apptsUpdateDone) return;
+    saveBtn.disabled = false;
+    saveBtn.textContent = "Save Changes";
+    closeEditClient();
+    // Re-render detail view with updated data
+    var detail = document.getElementById("client-detail");
+    if (detail && viewingDetail) {
+      _renderClientDetail(c, detail, []);
+      if (window.db && window.db.appointments) {
+        window.db.appointments.list().then(function(appts) {
+          var clientAppts = (appts || []).filter(function(a) {
+            return a.status === "complete" && (
+              (c.phone && a.client_phone === c.phone) ||
+              (c.email && a.client_email === c.email) ||
+              (a.client_id && String(a.client_id) === String(c.id))
+            );
+          }).map(function(a) {
+            return {
+              service: a.service_name || a.service || "Service",
+              date: a.appt_date || a.scheduled_date || "",
+              price: parseFloat(a.service_price) || parseFloat(a.price) || 0,
+              status: "complete"
+            };
+          }).sort(function(a, b) { return (b.date || "").localeCompare(a.date || ""); });
+          _renderClientDetail(c, detail, clientAppts);
+        });
+      }
+    }
+  }
+
+  // 1) Update clients table
+  if (window.db && window.db.clients) {
+    window.db.clients.update(id, clientFields).then(function() {
+      clientUpdateDone = true;
+      finishSave();
+    }).catch(function() {
+      clientUpdateDone = true;
+      finishSave();
+    });
+  } else {
+    clientUpdateDone = true;
+  }
+
+  // 2) Update all appointments for this client (past + future)
+  var apptFields = {
+    client_first_name: first,
+    client_last_name: last,
+    client_phone: phone,
+    client_email: email,
+    vehicle_year: vYear || null,
+    vehicle_make: vMake || null,
+    vehicle_model: vModel || null
+  };
+
+  if (window.sbClient) {
+    window.sbClient.from("appointments")
+      .update(apptFields)
+      .eq("client_id", id)
+      .select()
+      .then(function() {
+        apptsUpdateDone = true;
+        finishSave();
+      }).catch(function() {
+        apptsUpdateDone = true;
+        finishSave();
+      });
+  } else {
+    apptsUpdateDone = true;
+  }
+
+  if (!window.db && !window.sbClient) {
+    closeEditClient();
+    var detail = document.getElementById("client-detail");
+    if (detail && viewingDetail) _renderClientDetail(c, detail, []);
+  }
 }
 
 /* ── Add Client ──────────────────────────────────────────────────────────── */
