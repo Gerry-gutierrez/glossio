@@ -376,8 +376,9 @@ function dashFlagFlaker(id) {
           window.sbClient.from('clients').update({
             no_show_count: newCount,
             status: 'flaker'
-          }).eq('id', r.data.id).then(function() {
-            console.log('Flaker bumped: ' + newCount);
+          }).eq('id', r.data.id).select().then(function(upd) {
+            if (upd.error) console.error('Flaker update error:', upd.error);
+            else console.log('Flaker bumped: ' + newCount);
           });
         } else {
           window.sbClient.from('clients').insert({
@@ -433,7 +434,10 @@ function dashCameThrough(id) {
                 total_spent: newSpent,
                 last_visit: dateStr,
                 status: 'active'
-              }).eq('id', r.data.id);
+              }).eq('id', r.data.id).select().then(function(upd) {
+                if (upd.error) console.error('Client update error:', upd.error);
+                else console.log('Client updated OK: visits=' + newVisits);
+              });
             } else {
               window.sbClient.from('clients').insert({
                 profile_id: uid,

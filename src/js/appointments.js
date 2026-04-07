@@ -438,13 +438,17 @@ function completeAppt(id) {
         if (r.data) {
           var newVisits = (parseInt(r.data.visits) || 0) + 1;
           var newSpent = (parseFloat(r.data.total_spent) || 0) + (a.price || 0);
+          console.log("[completeAppt] Updating existing client id=" + r.data.id + " visits=" + newVisits + " spent=" + newSpent);
           window.sbClient.from("clients").update({
             visits: newVisits,
             total_spent: newSpent,
             last_visit: dateStr,
             status: "active"
-          }).eq("id", r.data.id).then(function() {
-            console.log("Client updated: visits=" + newVisits);
+          }).eq("id", r.data.id).select().then(function(upd) {
+            if (upd.error) console.error("Client update error:", upd.error);
+            else console.log("Client updated OK: visits=" + newVisits, upd.data);
+          }).catch(function(err) {
+            console.error("Client update failed:", err);
           });
         } else {
           window.sbClient.from("clients").insert({
