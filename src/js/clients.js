@@ -520,7 +520,9 @@ function saveEditClient(id) {
   }
 
   // 2) Update all appointments for this client (past + future)
+  //    Match by client_id OR old phone OR old email to catch orphaned appts
   var apptFields = {
+    client_id: id,
     client_first_name: first,
     client_last_name: last,
     client_phone: phone,
@@ -531,17 +533,29 @@ function saveEditClient(id) {
   };
 
   if (window.sbClient) {
-    window.sbClient.from("appointments")
+    var uid = window.db && window.db._userId ? window.db._userId() : null;
+    var pending = 0;
+    var done = 0;
+    function checkApptsDone() { if (done >= pending) { apptsUpdateDone = true; finishSave(); } }
+
+    // Build an OR filter: client_id match, old phone match, old email match
+    var filters = [];
+    filters.push("client_id.eq." + id);
+    if (oldPhone) filters.push("client_phone.eq." + oldPhone);
+    if (oldEmail) filters.push("client_email.eq." + oldEmail);
+    var orFilter = filters.join(",");
+
+    var query = window.sbClient.from("appointments")
       .update(apptFields)
-      .eq("client_id", id)
-      .select()
-      .then(function() {
-        apptsUpdateDone = true;
-        finishSave();
-      }).catch(function() {
-        apptsUpdateDone = true;
-        finishSave();
-      });
+      .or(orFilter);
+    if (uid) query = query.eq("profile_id", uid);
+    query.select().then(function() {
+      apptsUpdateDone = true;
+      finishSave();
+    }).catch(function() {
+      apptsUpdateDone = true;
+      finishSave();
+    });
   } else {
     apptsUpdateDone = true;
   }
