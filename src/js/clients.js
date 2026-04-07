@@ -549,8 +549,7 @@ function openScheduleModal(client) {
           '<span style="font-size:12px;color:' + (svc.color || "#00C2FF") + '">' +
           (svc.pricing_type === "quote" ? "Quote" : "$" + svc.price) + '</span>';
         btn.onclick = function() {
-          grid.querySelectorAll(".sched-svc-btn").forEach(function(b) { b.classList.remove("sched-svc-active"); });
-          btn.classList.add("sched-svc-active");
+          btn.classList.toggle("sched-svc-active");
         };
         grid.appendChild(btn);
       });
@@ -566,16 +565,18 @@ function closeScheduleModal() {
 }
 
 function submitSchedule() {
-  var activeBtn = document.querySelector(".sched-svc-btn.sched-svc-active");
+  var activeBtns = document.querySelectorAll(".sched-svc-btn.sched-svc-active");
   var date = document.getElementById("sched-date").value;
   var time = document.getElementById("sched-time").value;
   var notes = document.getElementById("sched-notes").value.trim();
   var errEl = document.getElementById("sched-error");
 
-  if (!activeBtn || !date || !time) {
-    errEl.textContent = "Please select a service, date, and time.";
+  if (activeBtns.length === 0) {
+    errEl.textContent = "Please select at least one service.";
     return;
   }
+  if (!date) { errEl.textContent = "Please select a date."; return; }
+  if (!time) { errEl.textContent = "Please select a time."; return; }
 
   var client = pendingScheduleClient;
   if (!client) return;
@@ -587,12 +588,23 @@ function submitSchedule() {
 
   var profileId = window.__glossio_user_id || "";
 
+  var serviceNames = [];
+  var totalPrice = 0;
+  var firstServiceId = "";
+  activeBtns.forEach(function(btn) {
+    if (!firstServiceId) firstServiceId = btn.dataset.id;
+    serviceNames.push(btn.querySelector("span:nth-child(2)")?.textContent || "Service");
+    totalPrice += parseFloat(btn.dataset.price) || 0;
+  });
+
   fetch("/.netlify/functions/create-booking", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       profileId: profileId,
-        serviceId: activeBtn.dataset.id,
+        serviceId: firstServiceId,
+        serviceName: serviceNames.join(" + "),
+        servicePrice: totalPrice,
         firstName: client.firstName,
         lastName: client.lastName,
         phone: client.phone,
@@ -600,7 +612,7 @@ function submitSchedule() {
         scheduledDate: date,
         scheduledTime: time,
         notes: notes,
-        price: parseFloat(activeBtn.dataset.price) || 0
+        price: totalPrice
       })
     }).then(function(res) { return res.json(); })
       .then(function(result) {
