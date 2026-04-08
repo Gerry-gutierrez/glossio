@@ -173,7 +173,7 @@ function renderList() {
             <p class="client-row-name">${c.firstName} ${c.lastName}</p>
             <span class="client-status-badge" style="background:${statusColor}15;color:${statusColor};border:1px solid ${statusColor}33">${statusLabel}</span>${flakerBadge && !isFlaker ? flakerBadge : ''}${isFlaker && c.noShowCount > 1 ? `<span class="client-status-badge" style="background:#FF8C4215;color:#FF8C42;border:1px solid #FF8C4233;margin-left:6px">${c.noShowCount}x</span>` : ''}
           </div>
-          <p class="client-row-detail">${c.vehicle || "No vehicle"} · via ${c.source || "Unknown"}</p>
+          <p class="client-row-detail">${(c.vehicles && c.vehicles.length > 0) ? [c.vehicles[0].year, c.vehicles[0].make, c.vehicles[0].model].filter(Boolean).join(" ") : (c.vehicle || "No vehicle")}${c.vehicles && c.vehicles.length > 1 ? ' +' + (c.vehicles.length - 1) + ' more' : ''} · via ${c.source || "Unknown"}</p>
         </div>
         <div class="client-stats-right">
           <div style="text-align:center">
@@ -518,11 +518,7 @@ function openEditClient(id) {
         <div><p class="field-label">Phone</p><input id="ec-phone" class="input" value="${c.phone}"></div>
         <div><p class="field-label">Email</p><input id="ec-email" class="input" value="${c.email}"></div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
-        <div><p class="field-label">Year</p><input id="ec-vyear" class="input" value="${c.vehicleYear}"></div>
-        <div><p class="field-label">Make</p><input id="ec-vmake" class="input" value="${c.vehicleMake}"></div>
-        <div><p class="field-label">Model</p><input id="ec-vmodel" class="input" value="${c.vehicleModel}"></div>
-      </div>
+      <p style="margin:12px 0 0;font-size:12px;color:var(--text-faint)">Vehicles are managed on the profile page below.</p>
       <p id="ec-error" style="color:#FF3366;font-size:13px;margin:12px 0 0;display:none"></p>
       <div style="display:flex;gap:10px;margin-top:20px">
         <button class="btn btn-ghost" onclick="closeEditClient()">Cancel</button>
@@ -542,9 +538,6 @@ function saveEditClient(id) {
   var last = document.getElementById("ec-last").value.trim();
   var phone = document.getElementById("ec-phone").value.trim();
   var email = document.getElementById("ec-email").value.trim();
-  var vYear = document.getElementById("ec-vyear").value.trim();
-  var vMake = document.getElementById("ec-vmake").value.trim();
-  var vModel = document.getElementById("ec-vmodel").value.trim();
 
   if (!first) {
     var errEl = document.getElementById("ec-error");
@@ -564,21 +557,14 @@ function saveEditClient(id) {
   c.lastName = last;
   c.phone = phone;
   c.email = email;
-  c.vehicleYear = vYear;
-  c.vehicleMake = vMake;
-  c.vehicleModel = vModel;
-  c.vehicle = [vYear, vMake, vModel].filter(Boolean).join(" ");
   saveClients();
 
-  // Update Supabase clients table
+  // Update Supabase clients table (vehicle fields stay as-is)
   var clientFields = {
     first_name: first,
     last_name: last,
     phone: phone,
-    email: email,
-    vehicle_year: vYear || null,
-    vehicle_make: vMake || null,
-    vehicle_model: vModel || null
+    email: email
   };
 
   var saveBtn = document.getElementById("ec-save-btn");
@@ -634,15 +620,13 @@ function saveEditClient(id) {
 
   // 2) Update all appointments for this client (past + future)
   //    Match by client_id OR old phone OR old email to catch orphaned appts
+  //    Only update name/phone/email — vehicle stays as whatever was booked
   var apptFields = {
     client_id: id,
     client_first_name: first,
     client_last_name: last,
     client_phone: phone,
-    client_email: email,
-    vehicle_year: vYear || null,
-    vehicle_make: vMake || null,
-    vehicle_model: vModel || null
+    client_email: email
   };
 
   if (window.sbClient) {
