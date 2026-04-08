@@ -1030,8 +1030,17 @@ var schedSelectedDay = null;
 
 function setSchedType(type) {
   schedType = type;
-  document.getElementById("sched-type-onetime").className = "filter-tab" + (type === "onetime" ? " active" : "");
-  document.getElementById("sched-type-recurring").className = "filter-tab" + (type === "recurring" ? " active" : "");
+  var oneBtn = document.getElementById("sched-type-onetime");
+  var recBtn = document.getElementById("sched-type-recurring");
+  oneBtn.className = "filter-tab" + (type === "onetime" ? " active" : "");
+  recBtn.className = "filter-tab" + (type === "recurring" ? " active" : "");
+  // Apply inline styles for clear visual feedback
+  oneBtn.style.background = type === "onetime" ? "rgba(0,194,255,0.15)" : "";
+  oneBtn.style.color = type === "onetime" ? "#00C2FF" : "";
+  oneBtn.style.borderColor = type === "onetime" ? "#00C2FF" : "";
+  recBtn.style.background = type === "recurring" ? "rgba(0,194,255,0.15)" : "";
+  recBtn.style.color = type === "recurring" ? "#00C2FF" : "";
+  recBtn.style.borderColor = type === "recurring" ? "#00C2FF" : "";
   document.getElementById("sched-onetime-fields").style.display = type === "onetime" ? "" : "none";
   document.getElementById("sched-recurring-fields").style.display = type === "recurring" ? "" : "none";
   document.getElementById("sched-submit-btn").textContent = type === "onetime" ? "Schedule Appointment" : "Create Recurring Series";
