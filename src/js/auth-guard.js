@@ -23,6 +23,11 @@
     window.db.profile.get().then(function(profile) {
       if (!profile) return;
 
+      /* Store company name globally for direct Supabase inserts */
+      if (profile.company_name) {
+        window.__glossio_company_name = profile.company_name;
+      }
+
       /* Update sidebar name */
       var nameEl = document.querySelector(".user-name");
       if (nameEl && profile.company_name) {

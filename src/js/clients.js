@@ -884,13 +884,14 @@ function submitSchedule() {
   // Build all appointment rows to insert directly into Supabase
   var uid = window.__glossio_user_id || "";
   var clientId = client.id || null;
+  var detailerUsername = window.__glossio_company_name || window.__glossio_username || "";
 
-  // Find service details for service_id
   var apptRows = dates.map(function(d) {
     return {
       profile_id: uid,
       client_id: clientId,
       service_id: firstServiceId,
+      detailer_username: detailerUsername,
       client_first_name: client.firstName,
       client_last_name: client.lastName || "",
       client_phone: client.phone || "",
@@ -1038,8 +1039,16 @@ function setSchedType(type) {
 }
 
 function pickSchedDay(btn) {
-  document.querySelectorAll("#sched-day-picker .filter-tab").forEach(function(b) { b.classList.remove("active"); });
+  document.querySelectorAll("#sched-day-picker .filter-tab").forEach(function(b) {
+    b.classList.remove("active");
+    b.style.background = "";
+    b.style.color = "";
+    b.style.borderColor = "";
+  });
   btn.classList.add("active");
+  btn.style.background = "rgba(0,194,255,0.15)";
+  btn.style.color = "#00C2FF";
+  btn.style.borderColor = "#00C2FF";
   schedSelectedDay = parseInt(btn.dataset.day);
   updateRecurringPreview();
 }
