@@ -218,7 +218,8 @@ function showDetail(id) {
       var clientAppts = (appts || []).filter(function(a) {
         return a.status === "complete" && (
           (c.phone && a.client_phone === c.phone) ||
-          (c.email && a.client_email === c.email)
+          (c.email && a.client_email === c.email) ||
+          (a.client_id && String(a.client_id) === String(c.id))
         );
       }).map(function(a) {
         return {
@@ -229,6 +230,9 @@ function showDetail(id) {
         };
       }).sort(function(a, b) { return (b.date || "").localeCompare(a.date || ""); });
       _renderClientDetail(c, detail, clientAppts);
+
+      /* Check for future recurring appointments */
+      _checkRecurringAppts(c, appts);
     });
   }
 }
@@ -302,6 +306,9 @@ function _renderClientDetail(c, detail, history) {
             <p class="mini-stat-label">Total Spent</p>
           </div>
         </div>
+
+        <!-- Cancel Recurring (shown dynamically if client has future recurring appts) -->
+        <div id="cancel-recurring-container" style="margin-top:12px"></div>
       </div>
 
       <div>
@@ -719,11 +726,25 @@ function openScheduleModal(client) {
   var modal = document.getElementById("schedule-modal");
   if (!modal) { createScheduleModal(); modal = document.getElementById("schedule-modal"); }
 
+  // Reset to one-time mode
+  schedType = "onetime";
+  schedSelectedDay = null;
+  setSchedType("onetime");
+
   document.getElementById("sched-client-name").textContent = client.firstName + " " + client.lastName;
   document.getElementById("sched-date").value = "";
   document.getElementById("sched-time").value = "";
+  document.getElementById("sched-start-date").value = "";
+  document.getElementById("sched-recurring-time").value = "";
   document.getElementById("sched-notes").value = "";
   document.getElementById("sched-error").textContent = "";
+  document.querySelectorAll("#sched-day-picker .filter-tab").forEach(function(b) { b.classList.remove("active"); });
+
+  // Add onchange listeners for preview updates
+  var freqEl = document.getElementById("sched-frequency");
+  var countEl = document.getElementById("sched-end-count");
+  if (freqEl) freqEl.onchange = updateRecurringPreview;
+  if (countEl) countEl.onchange = updateRecurringPreview;
 
   // Load services
   var grid = document.getElementById("sched-service-grid");
@@ -763,8 +784,6 @@ function closeScheduleModal() {
 
 function submitSchedule() {
   var activeBtns = document.querySelectorAll(".sched-svc-btn.sched-svc-active");
-  var date = document.getElementById("sched-date").value;
-  var time = document.getElementById("sched-time").value;
   var notes = document.getElementById("sched-notes").value.trim();
   var errEl = document.getElementById("sched-error");
 
@@ -772,19 +791,11 @@ function submitSchedule() {
     errEl.textContent = "Please select at least one service.";
     return;
   }
-  if (!date) { errEl.textContent = "Please select a date."; return; }
-  if (!time) { errEl.textContent = "Please select a time."; return; }
 
   var client = pendingScheduleClient;
   if (!client) return;
 
-  errEl.textContent = "";
-  var submitBtn = document.getElementById("sched-submit-btn");
-  submitBtn.disabled = true;
-  submitBtn.textContent = "Scheduling...";
-
   var profileId = window.__glossio_user_id || "";
-
   var serviceNames = [];
   var totalPrice = 0;
   var firstServiceId = "";
@@ -794,11 +805,23 @@ function submitSchedule() {
     totalPrice += parseFloat(btn.dataset.price) || 0;
   });
 
-  fetch("/.netlify/functions/create-booking", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      profileId: profileId,
+  /* ── One-time appointment ── */
+  if (schedType === "onetime") {
+    var date = document.getElementById("sched-date").value;
+    var time = document.getElementById("sched-time").value;
+    if (!date) { errEl.textContent = "Please select a date."; return; }
+    if (!time) { errEl.textContent = "Please select a time."; return; }
+
+    errEl.textContent = "";
+    var submitBtn = document.getElementById("sched-submit-btn");
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Scheduling...";
+
+    fetch("/.netlify/functions/create-booking", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        profileId: profileId,
         serviceId: firstServiceId,
         serviceName: serviceNames.join(" + "),
         servicePrice: totalPrice,
@@ -830,6 +853,90 @@ function submitSchedule() {
         submitBtn.textContent = "Schedule Appointment";
         errEl.textContent = "Something went wrong. Please try again.";
       });
+    return;
+  }
+
+  /* ── Recurring appointment ── */
+  var startDate = document.getElementById("sched-start-date").value;
+  var recurTime = document.getElementById("sched-recurring-time").value;
+  var freq = parseInt(document.getElementById("sched-frequency").value);
+  var count = parseInt(document.getElementById("sched-end-count").value);
+
+  if (schedSelectedDay === null) { errEl.textContent = "Please select a day of the week."; return; }
+  if (!startDate) { errEl.textContent = "Please select a start date."; return; }
+  if (!recurTime) { errEl.textContent = "Please select a time."; return; }
+
+  errEl.textContent = "";
+  var submitBtn = document.getElementById("sched-submit-btn");
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Creating " + count + " appointments...";
+
+  var dates = _generateRecurringDates(startDate, schedSelectedDay, freq, count);
+  var recurrenceId = "rec_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6);
+
+  // Format time for display (e.g. "14:00" → "2:00 PM")
+  var timeParts = recurTime.split(":");
+  var h = parseInt(timeParts[0]);
+  var ampm = h >= 12 ? "PM" : "AM";
+  var h12 = h % 12 || 12;
+  var displayTime = h12 + ":" + timeParts[1] + " " + ampm;
+
+  // Build all appointment rows to insert directly into Supabase
+  var uid = window.__glossio_user_id || "";
+  var clientId = client.id || null;
+
+  // Find service details for service_id
+  var apptRows = dates.map(function(d) {
+    return {
+      profile_id: uid,
+      client_id: clientId,
+      service_id: firstServiceId,
+      client_first_name: client.firstName,
+      client_last_name: client.lastName || "",
+      client_phone: client.phone || "",
+      client_email: client.email || "",
+      vehicle_year: client.vehicleYear || null,
+      vehicle_make: client.vehicleMake || null,
+      vehicle_model: client.vehicleModel || null,
+      service_name: serviceNames.join(" + "),
+      service_price: String(totalPrice),
+      appt_date: d,
+      appt_time: displayTime,
+      scheduled_date: d,
+      scheduled_time: recurTime + ":00",
+      status: "confirmed",
+      notes: notes || null,
+      recurrence_id: recurrenceId,
+      price: totalPrice
+    };
+  });
+
+  if (window.sbClient) {
+    window.sbClient.from("appointments")
+      .insert(apptRows)
+      .select()
+      .then(function(r) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Create Recurring Series";
+        if (r.error) {
+          errEl.textContent = r.error.message || "Failed to create recurring appointments.";
+        } else {
+          closeScheduleModal();
+          renderList();
+          // Re-render detail if viewing
+          var c = pendingScheduleClient;
+          if (c && viewingDetail) {
+            var detail = document.getElementById("client-detail");
+            if (detail) showDetail(c);
+          }
+        }
+      })
+      .catch(function() {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Create Recurring Series";
+        errEl.textContent = "Something went wrong. Please try again.";
+      });
+  }
 }
 
 function createScheduleModal() {
@@ -845,12 +952,67 @@ function createScheduleModal() {
         '<button class="modal-close" onclick="closeScheduleModal()">✕</button>' +
       '</div>' +
       '<p style="margin:0 0 20px;font-size:14px;color:var(--text-dim)">For <strong id="sched-client-name" style="color:var(--text)"></strong></p>' +
+
+      /* ── Appointment type toggle ── */
+      '<div id="sched-type-toggle" style="display:flex;gap:8px;margin-bottom:20px">' +
+        '<button id="sched-type-onetime" class="filter-tab active" onclick="setSchedType(\'onetime\')" style="flex:1;text-align:center">One-Time</button>' +
+        '<button id="sched-type-recurring" class="filter-tab" onclick="setSchedType(\'recurring\')" style="flex:1;text-align:center">Recurring</button>' +
+      '</div>' +
+
       '<p class="field-label">Service</p>' +
       '<div id="sched-service-grid" class="sched-service-grid"></div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px">' +
-        '<div><p class="field-label">Date</p><input id="sched-date" type="date" class="input"></div>' +
-        '<div><p class="field-label">Time</p><input id="sched-time" type="time" class="input"></div>' +
+
+      /* ── One-time date/time (existing) ── */
+      '<div id="sched-onetime-fields" style="margin-top:16px">' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
+          '<div><p class="field-label">Date</p><input id="sched-date" type="date" class="input"></div>' +
+          '<div><p class="field-label">Time</p><input id="sched-time" type="time" class="input"></div>' +
+        '</div>' +
       '</div>' +
+
+      /* ── Recurring fields ── */
+      '<div id="sched-recurring-fields" style="display:none;margin-top:16px">' +
+        '<p class="field-label">Repeats</p>' +
+        '<select id="sched-frequency" class="input" style="margin-bottom:12px">' +
+          '<option value="1">Every week</option>' +
+          '<option value="2" selected>Every 2 weeks</option>' +
+          '<option value="3">Every 3 weeks</option>' +
+          '<option value="4">Every 4 weeks (Monthly)</option>' +
+        '</select>' +
+        '<p class="field-label">On</p>' +
+        '<div id="sched-day-picker" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">' +
+          '<button class="filter-tab" data-day="1" onclick="pickSchedDay(this)" style="min-width:40px;text-align:center">Mon</button>' +
+          '<button class="filter-tab" data-day="2" onclick="pickSchedDay(this)" style="min-width:40px;text-align:center">Tue</button>' +
+          '<button class="filter-tab" data-day="3" onclick="pickSchedDay(this)" style="min-width:40px;text-align:center">Wed</button>' +
+          '<button class="filter-tab" data-day="4" onclick="pickSchedDay(this)" style="min-width:40px;text-align:center">Thu</button>' +
+          '<button class="filter-tab" data-day="5" onclick="pickSchedDay(this)" style="min-width:40px;text-align:center">Fri</button>' +
+          '<button class="filter-tab" data-day="6" onclick="pickSchedDay(this)" style="min-width:40px;text-align:center">Sat</button>' +
+          '<button class="filter-tab" data-day="0" onclick="pickSchedDay(this)" style="min-width:40px;text-align:center">Sun</button>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
+          '<div><p class="field-label">Starting</p><input id="sched-start-date" type="date" class="input"></div>' +
+          '<div><p class="field-label">At</p><input id="sched-recurring-time" type="time" class="input"></div>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">' +
+          '<div>' +
+            '<p class="field-label">Ends after</p>' +
+            '<select id="sched-end-count" class="input">' +
+              '<option value="4">4 appointments</option>' +
+              '<option value="6">6 appointments</option>' +
+              '<option value="8">8 appointments</option>' +
+              '<option value="10">10 appointments</option>' +
+              '<option value="12" selected>12 appointments</option>' +
+              '<option value="16">16 appointments</option>' +
+              '<option value="24">24 appointments</option>' +
+            '</select>' +
+          '</div>' +
+          '<div>' +
+            '<p class="field-label">Preview</p>' +
+            '<p id="sched-preview" style="font-size:12px;color:var(--text-dim);margin:8px 0 0;line-height:1.5">—</p>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+
       '<p class="field-label" style="margin-top:16px">Notes (optional)</p>' +
       '<textarea id="sched-notes" class="input" style="height:60px;resize:vertical" placeholder="Any notes for this appointment..."></textarea>' +
       '<p id="sched-error" style="color:#FF3366;font-size:13px;margin:12px 0 0"></p>' +
@@ -860,6 +1022,113 @@ function createScheduleModal() {
       '</div>' +
     '</div>';
   document.body.appendChild(modal);
+}
+
+var schedType = "onetime";
+var schedSelectedDay = null;
+
+function setSchedType(type) {
+  schedType = type;
+  document.getElementById("sched-type-onetime").className = "filter-tab" + (type === "onetime" ? " active" : "");
+  document.getElementById("sched-type-recurring").className = "filter-tab" + (type === "recurring" ? " active" : "");
+  document.getElementById("sched-onetime-fields").style.display = type === "onetime" ? "" : "none";
+  document.getElementById("sched-recurring-fields").style.display = type === "recurring" ? "" : "none";
+  document.getElementById("sched-submit-btn").textContent = type === "onetime" ? "Schedule Appointment" : "Create Recurring Series";
+  if (type === "recurring") updateRecurringPreview();
+}
+
+function pickSchedDay(btn) {
+  document.querySelectorAll("#sched-day-picker .filter-tab").forEach(function(b) { b.classList.remove("active"); });
+  btn.classList.add("active");
+  schedSelectedDay = parseInt(btn.dataset.day);
+  updateRecurringPreview();
+}
+
+function updateRecurringPreview() {
+  var freq = parseInt(document.getElementById("sched-frequency")?.value || "2");
+  var count = parseInt(document.getElementById("sched-end-count")?.value || "12");
+  var preview = document.getElementById("sched-preview");
+  if (!preview) return;
+  if (schedSelectedDay === null) { preview.textContent = "Select a day"; return; }
+
+  var dayNames = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  var totalWeeks = freq * count;
+  var months = Math.round(totalWeeks / 4.3);
+  preview.textContent = "Every " + (freq === 1 ? "" : freq + " ") + "week" + (freq > 1 ? "s" : "") +
+    " on " + dayNames[schedSelectedDay] + " — " + count + " appts over ~" + months + " months";
+}
+
+function _generateRecurringDates(startDate, dayOfWeek, freqWeeks, count) {
+  var dates = [];
+  var d = new Date(startDate + "T12:00:00");
+  // Move to the first occurrence of the selected day
+  var currentDay = d.getDay();
+  var daysUntil = (dayOfWeek - currentDay + 7) % 7;
+  if (daysUntil === 0 && d <= new Date()) daysUntil = 7 * freqWeeks;
+  d.setDate(d.getDate() + daysUntil);
+
+  for (var i = 0; i < count; i++) {
+    var yyyy = d.getFullYear();
+    var mm = String(d.getMonth() + 1).padStart(2, "0");
+    var dd = String(d.getDate()).padStart(2, "0");
+    dates.push(yyyy + "-" + mm + "-" + dd);
+    d.setDate(d.getDate() + (7 * freqWeeks));
+  }
+  return dates;
+}
+
+/* ── Recurring Appointment Management ──────────────────────────────────── */
+
+function _checkRecurringAppts(c, allAppts) {
+  var container = document.getElementById("cancel-recurring-container");
+  if (!container) return;
+
+  var today = new Date().toISOString().split("T")[0];
+  var futureRecurring = (allAppts || []).filter(function(a) {
+    return a.recurrence_id &&
+      (a.status === "pending" || a.status === "confirmed") &&
+      a.appt_date >= today &&
+      (String(a.client_id) === String(c.id) ||
+       (c.phone && a.client_phone === c.phone));
+  });
+
+  if (futureRecurring.length === 0) {
+    container.innerHTML = "";
+    return;
+  }
+
+  container.innerHTML =
+    '<button class="btn" style="font-size:12px;padding:9px 20px;margin-top:4px;background:#FF336615;border:1px solid #FF336633;color:#FF3366;width:100%;font-weight:600" ' +
+    'onclick="cancelRecurringAppts(\'' + c.id + '\',\'' + futureRecurring[0].recurrence_id + '\')">' +
+    'Cancel Recurring Appointments (' + futureRecurring.length + ' remaining)</button>';
+}
+
+function cancelRecurringAppts(clientId, recurrenceId) {
+  if (!confirm("This will permanently delete all future recurring appointments for this client. Past and completed appointments will stay on record. Continue?")) return;
+
+  var today = new Date().toISOString().split("T")[0];
+
+  if (window.sbClient) {
+    window.sbClient.from("appointments")
+      .delete()
+      .eq("recurrence_id", recurrenceId)
+      .gte("appt_date", today)
+      .in("status", ["pending", "confirmed"])
+      .select()
+      .then(function(r) {
+        // Remove the button
+        var container = document.getElementById("cancel-recurring-container");
+        if (container) container.innerHTML = '<p style="color:var(--success);font-size:13px;margin:8px 0">Recurring appointments cancelled.</p>';
+        // Refresh the detail view
+        var c = clients.find(function(cl) { return String(cl.id) === String(clientId); });
+        if (c) {
+          setTimeout(function() { showDetail(c.id); }, 1500);
+        }
+      })
+      .catch(function() {
+        alert("Something went wrong. Please try again.");
+      });
+  }
 }
 
 /* ── Init ─────────────────────────────────────────────────────────────────── */
