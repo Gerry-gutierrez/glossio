@@ -245,11 +245,10 @@ function renderAppts() {
   emptyEl.style.display = "none";
 
   const searchVal = (document.getElementById("appt-search")?.value || "").toLowerCase();
-  const skipDateFilter = apptFilter === "pending" || apptFilter === "confirmed";
   const filtered = appointments.filter(a => {
     const matchFilter = apptFilter === "all" || a.status === apptFilter;
     const matchSearch = !searchVal || (a.client + " " + a.vehicle + " " + a.service + " " + a.phone + " " + a.email).toLowerCase().includes(searchVal);
-    const matchDate = skipDateFilter || isInDateRange(a.date);
+    const matchDate = isInDateRange(a.date);
     return matchFilter && matchSearch && matchDate;
   });
 
