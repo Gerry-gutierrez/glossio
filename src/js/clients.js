@@ -32,6 +32,7 @@ function loadClients() {
           vehicleYear: c.vehicle_year || "",
           vehicleMake: c.vehicle_make || "",
           vehicleModel: c.vehicle_model || "",
+          vehicles: [],
           source: c.source || "",
           since: c.since || "",
           lastVisit: c.last_visit || c.lastVisit || "",
@@ -44,7 +45,9 @@ function loadClients() {
         };
       });
       nextClientId = clients.reduce((max, c) => Math.max(max, (typeof c.id === "number" ? c.id : 0) + 1), 1);
-      return clients;
+
+      // Load vehicles for all clients
+      return _loadAllVehicles().then(function() { return clients; });
     }).catch(function() {
       /* Fallback to localStorage */
       _loadClientsFromLS();
@@ -254,6 +257,88 @@ function _fmtDetailDate(dateStr) {
   return months[m] + " " + d + ", " + parts[0];
 }
 
+/* ── Multi-Vehicle Support ─────────────────────────────────────────────── */
+
+function _loadAllVehicles() {
+  if (!window.sbClient) return Promise.resolve();
+  return window.sbClient.from("client_vehicles")
+    .select("*")
+    .then(function(r) {
+      var vehicles = r.data || [];
+      // Group by client_id
+      clients.forEach(function(c) {
+        c.vehicles = vehicles.filter(function(v) { return v.client_id === c.id; })
+          .map(function(v) {
+            return { id: v.id, year: v.vehicle_year || "", make: v.vehicle_make || "", model: v.vehicle_model || "" };
+          });
+        // If client has a legacy vehicle but no entries in client_vehicles, migrate it
+        if (c.vehicles.length === 0 && c.vehicleYear) {
+          _addVehicleToDb(c.id, c.vehicleYear, c.vehicleMake, c.vehicleModel).then(function(v) {
+            if (v) c.vehicles.push({ id: v.id, year: v.vehicle_year, make: v.vehicle_make, model: v.vehicle_model });
+          });
+        }
+      });
+    }).catch(function() { /* table might not exist yet */ });
+}
+
+function _addVehicleToDb(clientId, year, make, model) {
+  if (!window.sbClient) return Promise.resolve(null);
+  return window.sbClient.from("client_vehicles")
+    .insert({ client_id: clientId, vehicle_year: year || null, vehicle_make: make || null, vehicle_model: model || null })
+    .select()
+    .single()
+    .then(function(r) { return r.data; })
+    .catch(function() { return null; });
+}
+
+function addVehicleToClient(clientId) {
+  var year = document.getElementById("av-year").value.trim();
+  var make = document.getElementById("av-make").value.trim();
+  var model = document.getElementById("av-vmodel").value.trim();
+  if (!make && !model) return;
+
+  var c = clients.find(function(cl) { return String(cl.id) === String(clientId); });
+  if (!c) return;
+
+  var btn = document.getElementById("av-save-btn");
+  if (btn) { btn.disabled = true; btn.textContent = "Adding..."; }
+
+  _addVehicleToDb(clientId, year, make, model).then(function(v) {
+    if (v) {
+      c.vehicles.push({ id: v.id, year: v.vehicle_year || year, make: v.vehicle_make || make, model: v.vehicle_model || model });
+      // Also update the primary vehicle fields if this is the first
+      if (c.vehicles.length === 1) {
+        c.vehicleYear = year; c.vehicleMake = make; c.vehicleModel = model;
+        c.vehicle = [year, make, model].filter(Boolean).join(" ");
+      }
+    }
+    // Re-render
+    var detail = document.getElementById("client-detail");
+    if (detail && viewingDetail) showDetail(c.id);
+  });
+}
+
+function removeVehicle(vehicleId, clientId) {
+  if (!confirm("Remove this vehicle?")) return;
+  var c = clients.find(function(cl) { return String(cl.id) === String(clientId); });
+  if (!c) return;
+
+  if (window.sbClient) {
+    window.sbClient.from("client_vehicles").delete().eq("id", vehicleId).then(function() {
+      c.vehicles = c.vehicles.filter(function(v) { return v.id !== vehicleId; });
+      // Update primary vehicle to first remaining
+      if (c.vehicles.length > 0) {
+        c.vehicleYear = c.vehicles[0].year; c.vehicleMake = c.vehicles[0].make; c.vehicleModel = c.vehicles[0].model;
+        c.vehicle = [c.vehicles[0].year, c.vehicles[0].make, c.vehicles[0].model].filter(Boolean).join(" ");
+      } else {
+        c.vehicleYear = ""; c.vehicleMake = ""; c.vehicleModel = ""; c.vehicle = "";
+      }
+      var detail = document.getElementById("client-detail");
+      if (detail && viewingDetail) showDetail(c.id);
+    });
+  }
+}
+
 function _renderClientDetail(c, detail, history) {
 
   detail.innerHTML = `
@@ -282,7 +367,6 @@ function _renderClientDetail(c, detail, history) {
           ${[
             { icon: "📱", label: "Phone", value: c.phone || "—" },
             { icon: "✉️", label: "Email", value: c.email || "—" },
-            { icon: "🚗", label: "Vehicle", value: c.vehicle || "—" },
             { icon: "📣", label: "Found via", value: c.source || "—" },
           ].map(f => `
             <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:14px">
@@ -293,6 +377,28 @@ function _renderClientDetail(c, detail, history) {
               </div>
             </div>
           `).join("")}
+
+          <!-- Vehicles Section -->
+          <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:14px">
+            <span style="font-size:16px;margin-top:1px">🚗</span>
+            <div style="flex:1">
+              <p style="margin:0 0 6px;font-size:10px;color:var(--text-faint);letter-spacing:0.15em;text-transform:uppercase">Vehicles</p>
+              ${(c.vehicles && c.vehicles.length > 0) ? c.vehicles.map(v => `
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+                  <p style="margin:0;font-size:14px;color:#C8C4BC">${[v.year, v.make, v.model].filter(Boolean).join(" ")}</p>
+                  <button onclick="removeVehicle('${v.id}','${c.id}')" style="background:none;border:none;color:var(--text-faint);cursor:pointer;font-size:14px;padding:2px 6px" title="Remove vehicle">✕</button>
+                </div>
+              `).join("") : '<p style="margin:0 0 6px;font-size:14px;color:#C8C4BC">' + (c.vehicle || "—") + '</p>'}
+              <div id="add-vehicle-form" style="margin-top:8px">
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px">
+                  <input id="av-year" class="input" placeholder="Year" style="font-size:12px;padding:6px 8px">
+                  <input id="av-make" class="input" placeholder="Make" style="font-size:12px;padding:6px 8px">
+                  <input id="av-vmodel" class="input" placeholder="Model" style="font-size:12px;padding:6px 8px">
+                </div>
+                <button id="av-save-btn" class="btn" style="font-size:11px;padding:5px 12px;background:rgba(0,229,160,0.1);border:1px solid rgba(0,229,160,0.3);color:#00E5A0;cursor:pointer;border-radius:6px" onclick="addVehicleToClient('${c.id}')">+ Add Vehicle</button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Mini stats -->
@@ -746,6 +852,24 @@ function openScheduleModal(client) {
   if (freqEl) freqEl.onchange = updateRecurringPreview;
   if (countEl) countEl.onchange = updateRecurringPreview;
 
+  // Load vehicle picker
+  var vehiclePicker = document.getElementById("sched-vehicle-picker");
+  if (vehiclePicker) {
+    if (client.vehicles && client.vehicles.length > 1) {
+      vehiclePicker.style.display = "";
+      var sel = document.getElementById("sched-vehicle-select");
+      sel.innerHTML = "";
+      client.vehicles.forEach(function(v, i) {
+        var opt = document.createElement("option");
+        opt.value = i;
+        opt.textContent = [v.year, v.make, v.model].filter(Boolean).join(" ");
+        sel.appendChild(opt);
+      });
+    } else {
+      vehiclePicker.style.display = "none";
+    }
+  }
+
   // Load services
   var grid = document.getElementById("sched-service-grid");
   grid.innerHTML = '<p style="color:var(--text-faint);font-size:13px">Loading services...</p>';
@@ -795,6 +919,17 @@ function submitSchedule() {
   var client = pendingScheduleClient;
   if (!client) return;
 
+  // Determine which vehicle to use
+  var vYear = client.vehicleYear || "";
+  var vMake = client.vehicleMake || "";
+  var vModel = client.vehicleModel || "";
+  var vehiclePickerEl = document.getElementById("sched-vehicle-picker");
+  if (vehiclePickerEl && vehiclePickerEl.style.display !== "none" && client.vehicles && client.vehicles.length > 1) {
+    var selIdx = parseInt(document.getElementById("sched-vehicle-select").value) || 0;
+    var selVehicle = client.vehicles[selIdx];
+    if (selVehicle) { vYear = selVehicle.year; vMake = selVehicle.make; vModel = selVehicle.model; }
+  }
+
   var profileId = window.__glossio_user_id || "";
   var serviceNames = [];
   var totalPrice = 0;
@@ -829,9 +964,9 @@ function submitSchedule() {
         lastName: client.lastName,
         phone: client.phone,
         email: client.email,
-        vehicleYear: client.vehicleYear,
-        vehicleMake: client.vehicleMake,
-        vehicleModel: client.vehicleModel,
+        vehicleYear: vYear,
+        vehicleMake: vMake,
+        vehicleModel: vModel,
         scheduledDate: date,
         scheduledTime: time,
         notes: notes,
@@ -896,9 +1031,9 @@ function submitSchedule() {
       client_last_name: client.lastName || "",
       client_phone: client.phone || "",
       client_email: client.email || "",
-      vehicle_year: client.vehicleYear || null,
-      vehicle_make: client.vehicleMake || null,
-      vehicle_model: client.vehicleModel || null,
+      vehicle_year: vYear || null,
+      vehicle_make: vMake || null,
+      vehicle_model: vModel || null,
       service_name: serviceNames.join(" + "),
       service_price: String(totalPrice),
       appt_date: d,
@@ -962,6 +1097,12 @@ function createScheduleModal() {
 
       '<p class="field-label">Service</p>' +
       '<div id="sched-service-grid" class="sched-service-grid"></div>' +
+
+      /* ── Vehicle picker (shown when client has multiple vehicles) ── */
+      '<div id="sched-vehicle-picker" style="display:none;margin-top:16px">' +
+        '<p class="field-label">Vehicle</p>' +
+        '<select id="sched-vehicle-select" class="input"></select>' +
+      '</div>' +
 
       /* ── One-time date/time (existing) ── */
       '<div id="sched-onetime-fields" style="margin-top:16px">' +
