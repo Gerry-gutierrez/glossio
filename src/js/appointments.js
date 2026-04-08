@@ -676,17 +676,16 @@ function renderCalendar() {
   const searchVal = (document.getElementById("appt-search")?.value || "").toLowerCase();
 
   /* Apply same filters as list view: status + search + date range */
-  const calSkipDate = apptFilter === "pending" || apptFilter === "confirmed";
   const calAppts = appointments.filter(a => {
     const matchFilter = apptFilter === "all" || a.status === apptFilter;
     const matchSearch = !searchVal || (a.client + " " + a.vehicle + " " + a.service + " " + (a.phone||"") + " " + (a.email||"")).toLowerCase().includes(searchVal);
-    const matchDate = calSkipDate || isInDateRange(a.date);
+    const matchDate = isInDateRange(a.date);
     return matchFilter && matchSearch && matchDate;
   });
 
   /* Figure out which months to render based on date range */
   var months = [];
-  var bounds = calSkipDate ? null : getDateRangeBounds();
+  var bounds = getDateRangeBounds();
   if (bounds) {
     var startParts = bounds.from.split("-");
     var endParts = bounds.to.split("-");
@@ -727,7 +726,7 @@ function renderCalendar() {
       const hasAny = dayAppts.length > 0;
 
       cells += `
-        <div class="cal-day ${hasAny ? 'cal-day-has' : ''}" style="${hasAny ? `background:${dotColor}15;border-color:${dotColor}33` : ''}">
+        <div class="cal-day ${hasAny ? 'cal-day-has' : ''}" style="${hasAny ? `background:${dotColor}15;border-color:${dotColor}33;cursor:pointer` : ''}" ${hasAny ? `onclick="openCalDayPopup('${dateStr}')"` : ''}>
           <span style="${hasAny ? 'color:var(--text);font-weight:700' : 'color:var(--text-faint)'}">${day}</span>
           ${hasAny ? `<span class="cal-day-count" style="color:${dotColor}">${dayAppts.length} appt${dayAppts.length > 1 ? 's' : ''}</span>` : ''}
         </div>
@@ -750,6 +749,66 @@ function renderCalendar() {
       `).join("")}
     </div>
   `;
+}
+
+/* ── Calendar Day Popup ──────────────────────────────────────────────────── */
+
+function openCalDayPopup(dateStr) {
+  var dayAppts = appointments.filter(function(a) { return a.date === dateStr; })
+    .sort(function(a, b) { return (a.time || "").localeCompare(b.time || ""); });
+  if (dayAppts.length === 0) return;
+
+  // Format the date nicely
+  var parts = dateStr.split("-");
+  var months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  var m = parseInt(parts[1], 10) - 1;
+  var d = parseInt(parts[2], 10);
+  var dateLabel = months[m] + " " + d + ", " + parts[0];
+
+  var modal = document.getElementById("cal-day-modal");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "cal-day-modal";
+    modal.className = "modal-overlay";
+    modal.onclick = function(e) { if (e.target === modal) modal.style.display = "none"; };
+    document.body.appendChild(modal);
+  }
+
+  var statusColors = { pending: "#FFD60A", confirmed: "#00C2FF", complete: "#00E5A0", missed: "#FF8C42", cancelled: "#FF3366" };
+  var statusLabels = { pending: "PENDING", confirmed: "CONFIRMED", complete: "CAME THROUGH", missed: "NO-SHOW", cancelled: "CANCELLED" };
+
+  modal.style.display = "flex";
+  modal.innerHTML =
+    '<div class="modal-box" style="max-width:560px;max-height:80vh;overflow-y:auto">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">' +
+        '<h2 style="margin:0;font-size:18px;font-weight:700">' + dateLabel + '</h2>' +
+        '<button class="modal-close" onclick="document.getElementById(\'cal-day-modal\').style.display=\'none\'">✕</button>' +
+      '</div>' +
+      '<p style="margin:0 0 16px;font-size:13px;color:var(--text-dim)">' + dayAppts.length + ' appointment' + (dayAppts.length > 1 ? 's' : '') + '</p>' +
+      dayAppts.map(function(a, i) {
+        var sc = statusColors[a.status] || "#888";
+        var sl = statusLabels[a.status] || a.status;
+        return '<div style="padding:14px 0;' + (i < dayAppts.length - 1 ? 'border-bottom:1px solid var(--border)' : '') + '">' +
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">' +
+            '<div>' +
+              '<p style="margin:0 0 3px;font-size:15px;font-weight:700">' + (a.client || "Unknown") + '</p>' +
+              '<p style="margin:0;font-size:12px;color:var(--text-dim)">' + (a.vehicle || "") + '</p>' +
+            '</div>' +
+            '<div style="text-align:right">' +
+              '<p style="margin:0 0 4px;font-size:15px;font-weight:700;color:var(--success)">' + (a.price ? "$" + parseFloat(a.price).toFixed(2) : "") + '</p>' +
+              '<span style="background:' + sc + '15;color:' + sc + ';border:1px solid ' + sc + '33;border-radius:20px;font-size:9px;font-weight:700;padding:2px 8px;text-transform:uppercase;letter-spacing:0.08em">' + sl + '</span>' +
+            '</div>' +
+          '</div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">' +
+            '<div><span style="color:var(--text-faint);text-transform:uppercase;font-size:10px;letter-spacing:0.1em">Time</span><p style="margin:2px 0 0;color:var(--text)">' + (a.time || "—") + '</p></div>' +
+            '<div><span style="color:var(--text-faint);text-transform:uppercase;font-size:10px;letter-spacing:0.1em">Service</span><p style="margin:2px 0 0;color:var(--text)">' + (a.service || "—") + '</p></div>' +
+            '<div><span style="color:var(--text-faint);text-transform:uppercase;font-size:10px;letter-spacing:0.1em">Phone</span><p style="margin:2px 0 0;color:var(--text)">' + (a.phone || "—") + '</p></div>' +
+            '<div><span style="color:var(--text-faint);text-transform:uppercase;font-size:10px;letter-spacing:0.1em">Email</span><p style="margin:2px 0 0;color:var(--text)">' + (a.email || "—") + '</p></div>' +
+          '</div>' +
+          (a.notes && a.notes !== "None" ? '<div style="margin-top:8px;font-size:12px"><span style="color:var(--text-faint);text-transform:uppercase;font-size:10px;letter-spacing:0.1em">Notes</span><p style="margin:2px 0 0;color:var(--text)">' + a.notes + '</p></div>' : '') +
+        '</div>';
+      }).join("") +
+    '</div>';
 }
 
 /* ── Create Appointment Modal ─────────────────────────────────────────────── */
