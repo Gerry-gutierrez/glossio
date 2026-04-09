@@ -213,6 +213,9 @@ function openAddModal() {
   document.getElementById("svc-name").value = "";
   document.getElementById("svc-price").value = "";
   document.getElementById("svc-desc").value = "";
+  var durEl = document.getElementById("svc-duration");
+  if (durEl) durEl.value = "";
+  _showDurationField();
   buildPickers();
   setPricingType("fixed");
   updatePreview();
@@ -234,10 +237,23 @@ function openEditModal(id) {
   document.getElementById("svc-name").value = svc.name;
   document.getElementById("svc-price").value = svc.price;
   document.getElementById("svc-desc").value = svc.description || "";
+  var durEl = document.getElementById("svc-duration");
+  if (durEl) durEl.value = svc.duration_minutes || "";
+  _showDurationField();
   buildPickers();
   setPricingType(modalPricingType);
   updatePreview();
   document.getElementById("service-modal").style.display = "flex";
+}
+
+function _showDurationField() {
+  var wrap = document.getElementById("duration-field-wrap");
+  if (!wrap) return;
+  // Check if time blocks are enabled from localStorage settings
+  try {
+    var s = JSON.parse(localStorage.getItem("glossio_settings") || "{}");
+    wrap.style.display = s.timeBlocksEnabled ? "" : "none";
+  } catch(e) { wrap.style.display = "none"; }
 }
 
 /* ── Pickers ─────────────────────────────────────────────────────────────── */
@@ -300,6 +316,8 @@ function submitService() {
   const name = document.getElementById("svc-name").value.trim();
   const price = document.getElementById("svc-price").value.trim();
   const desc = document.getElementById("svc-desc").value.trim();
+  const durVal = document.getElementById("svc-duration")?.value;
+  const duration = durVal ? parseInt(durVal) : null;
 
   if (!name) return;
 
@@ -312,7 +330,8 @@ function submitService() {
       color: modalColor,
       pricing_type: modalPricingType,
       is_active: true,
-      sort_order: services.length
+      sort_order: services.length,
+      duration_minutes: duration
     };
 
     /* Write to Supabase via window.db (falls back to localStorage if offline) */
@@ -345,7 +364,8 @@ function submitService() {
         description: desc,
         icon: modalIcon,
         color: modalColor,
-        pricing_type: modalPricingType
+        pricing_type: modalPricingType,
+        duration_minutes: duration
       };
 
       /* Update in Supabase */
@@ -356,6 +376,7 @@ function submitService() {
         svc.icon = modalIcon;
         svc.color = modalColor;
         svc.pricing_type = modalPricingType;
+        svc.duration_minutes = duration;
         saveServicesToLocalStorage();
         closeModal();
         render();
@@ -369,6 +390,7 @@ function submitService() {
         svc.icon = modalIcon;
         svc.color = modalColor;
         svc.pricing_type = modalPricingType;
+        svc.duration_minutes = duration;
         saveServicesToLocalStorage();
         closeModal();
         render();

@@ -10,6 +10,7 @@ var _apiPhotos = null;
 var _apiHours = null; /* business hours from API */
 var _apiBlocks = null; /* vacation / date blocks from API */
 var _apiAvailability = null; /* advance booking / min notice settings */
+var _apiBookedSlots = null; /* existing appointments for time blocking */
 
 function loadProfile() {
   try { return JSON.parse(localStorage.getItem(PROFILE_KEY) || "{}"); } catch(e) { return {}; }
@@ -43,7 +44,8 @@ function loadProfileData() {
         _apiPhotos = data.photos || [];
         _apiHours = data.hours || [];
         _apiBlocks = data.blocks || [];
-        _apiAvailability = data.availability || { advance_booking_days: 30, minimum_notice_hours: 24 };
+        _apiAvailability = data.availability || { advance_booking_days: 30, minimum_notice_hours: 24, time_blocks_enabled: false };
+        _apiBookedSlots = data.bookedSlots || [];
         return {
           profile: data.profile || {},
           photos: _apiPhotos,
@@ -584,9 +586,55 @@ function renderBookingTimeGrid(dateStr) {
   var isToday = dateStr === todayStr;
   var currentHour = isToday ? new Date().getHours() : -1;
 
+  /* Build blocked time ranges if time blocks are enabled */
+  var timeBlocksEnabled = _apiAvailability && _apiAvailability.time_blocks_enabled;
+  var blockedRanges = []; /* array of { startMin, endMin } in minutes from midnight */
+  if (timeBlocksEnabled && _apiBookedSlots) {
+    var daySlots = _apiBookedSlots.filter(function(s) { return s.date === dateStr; });
+    daySlots.forEach(function(slot) {
+      var timeStr = slot.time || "";
+      var parts = timeStr.split(":");
+      var slotHr = parseInt(parts[0], 10);
+      var slotMin = parseInt(parts[1], 10) || 0;
+      if (isNaN(slotHr)) {
+        /* Try parsing AM/PM format like "9:00 AM" */
+        var match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+        if (match) {
+          slotHr = parseInt(match[1]);
+          slotMin = parseInt(match[2]);
+          if (match[3].toUpperCase() === "PM" && slotHr !== 12) slotHr += 12;
+          if (match[3].toUpperCase() === "AM" && slotHr === 12) slotHr = 0;
+        }
+      }
+      if (isNaN(slotHr)) return;
+      var startMin = slotHr * 60 + slotMin;
+      /* Find duration from service */
+      var dur = 60; /* default 1 hour */
+      if (slot.service_id && _apiServices) {
+        var svc = _apiServices.find(function(s) { return s.id === slot.service_id; });
+        if (svc && svc.duration_minutes) dur = svc.duration_minutes;
+      }
+      blockedRanges.push({ startMin: startMin, endMin: startMin + dur });
+    });
+  }
+
   for (var hr = openH; hr < closeH; hr++) {
     /* Skip past times if booking for today */
     if (isToday && hr <= currentHour) continue;
+
+    /* Check if this slot is blocked by an existing appointment */
+    var slotStart = hr * 60;
+    var isBlocked = false;
+    if (timeBlocksEnabled) {
+      for (var b = 0; b < blockedRanges.length; b++) {
+        /* Slot is blocked if it falls within any booked range */
+        if (slotStart >= blockedRanges[b].startMin && slotStart < blockedRanges[b].endMin) {
+          isBlocked = true;
+          break;
+        }
+      }
+    }
+    if (isBlocked) continue;
 
     var ampm = hr < 12 ? "AM" : "PM";
     var display = hr === 0 ? 12 : hr > 12 ? hr - 12 : hr;

@@ -31,6 +31,7 @@ const DEFAULT_SETTINGS = {
   maxAppts: 4,
   advanceDays: 30,
   minHours: 24,
+  timeBlocksEnabled: false,
   bookingOn: true,
   bookingSms: true,
   bookingEmail: true,
@@ -96,6 +97,7 @@ function showScreen(screen) {
     case "availability-vacation": renderVacation(); break;
     case "availability-maxappts": renderMaxAppts(); break;
     case "availability-advance": renderAdvance(); break;
+    case "availability-timeblocks": renderTimeBlocks(); break;
     case "notifications": renderNotifications(); break;
     case "notifications-booking": renderNotifBooking(); break;
     case "notifications-cancel": renderNotifCancel(); break;
@@ -400,6 +402,7 @@ function renderAvailability() {
       { id: "availability-hours", icon: "🕐", color: "#FFD60A", label: "Business Hours", desc: "Set the days and hours you're available for appointments.", meta: openDays.length + " days open" },
       { id: "availability-vacation", icon: "🏖️", color: "#00C2FF", label: "Vacation / Date Blocks", desc: "Block specific dates or ranges — clients won't be able to book you on these days.", meta: blockCount > 0 ? blockCount + " active block" + (blockCount > 1 ? "s" : "") : "No blocks set" },
       { id: "availability-advance", icon: "📅", color: "#FF6B35", label: "Advance Booking Window", desc: "Control how far ahead clients can book and how much notice you need.", meta: advLabel },
+      { id: "availability-timeblocks", icon: "🧱", color: "#A78BFA", label: "Time Blocks", desc: "Prevent double-bookings by blocking off time slots when a client books an appointment.", meta: settings.timeBlocksEnabled ? "Enabled" : "Disabled" },
     ].map(item =>
       '<div class="stg-nav-card" style="border-left-color:' + item.color + '" onclick="showScreen(\'' + item.id + '\')">' +
         '<div style="display:flex;gap:14px;align-items:center">' +
@@ -688,6 +691,75 @@ function saveAdvance() {
       });
   }
 
+  showSettingsToast();
+}
+
+/* ── Time Blocks ────────────────────────────────────────────────────────── */
+
+function renderTimeBlocks() {
+  var enabled = settings.timeBlocksEnabled;
+
+  document.getElementById("settings-sub").innerHTML =
+    backBtn("availability") +
+    subHeader("Availability & Blocking", "Time Blocks", "Prevent double-bookings by blocking off time slots automatically.") +
+
+    '<div class="stg-card">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">' +
+        '<div>' +
+          '<p style="margin:0 0 4px;font-size:15px;font-weight:700">Enable Time Blocks</p>' +
+          '<p style="margin:0;font-size:12px;color:#666">When enabled, booked time slots are automatically blocked so clients can\'t double-book.</p>' +
+        '</div>' +
+        '<label class="toggle-switch">' +
+          '<input type="checkbox" id="timeblocks-toggle" ' + (enabled ? "checked" : "") + ' onchange="toggleTimeBlocks()">' +
+          '<span class="toggle-slider"></span>' +
+        '</label>' +
+      '</div>' +
+
+      (enabled ? (
+        '<div style="background:rgba(0,229,160,0.06);border:1px solid rgba(0,229,160,0.2);border-radius:10px;padding:20px;margin-bottom:20px">' +
+          '<p style="margin:0 0 12px;font-size:14px;font-weight:700;color:#00E5A0">Time Blocks are active</p>' +
+          '<p style="margin:0 0 16px;font-size:13px;color:#888;line-height:1.6">Your booking page will now only show available time slots to clients. Here\'s how to set it up:</p>' +
+          '<div style="margin-bottom:12px">' +
+            '<p style="margin:0 0 4px;font-size:13px;font-weight:600">1. Set your business hours</p>' +
+            '<p style="margin:0;font-size:12px;color:#666">Go to Availability & Blocking > Business Hours to set the days and hours you\'re available.</p>' +
+          '</div>' +
+          '<div style="margin-bottom:12px">' +
+            '<p style="margin:0 0 4px;font-size:13px;font-weight:600">2. Set service durations</p>' +
+            '<p style="margin:0;font-size:12px;color:#666">Go to the Services tab and set how long each service takes. This tells the system how much time to block off per appointment.</p>' +
+          '</div>' +
+          '<div style="margin-bottom:0">' +
+            '<p style="margin:0 0 4px;font-size:13px;font-weight:600">3. You\'re all set</p>' +
+            '<p style="margin:0;font-size:12px;color:#666">When a client books a time slot, it automatically blocks that window. Adjusting, cancelling, or deleting an appointment frees up that time slot.</p>' +
+          '</div>' +
+        '</div>'
+      ) : (
+        '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:20px">' +
+          '<p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#888">What does this do?</p>' +
+          '<p style="margin:0;font-size:12px;color:#666;line-height:1.6">When enabled, your booking page will automatically hide time slots that are already taken. If a client books at 9 AM for a 1-hour service, no one else can book until 10 AM. This prevents double-bookings without you having to manage it manually.</p>' +
+        '</div>'
+      )) +
+    '</div>';
+}
+
+function toggleTimeBlocks() {
+  var enabled = document.getElementById("timeblocks-toggle").checked;
+  settings.timeBlocksEnabled = enabled;
+  saveSettings();
+
+  /* Sync to Supabase availability_settings */
+  if (window.__glossio_user_id && window.sbClient) {
+    window.sbClient
+      .from("availability_settings")
+      .upsert({
+        profile_id: window.__glossio_user_id,
+        time_blocks_enabled: enabled,
+      }, { onConflict: "profile_id" })
+      .then(function(res) {
+        if (res.error) console.error("Failed to sync time blocks setting:", res.error);
+      });
+  }
+
+  renderTimeBlocks();
   showSettingsToast();
 }
 

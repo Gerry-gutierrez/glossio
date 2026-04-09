@@ -53,7 +53,7 @@ export const handler = async (event) => {
     /* Get active services (is_active may be NULL for older services, treat as active) */
     const { data: services } = await supabase
       .from("services")
-      .select("id, name, description, price, icon, color, pricing_type")
+      .select("id, name, description, price, icon, color, pricing_type, duration_minutes")
       .eq("profile_id", profile.id)
       .neq("is_active", false)
       .order("sort_order", { ascending: true });
@@ -81,12 +81,31 @@ export const handler = async (event) => {
       .gte("end_date", today)
       .order("start_date");
 
-    /* Get availability settings (advance booking window, min notice) */
+    /* Get availability settings (advance booking window, min notice, time blocks) */
     const { data: availSettings } = await supabase
       .from("availability_settings")
-      .select("advance_booking_days, minimum_notice_hours")
+      .select("advance_booking_days, minimum_notice_hours, time_blocks_enabled")
       .eq("profile_id", profile.id)
       .single();
+
+    /* Get future appointments for time blocking (only if enabled) */
+    let bookedSlots = [];
+    if (availSettings && availSettings.time_blocks_enabled) {
+      const { data: appts } = await supabase
+        .from("appointments")
+        .select("appt_date, appt_time, scheduled_time, service_name, service_id")
+        .eq("profile_id", profile.id)
+        .in("status", ["pending", "confirmed"])
+        .gte("appt_date", today);
+      if (appts) {
+        bookedSlots = appts.map(a => ({
+          date: a.appt_date,
+          time: a.scheduled_time || a.appt_time,
+          service_id: a.service_id,
+          service_name: a.service_name,
+        }));
+      }
+    }
 
     return {
       statusCode: 200,
@@ -100,7 +119,8 @@ export const handler = async (event) => {
         photos: photos || [],
         hours: hours || [],
         blocks: blocks || [],
-        availability: availSettings || { advance_booking_days: 30, minimum_notice_hours: 24 },
+        availability: availSettings || { advance_booking_days: 30, minimum_notice_hours: 24, time_blocks_enabled: false },
+        bookedSlots: bookedSlots,
       }),
     };
   } catch (err) {

@@ -66,6 +66,26 @@ extraJs: services.js
       <input id="svc-price" class="input" placeholder="e.g. 199.99">
     </div>
 
+    <!-- Duration (only visible when Time Blocks enabled) -->
+    <div id="duration-field-wrap" style="display:none;margin-bottom:16px">
+      <p class="field-label">Service Duration</p>
+      <select id="svc-duration" class="input">
+        <option value="">Not set</option>
+        <option value="30">30 minutes</option>
+        <option value="45">45 minutes</option>
+        <option value="60">1 hour</option>
+        <option value="90">1.5 hours</option>
+        <option value="120">2 hours</option>
+        <option value="150">2.5 hours</option>
+        <option value="180">3 hours</option>
+        <option value="240">4 hours</option>
+        <option value="300">5 hours</option>
+        <option value="360">6 hours</option>
+        <option value="480">8 hours (full day)</option>
+      </select>
+      <p style="margin:4px 0 0;font-size:11px;color:var(--text-faint)">How long does this service take? Used to block time slots on your booking page.</p>
+    </div>
+
     <p class="field-label">Description</p>
     <textarea id="svc-desc" class="input" style="height:90px;resize:vertical" placeholder="What's included in this service?"></textarea>
 
