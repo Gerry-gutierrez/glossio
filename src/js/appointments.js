@@ -806,6 +806,24 @@ function openCalDayPopup(dateStr) {
             '<div><span style="color:var(--text-faint);text-transform:uppercase;font-size:10px;letter-spacing:0.1em">Email</span><p style="margin:2px 0 0;color:var(--text)">' + (a.email || "—") + '</p></div>' +
           '</div>' +
           (a.notes && a.notes !== "None" ? '<div style="margin-top:8px;font-size:12px"><span style="color:var(--text-faint);text-transform:uppercase;font-size:10px;letter-spacing:0.1em">Notes</span><p style="margin:2px 0 0;color:var(--text)">' + a.notes + '</p></div>' : '') +
+          '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">' +
+            (a.status === "pending" ?
+              '<button class="action-btn" style="background:#00C2FF15;border-color:#00C2FF33;color:#00C2FF;font-size:11px;padding:4px 10px" onclick="confirmAppt(\'' + a.id + '\');setTimeout(function(){openCalDayPopup(\'' + dateStr + '\')},500)">✓ Confirm</button>' +
+              '<button class="action-btn" style="background:#A78BFA15;border-color:#A78BFA33;color:#A78BFA;font-size:11px;padding:4px 10px" onclick="document.getElementById(\'cal-day-modal\').style.display=\'none\';openAdjustModal(\'' + a.id + '\')">✎ Adjust</button>' +
+              '<button class="action-btn" style="background:#00E5A015;border-color:#00E5A033;color:#00E5A0;font-size:11px;padding:4px 10px" onclick="completeAppt(\'' + a.id + '\');setTimeout(function(){openCalDayPopup(\'' + dateStr + '\')},500)">✅ Came Through</button>' +
+              '<button class="action-btn" style="background:#FF8C4215;border-color:#FF8C4233;color:#FF8C42;font-size:11px;padding:4px 10px" onclick="missAppt(\'' + a.id + '\');setTimeout(function(){openCalDayPopup(\'' + dateStr + '\')},500)">⚠ No-Show</button>' +
+              '<button class="action-btn" style="background:#FF336615;border-color:#FF336633;color:#FF3366;font-size:11px;padding:4px 10px" onclick="cancelAppt(\'' + a.id + '\');setTimeout(function(){openCalDayPopup(\'' + dateStr + '\')},500)">✗ Cancel</button>'
+            : '') +
+            (a.status === "confirmed" ?
+              '<button class="action-btn" style="background:#A78BFA15;border-color:#A78BFA33;color:#A78BFA;font-size:11px;padding:4px 10px" onclick="document.getElementById(\'cal-day-modal\').style.display=\'none\';openAdjustModal(\'' + a.id + '\')">✎ Adjust</button>' +
+              '<button class="action-btn" style="background:#00E5A015;border-color:#00E5A033;color:#00E5A0;font-size:11px;padding:4px 10px" onclick="completeAppt(\'' + a.id + '\');setTimeout(function(){openCalDayPopup(\'' + dateStr + '\')},500)">✅ Came Through</button>' +
+              '<button class="action-btn" style="background:#FF8C4215;border-color:#FF8C4233;color:#FF8C42;font-size:11px;padding:4px 10px" onclick="missAppt(\'' + a.id + '\');setTimeout(function(){openCalDayPopup(\'' + dateStr + '\')},500)">⚠ No-Show</button>' +
+              '<button class="action-btn" style="background:#FF336615;border-color:#FF336633;color:#FF3366;font-size:11px;padding:4px 10px" onclick="cancelAppt(\'' + a.id + '\');setTimeout(function(){openCalDayPopup(\'' + dateStr + '\')},500)">✗ Cancel</button>'
+            : '') +
+            (a.status === "complete" ? '<span style="font-size:11px;color:var(--text-faint)">Done ✓</span>' : '') +
+            (a.status === "cancelled" ? '<span style="font-size:11px;color:var(--text-faint)">Cancelled</span>' : '') +
+            (a.status === "missed" ? '<span style="font-size:11px;color:var(--text-faint)">No-Show ⚠</span>' : '') +
+          '</div>' +
         '</div>';
       }).join("") +
     '</div>';
