@@ -274,8 +274,40 @@ function openServicesSheet() {
     });
     html += '</div>';
 
+    /* ── Product Add-ons (only if enabled) ── */
+    _selectedProducts = [];
+    if (_productsEnabled && _apiProducts && _apiProducts.length > 0) {
+      html +=
+        '<div style="margin-top:28px;padding:18px;background:linear-gradient(135deg,rgba(162,89,255,0.08),rgba(0,194,255,0.06));border:1px solid rgba(162,89,255,0.25);border-radius:14px">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' +
+            '<span style="font-size:18px">&#128722;</span>' +
+            '<p style="margin:0;font-size:14px;font-weight:700;color:#E8E4DC">Take a product home with you</p>' +
+          '</div>' +
+          '<p style="margin:0 0 14px;font-size:12px;color:#888;line-height:1.5">These are <strong style="color:#A259FF">separate products for purchase</strong> — not part of your service. Add a bottle to keep your car looking fresh between visits.</p>' +
+          '<div class="pub-product-addon-list" style="display:flex;flex-direction:column;gap:8px">';
+
+      _apiProducts.forEach(function(prod) {
+        html +=
+          '<div class="pub-addon-card" data-prod-id="' + prod.id + '" onclick="toggleProductAddon(\'' + prod.id + '\')" style="display:flex;align-items:center;gap:12px;padding:12px;background:#0D0D12;border:1.5px solid #1E1E2E;border-radius:10px;cursor:pointer;transition:all .2s">' +
+            '<div id="addon-check-' + prod.id + '" style="width:22px;height:22px;border-radius:6px;border:2px solid #555;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s"></div>' +
+            (prod.image_url
+              ? '<div style="width:48px;height:48px;border-radius:8px;overflow:hidden;flex-shrink:0;background:#111"><img src="' + esc(prod.image_url) + '" style="width:100%;height:100%;object-fit:cover" alt=""></div>'
+              : '<div style="width:48px;height:48px;border-radius:8px;background:#111;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:22px">&#128722;</div>'
+            ) +
+            '<div style="flex:1;min-width:0">' +
+              '<p style="margin:0 0 2px;font-size:13px;font-weight:700;color:#E8E4DC;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(prod.name) + '</p>' +
+              (prod.description ? '<p style="margin:0;font-size:11px;color:#777;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(prod.description) + '</p>' : '') +
+            '</div>' +
+            '<span style="font-size:14px;font-weight:700;color:#A259FF;flex-shrink:0">+$' + esc(String(prod.price || '0')) + '</span>' +
+          '</div>';
+      });
+
+      html += '</div></div>';
+    }
+
     /* Continue button + total */
     html += '<div id="svc-selection-summary" style="display:none;margin-top:16px;padding:16px;background:var(--bg-card);border:1px solid var(--border);border-radius:12px">' +
+      '<div id="svc-sel-breakdown" style="font-size:12px;color:#777;margin-bottom:10px;display:none"></div>' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
         '<span style="font-size:14px;color:#aaa" id="svc-sel-count">0 services selected</span>' +
         '<span style="font-size:18px;font-weight:700;color:var(--success)" id="svc-sel-total">$0</span>' +
@@ -327,6 +359,7 @@ function toggleService(id) {
 /* ── Booking Flow — Multi-step form ──────────────────────────────────── */
 
 var _selectedServices = [];  /* Array of { id, name, price, color } */
+var _selectedProducts = [];  /* Array of { id, name, price } — add-on products */
 var _selectedServiceId = null;
 var _selectedServiceName = "";
 var _selectedServiceColor = "";
@@ -364,21 +397,74 @@ function toggleServiceSelect(serviceId) {
     card.style.boxShadow = "0 0 0 2px " + color + "44";
   }
 
-  /* Update summary */
+  updateSelectionSummary();
+}
+
+function updateSelectionSummary() {
   var summary = document.getElementById("svc-selection-summary");
   var countEl = document.getElementById("svc-sel-count");
   var totalEl = document.getElementById("svc-sel-total");
-  if (summary) {
-    if (_selectedServices.length > 0) {
-      summary.style.display = "";
-      var hasQuote = _selectedServices.some(function(svc) { return svc.pricing_type === 'quote'; });
-      var total = _selectedServices.reduce(function(s, svc) { return s + (svc.pricing_type === 'quote' ? 0 : (parseFloat(svc.price) || 0)); }, 0);
-      if (countEl) countEl.textContent = _selectedServices.length + " service" + (_selectedServices.length > 1 ? "s" : "") + " selected";
-      if (totalEl) totalEl.textContent = hasQuote ? (total > 0 ? "$" + total.toFixed(2) + " + Quote" : "Quote") : "$" + total.toFixed(2);
+  var breakdownEl = document.getElementById("svc-sel-breakdown");
+  if (!summary) return;
+
+  if (_selectedServices.length === 0 && _selectedProducts.length === 0) {
+    summary.style.display = "none";
+    return;
+  }
+
+  summary.style.display = "";
+  var hasQuote = _selectedServices.some(function(svc) { return svc.pricing_type === 'quote'; });
+  var svcTotal = _selectedServices.reduce(function(s, svc) { return s + (svc.pricing_type === 'quote' ? 0 : (parseFloat(svc.price) || 0)); }, 0);
+  var prodTotal = _selectedProducts.reduce(function(s, p) { return s + (parseFloat(p.price) || 0); }, 0);
+  var grandTotal = svcTotal + prodTotal;
+
+  var countText = _selectedServices.length + " service" + (_selectedServices.length !== 1 ? "s" : "");
+  if (_selectedProducts.length > 0) {
+    countText += " + " + _selectedProducts.length + " product" + (_selectedProducts.length !== 1 ? "s" : "");
+  }
+  if (countEl) countEl.textContent = countText;
+  if (totalEl) totalEl.textContent = hasQuote ? (grandTotal > 0 ? "$" + grandTotal.toFixed(2) + " + Quote" : "Quote") : "$" + grandTotal.toFixed(2);
+
+  if (breakdownEl) {
+    if (_selectedProducts.length > 0 && _selectedServices.length > 0) {
+      breakdownEl.style.display = "";
+      breakdownEl.innerHTML = 'Services: $' + svcTotal.toFixed(2) + (hasQuote ? ' + Quote' : '') + ' &nbsp;·&nbsp; Products: $' + prodTotal.toFixed(2);
     } else {
-      summary.style.display = "none";
+      breakdownEl.style.display = "none";
     }
   }
+}
+
+function toggleProductAddon(productId) {
+  if (!_apiProducts) return;
+  var prod = null;
+  for (var i = 0; i < _apiProducts.length; i++) {
+    if (_apiProducts[i].id === productId) { prod = _apiProducts[i]; break; }
+  }
+  if (!prod) return;
+
+  var card = document.querySelector('.pub-addon-card[data-prod-id="' + productId + '"]');
+  var check = document.getElementById("addon-check-" + productId);
+  var idx = -1;
+  for (var j = 0; j < _selectedProducts.length; j++) {
+    if (_selectedProducts[j].id === productId) { idx = j; break; }
+  }
+
+  if (idx >= 0) {
+    _selectedProducts.splice(idx, 1);
+    if (check) { check.style.background = ""; check.style.borderColor = "#555"; check.innerHTML = ""; }
+    if (card) { card.style.borderColor = "#1E1E2E"; card.style.background = "#0D0D12"; }
+  } else {
+    _selectedProducts.push({ id: productId, name: prod.name, price: prod.price || 0 });
+    if (check) {
+      check.style.background = "#A259FF";
+      check.style.borderColor = "#A259FF";
+      check.innerHTML = '<span style="color:#fff;font-size:14px;font-weight:700">&#10003;</span>';
+    }
+    if (card) { card.style.borderColor = "#A259FF"; card.style.background = "rgba(162,89,255,0.08)"; }
+  }
+
+  updateSelectionSummary();
 }
 
 function handleMultiBooking() {
@@ -426,7 +512,19 @@ function openBookingForm() {
         '<h2 style="margin:0;font-size:20px;font-weight:700">Book ' + esc(_selectedServiceName) + '</h2>' +
         '<button class="pub-sheet-close" onclick="closeServicesSheet()">&#10005;</button>' +
       '</div>' +
-      '<p style="margin:0 0 20px;font-size:13px;color:#666">Fill in your details to request this appointment.</p>' +
+      '<p style="margin:0 0 16px;font-size:13px;color:#666">Fill in your details to request this appointment.</p>' +
+
+      /* Show product add-ons summary if any */
+      (_selectedProducts && _selectedProducts.length > 0
+        ? '<div style="margin:0 0 20px;padding:12px 14px;background:rgba(162,89,255,0.08);border:1px solid rgba(162,89,255,0.3);border-radius:10px">' +
+            '<p style="margin:0 0 6px;font-size:11px;color:#A259FF;font-weight:700;letter-spacing:0.1em;text-transform:uppercase">&#128722; Add-on Products</p>' +
+            _selectedProducts.map(function(p) {
+              return '<p style="margin:2px 0;font-size:12px;color:#C8C4BC">' + esc(p.name) + ' <span style="color:#888">— $' + esc(String(p.price || '0')) + '</span></p>';
+            }).join('') +
+            '<p style="margin:6px 0 0;font-size:10px;color:#777;font-style:italic">These are separate products you\'re taking home — not part of the service.</p>' +
+          '</div>'
+        : ''
+      ) +
 
       '<form id="booking-form" onsubmit="submitBooking(event)">' +
 
@@ -725,6 +823,17 @@ function submitBooking(e) {
   btn.style.opacity = "0.6";
   errDiv.style.display = "none";
 
+  /* Build notes with products appended */
+  var finalNotes = notes || "";
+  if (_selectedProducts && _selectedProducts.length > 0) {
+    var productLines = _selectedProducts.map(function(p) {
+      return "• " + p.name + " — $" + (parseFloat(p.price) || 0).toFixed(2);
+    }).join("\n");
+    var productTotal = _selectedProducts.reduce(function(s, p) { return s + (parseFloat(p.price) || 0); }, 0);
+    var productSection = "🛒 PRODUCTS ORDERED (add-on, not part of service):\n" + productLines + "\nProducts Total: $" + productTotal.toFixed(2);
+    finalNotes = finalNotes ? (finalNotes + "\n\n" + productSection) : productSection;
+  }
+
   var payload = {
     slug: slug,
     serviceId: _selectedServiceId,
@@ -737,7 +846,8 @@ function submitBooking(e) {
     vehicleYear: vehicleYear,
     vehicleMake: vehicleMake,
     vehicleModel: vehicleModel,
-    notes: notes,
+    notes: finalNotes,
+    products: _selectedProducts,
     scheduledDate: scheduledDate,
     scheduledTime: scheduledTime
   };

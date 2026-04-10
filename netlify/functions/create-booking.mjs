@@ -16,7 +16,7 @@ export const handler = async (event) => {
     slug, profileId: directProfileId, serviceId, serviceName, servicePrice,
     firstName, lastName, email, phone,
     vehicleYear, vehicleMake, vehicleModel,
-    notes, scheduledDate, scheduledTime, howHeard
+    notes, scheduledDate, scheduledTime, howHeard, products
   } = body;
 
   /* ── Validate required fields ── */
@@ -190,8 +190,11 @@ export const handler = async (event) => {
           const fromNumber = process.env.TWILIO_PHONE_NUMBER;
           if (accountSid && authToken && fromNumber) {
             const client = twilio(accountSid, authToken);
+            const productsNote = (products && products.length > 0)
+              ? ` + ${products.length} product${products.length > 1 ? "s" : ""} ordered`
+              : "";
             await client.messages.create({
-              body: `PENDING APPT: ${firstName} ${lastName}, ${phone}, wants to know if ${scheduledTime} on ${scheduledDate} would work. Please open GlossIO for more info and confirm.`,
+              body: `PENDING APPT: ${firstName} ${lastName}, ${phone}, wants to know if ${scheduledTime} on ${scheduledDate} would work${productsNote}. Please open GlossIO for more info and confirm.`,
               from: fromNumber,
               to: prof.phone,
             });
