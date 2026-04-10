@@ -489,6 +489,57 @@
     }
   };
 
+  /* ────────────────────────────────────────────────────────────────────────── */
+  /* ── Products ──                                                            */
+  /* ────────────────────────────────────────────────────────────────────────── */
+
+  var products = {
+    list: afterAuth(function() {
+      if (sb() && userId()) {
+        return sb().from("products").select("*")
+          .eq("profile_id", userId())
+          .order("sort_order", { ascending: true })
+          .then(function(r) { return r.data || []; });
+      }
+      return Promise.resolve([]);
+    }),
+
+    listByProfile: function(profileId) {
+      if (sb()) {
+        return sb().from("products").select("*")
+          .eq("profile_id", profileId)
+          .eq("is_active", true)
+          .order("sort_order", { ascending: true })
+          .then(function(r) { return r.data || []; });
+      }
+      return Promise.resolve([]);
+    },
+
+    create: afterAuth(function(data) {
+      if (sb() && userId()) {
+        data.profile_id = userId();
+        return sb().from("products").insert(data).select().single()
+          .then(function(r) { return r.data; });
+      }
+      return Promise.resolve(data);
+    }),
+
+    update: afterAuth(function(id, fields) {
+      if (sb() && userId()) {
+        return sb().from("products").update(fields).eq("id", id).eq("profile_id", userId()).select().single()
+          .then(function(r) { return r.data; });
+      }
+      return Promise.resolve(fields);
+    }),
+
+    remove: afterAuth(function(id) {
+      if (sb() && userId()) {
+        return sb().from("products").delete().eq("id", id).eq("profile_id", userId());
+      }
+      return Promise.resolve();
+    })
+  };
+
   /* ── Expose globally ── */
   window.db = {
     profile: profile,
@@ -498,6 +549,7 @@
     appointments: appointments,
     settings: settings,
     storage: storage,
+    products: products,
     isOnline: function() { return !!sb() && !!userId(); },
     ready: _authReady
   };

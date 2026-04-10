@@ -22,7 +22,7 @@ export const handler = async (event) => {
     /* Get profile by slug */
     let { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("id, company_name, slug, tagline, bio, instagram_handle, location, avatar_url, is_pro")
+      .select("id, company_name, slug, tagline, bio, instagram_handle, location, avatar_url, is_pro, products_enabled")
       .eq("slug", slug)
       .single();
 
@@ -30,7 +30,7 @@ export const handler = async (event) => {
     if (profileError || !profile) {
       const { data: allProfiles } = await supabase
         .from("profiles")
-        .select("id, company_name, slug, tagline, bio, instagram_handle, location, avatar_url, is_pro");
+        .select("id, company_name, slug, tagline, bio, instagram_handle, location, avatar_url, is_pro, products_enabled");
 
       if (allProfiles) {
         profile = allProfiles.find(function(p) {
@@ -107,6 +107,18 @@ export const handler = async (event) => {
       }
     }
 
+    /* Get products if enabled */
+    let productsList = [];
+    if (profile.products_enabled) {
+      const { data: prods } = await supabase
+        .from("products")
+        .select("id, name, description, price, image_url")
+        .eq("profile_id", profile.id)
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true });
+      productsList = prods || [];
+    }
+
     return {
       statusCode: 200,
       headers: {
@@ -121,6 +133,7 @@ export const handler = async (event) => {
         blocks: blocks || [],
         availability: availSettings || { advance_booking_days: 30, minimum_notice_hours: 24, time_blocks_enabled: false },
         bookedSlots: bookedSlots,
+        products: productsList,
       }),
     };
   } catch (err) {

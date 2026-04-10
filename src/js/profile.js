@@ -21,6 +21,10 @@ let removeMode = false;
 let previewMode = false;
 let avatarUrl = null;
 let uploadingAvatar = false;
+let productsEnabled = false;
+let productsList = [];
+let pendingProductFile = null;
+let pendingProductDataUrl = null;
 
 function escHtml(str) {
   const d = document.createElement("div");
@@ -68,6 +72,23 @@ function loadProfile() {
         syncProfileToSupabase();
       }
     });
+
+    /* Load products_enabled flag from profile */
+    window.db.profile.get().then(function(sbP) {
+      if (sbP) {
+        productsEnabled = !!sbP.products_enabled;
+      }
+    });
+
+    /* Load products from Supabase */
+    if (window.db.products) {
+      window.db.products.list().then(function(sbProducts) {
+        if (sbProducts) {
+          productsList = sbProducts;
+          renderProfile();
+        }
+      });
+    }
 
     /* Load photos from Supabase */
     window.db.photos.list().then(function(sbPhotos) {
@@ -270,7 +291,255 @@ function renderProfile() {
         '<button class="btn btn-primary" style="margin-top:16px;font-size:13px;padding:10px 20px" onclick="openAddPhoto()">Upload Photos</button>'
       ) +
       '<p style="text-align:center;margin:10px 0 0;font-size:11px;color:#444">Tap any photo to view</p>' +
+    '</div>' +
+
+    /* Products Section */
+    '<div class="card" style="margin-top:28px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
+        '<div>' +
+          '<h3 style="font-size:15px;font-weight:700;margin:0">Products</h3>' +
+          '<p style="font-size:12px;color:var(--text-dim);margin:4px 0 0">Display products you sell on your public profile</p>' +
+        '</div>' +
+        '<label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer">' +
+          '<input type="checkbox" ' + (productsEnabled ? 'checked' : '') + ' onchange="toggleProductsEnabled(this.checked)" style="opacity:0;width:0;height:0">' +
+          '<span style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:' + (productsEnabled ? '#00C2FF' : '#333') + ';border-radius:24px;transition:.3s"></span>' +
+          '<span style="position:absolute;content:\'\';height:18px;width:18px;left:' + (productsEnabled ? '23px' : '3px') + ';bottom:3px;background:#fff;border-radius:50%;transition:.3s"></span>' +
+        '</label>' +
+      '</div>' +
+      (productsEnabled ? renderProductsManager() : '<p style="font-size:13px;color:#555;margin:0">Toggle on to add products your clients can browse — sprays, cleaners, merch, and more.</p>') +
     '</div>';
+}
+
+/* ── Products Manager ──────────────────────────────────────────────────── */
+
+function toggleProductsEnabled(checked) {
+  productsEnabled = checked;
+  /* Save to Supabase */
+  if (window.db && window.db.isOnline()) {
+    window.db.profile.update({ products_enabled: checked });
+  }
+  renderProfile();
+  showProfileToast(checked ? "Products enabled!" : "Products hidden from profile");
+}
+
+function renderProductsManager() {
+  var html = '';
+
+  if (productsList.length > 0) {
+    html += '<div style="display:flex;gap:8px;margin-bottom:16px">' +
+      '<button class="btn btn-primary" style="font-size:12px;padding:8px 16px" onclick="openAddProduct()">+ Add Product</button>' +
+    '</div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">';
+    productsList.forEach(function(prod) {
+      html +=
+        '<div class="card" style="padding:0;overflow:hidden;border:1px solid var(--border);position:relative">' +
+          '<div style="position:absolute;top:8px;right:8px;display:flex;gap:4px;z-index:2">' +
+            '<button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;background:rgba(10,10,15,0.8);border:1px solid #333" onclick="openEditProduct(\'' + prod.id + '\')">Edit</button>' +
+            '<button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;background:rgba(10,10,15,0.8);border:1px solid #333;color:#FF3366" onclick="deleteProduct(\'' + prod.id + '\')">X</button>' +
+          '</div>' +
+          (prod.image_url
+            ? '<div style="width:100%;aspect-ratio:1;overflow:hidden"><img src="' + escHtml(prod.image_url) + '" alt="' + escHtml(prod.name) + '" style="width:100%;height:100%;object-fit:cover"></div>'
+            : '<div style="width:100%;aspect-ratio:1;background:#111118;display:flex;align-items:center;justify-content:center"><span style="font-size:40px;color:#333">&#128722;</span></div>'
+          ) +
+          '<div style="padding:12px">' +
+            '<p style="margin:0 0 4px;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escHtml(prod.name) + '</p>' +
+            '<p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#00C2FF">$' + escHtml(String(prod.price || '0')) + '</p>' +
+            (prod.description ? '<p style="margin:0;font-size:11px;color:#777;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">' + escHtml(prod.description) + '</p>' : '') +
+          '</div>' +
+        '</div>';
+    });
+    html += '</div>';
+  } else {
+    html += '<div style="text-align:center;padding:24px 0">' +
+      '<p style="font-size:32px;margin:0 0 8px">&#128722;</p>' +
+      '<p style="font-size:13px;color:#777;margin:0 0 16px">No products yet. Add sprays, cleaners, merch — anything you sell.</p>' +
+      '<button class="btn btn-primary" style="font-size:13px;padding:10px 20px" onclick="openAddProduct()">+ Add Your First Product</button>' +
+    '</div>';
+  }
+
+  return html;
+}
+
+/* ── Add Product Modal ─────────────────────────────────────────────────── */
+
+function openAddProduct() {
+  pendingProductFile = null;
+  pendingProductDataUrl = null;
+  var modal = document.getElementById("profile-modal");
+  modal.style.display = "flex";
+  modal.innerHTML =
+    '<div class="modal-box" style="max-width:460px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:28px">' +
+        '<h2 style="margin:0;font-size:20px;font-weight:700">Add Product</h2>' +
+        '<button class="modal-close" onclick="closeEditModal()">&#10005;</button>' +
+      '</div>' +
+
+      '<p class="field-label">Product Photo</p>' +
+      '<div id="product-upload-area" class="photo-upload-area" onclick="document.getElementById(\'product-file-input\').click()" style="cursor:pointer">' +
+        '<input type="file" id="product-file-input" accept="image/*" style="display:none" onchange="handleProductFile(this)">' +
+        '<div id="product-upload-placeholder" class="photo-upload-placeholder">' +
+          '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>' +
+          '<p style="margin:6px 0 0;font-size:13px;color:var(--text-faint)">Click to upload a photo</p>' +
+          '<p style="margin:2px 0 0;font-size:11px;color:#444">JPG, PNG, or WebP — max 5 MB</p>' +
+        '</div>' +
+        '<img id="product-upload-preview" style="display:none;max-width:100%;max-height:200px;border-radius:8px;object-fit:contain" />' +
+      '</div>' +
+
+      '<p class="field-label">Product Name *</p>' +
+      '<input class="input" id="product-name" placeholder="e.g. SiO2 Ceramic Detailer" maxlength="80">' +
+
+      '<p class="field-label">Price ($) *</p>' +
+      '<input class="input" id="product-price" type="number" step="0.01" min="0" placeholder="29.99">' +
+
+      '<p class="field-label">Description</p>' +
+      '<textarea class="input" id="product-desc" rows="3" maxlength="300" placeholder="What does this product do? Why should clients buy it?" style="resize:vertical"></textarea>' +
+
+      '<div style="display:flex;gap:10px;margin-top:20px">' +
+        '<button class="btn btn-ghost" onclick="closeEditModal()">Cancel</button>' +
+        '<button class="btn btn-primary" style="flex:1" id="add-product-btn" onclick="submitProduct()">Add Product</button>' +
+      '</div>' +
+    '</div>';
+
+  modal.addEventListener("click", function(e) {
+    if (e.target === this) closeEditModal();
+  });
+}
+
+function handleProductFile(input) {
+  var file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    showProfileToast("Image must be under 5 MB");
+    return;
+  }
+  pendingProductFile = file;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    pendingProductDataUrl = e.target.result;
+    var preview = document.getElementById("product-upload-preview");
+    var placeholder = document.getElementById("product-upload-placeholder");
+    if (preview) { preview.src = pendingProductDataUrl; preview.style.display = "block"; }
+    if (placeholder) placeholder.style.display = "none";
+  };
+  reader.readAsDataURL(file);
+}
+
+function submitProduct(editId) {
+  var name = document.getElementById("product-name").value.trim();
+  var price = document.getElementById("product-price").value.trim();
+  var desc = document.getElementById("product-desc").value.trim();
+
+  if (!name || !price) {
+    showProfileToast("Name and price are required");
+    return;
+  }
+
+  var btn = document.getElementById("add-product-btn");
+  if (btn) { btn.disabled = true; btn.textContent = "Saving..."; }
+
+  var saveData = {
+    name: name,
+    price: parseFloat(price) || 0,
+    description: desc || null,
+    sort_order: editId ? undefined : productsList.length
+  };
+
+  /* Upload image first if we have one */
+  var uploadPromise;
+  if (pendingProductFile && window.db && window.db.isOnline()) {
+    var userId = window.__glossio_user_id;
+    var ext = pendingProductFile.name.split(".").pop() || "jpg";
+    var path = userId + "/products/" + Date.now() + "." + ext;
+    uploadPromise = window.db.storage.upload("work-photos", path, pendingProductFile)
+      .then(function() {
+        saveData.image_url = window.db.storage.getPublicUrl("work-photos", path);
+      });
+  } else {
+    uploadPromise = Promise.resolve();
+  }
+
+  uploadPromise.then(function() {
+    /* Remove undefined keys */
+    Object.keys(saveData).forEach(function(k) { if (saveData[k] === undefined) delete saveData[k]; });
+
+    if (editId) {
+      return window.db.products.update(editId, saveData).then(function(updated) {
+        /* Update local list */
+        productsList = productsList.map(function(p) {
+          if (p.id === editId) return Object.assign(p, saveData);
+          return p;
+        });
+      });
+    } else {
+      return window.db.products.create(saveData).then(function(created) {
+        if (created) productsList.push(created);
+      });
+    }
+  }).then(function() {
+    closeEditModal();
+    renderProfile();
+    showProfileToast(editId ? "Product updated!" : "Product added!");
+  }).catch(function(err) {
+    console.error("Product save error:", err);
+    if (btn) { btn.disabled = false; btn.textContent = editId ? "Save Changes" : "Add Product"; }
+    showProfileToast("Failed to save — try again");
+  });
+}
+
+function openEditProduct(id) {
+  var prod = productsList.find(function(p) { return p.id === id; });
+  if (!prod) return;
+
+  pendingProductFile = null;
+  pendingProductDataUrl = null;
+  var modal = document.getElementById("profile-modal");
+  modal.style.display = "flex";
+  modal.innerHTML =
+    '<div class="modal-box" style="max-width:460px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:28px">' +
+        '<h2 style="margin:0;font-size:20px;font-weight:700">Edit Product</h2>' +
+        '<button class="modal-close" onclick="closeEditModal()">&#10005;</button>' +
+      '</div>' +
+
+      '<p class="field-label">Product Photo</p>' +
+      '<div id="product-upload-area" class="photo-upload-area" onclick="document.getElementById(\'product-file-input\').click()" style="cursor:pointer">' +
+        '<input type="file" id="product-file-input" accept="image/*" style="display:none" onchange="handleProductFile(this)">' +
+        '<div id="product-upload-placeholder" class="photo-upload-placeholder" style="' + (prod.image_url ? 'display:none' : '') + '">' +
+          '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>' +
+          '<p style="margin:6px 0 0;font-size:13px;color:var(--text-faint)">Click to change photo</p>' +
+        '</div>' +
+        '<img id="product-upload-preview" src="' + escHtml(prod.image_url || '') + '" style="' + (prod.image_url ? '' : 'display:none;') + 'max-width:100%;max-height:200px;border-radius:8px;object-fit:contain" />' +
+      '</div>' +
+
+      '<p class="field-label">Product Name *</p>' +
+      '<input class="input" id="product-name" value="' + escHtml(prod.name) + '" maxlength="80">' +
+
+      '<p class="field-label">Price ($) *</p>' +
+      '<input class="input" id="product-price" type="number" step="0.01" min="0" value="' + (prod.price || '') + '">' +
+
+      '<p class="field-label">Description</p>' +
+      '<textarea class="input" id="product-desc" rows="3" maxlength="300" style="resize:vertical">' + escHtml(prod.description || '') + '</textarea>' +
+
+      '<div style="display:flex;gap:10px;margin-top:20px">' +
+        '<button class="btn btn-ghost" onclick="closeEditModal()">Cancel</button>' +
+        '<button class="btn btn-primary" style="flex:1" id="add-product-btn" onclick="submitProduct(\'' + id + '\')">Save Changes</button>' +
+      '</div>' +
+    '</div>';
+
+  modal.addEventListener("click", function(e) {
+    if (e.target === this) closeEditModal();
+  });
+}
+
+function deleteProduct(id) {
+  if (!confirm("Remove this product?")) return;
+  window.db.products.remove(id).then(function() {
+    productsList = productsList.filter(function(p) { return p.id !== id; });
+    renderProfile();
+    showProfileToast("Product removed");
+  }).catch(function() {
+    showProfileToast("Failed to remove — try again");
+  });
 }
 
 /* ── Edit Modal ──────────────────────────────────────────────────────────── */

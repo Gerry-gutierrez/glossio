@@ -11,6 +11,8 @@ var _apiHours = null; /* business hours from API */
 var _apiBlocks = null; /* vacation / date blocks from API */
 var _apiAvailability = null; /* advance booking / min notice settings */
 var _apiBookedSlots = null; /* existing appointments for time blocking */
+var _apiProducts = null; /* products catalog */
+var _productsEnabled = false;
 
 function loadProfile() {
   try { return JSON.parse(localStorage.getItem(PROFILE_KEY) || "{}"); } catch(e) { return {}; }
@@ -46,6 +48,8 @@ function loadProfileData() {
         _apiBlocks = data.blocks || [];
         _apiAvailability = data.availability || { advance_booking_days: 30, minimum_notice_hours: 24, time_blocks_enabled: false };
         _apiBookedSlots = data.bookedSlots || [];
+        _apiProducts = data.products || [];
+        _productsEnabled = !!(data.profile && data.profile.products_enabled);
         return {
           profile: data.profile || {},
           photos: _apiPhotos,
@@ -114,10 +118,29 @@ function doRender(p, photos, services) {
       '<p class="pub-tagline">' + esc(tagline + (location ? " · " + location : "")) + '</p>' +
 
 
+      /* Tab buttons — only show if products are enabled */
+      (_productsEnabled && _apiProducts.length > 0
+        ? '<div style="display:flex;gap:8px;margin-bottom:16px;justify-content:center">' +
+            '<button id="pub-tab-services" class="pub-tab-btn pub-tab-active" onclick="switchPubTab(\'services\')" style="padding:10px 24px;border-radius:30px;border:1px solid #00C2FF;background:#00C2FF22;color:#00C2FF;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s">&#128736; Services</button>' +
+            '<button id="pub-tab-products" class="pub-tab-btn" onclick="switchPubTab(\'products\')" style="padding:10px 24px;border-radius:30px;border:1px solid #333;background:transparent;color:#888;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s">&#128722; Products</button>' +
+          '</div>'
+        : ''
+      ) +
+
+      '<div id="pub-services-cta">' +
       '<button class="pub-book-btn" onclick="openServicesSheet()">' +
         '&#128736; See Services &amp; Book an Appointment' +
       '</button>' +
       '<p class="pub-book-sub">Browse services · Pick a time · Get confirmed</p>' +
+      '</div>' +
+
+      /* Products grid (hidden by default) */
+      (_productsEnabled && _apiProducts.length > 0
+        ? '<div id="pub-products-section" style="display:none;width:100%;max-width:480px;margin:0 auto">' +
+            renderPublicProductGrid(_apiProducts) +
+          '</div>'
+        : ''
+      ) +
 
       '<div class="pub-scroll-hint">' +
         '<p>Scroll to see our work</p>' +
@@ -752,6 +775,84 @@ function showBookingConfirmation() {
         'Done' +
       '</button>' +
     '</div>';
+}
+
+/* ── Public Products ────────────────────────────────────────────────────── */
+
+function switchPubTab(tab) {
+  var servicesBtn = document.getElementById("pub-tab-services");
+  var productsBtn = document.getElementById("pub-tab-products");
+  var servicesCta = document.getElementById("pub-services-cta");
+  var productsSection = document.getElementById("pub-products-section");
+  if (!servicesBtn || !productsBtn) return;
+
+  if (tab === "products") {
+    servicesBtn.style.background = "transparent";
+    servicesBtn.style.borderColor = "#333";
+    servicesBtn.style.color = "#888";
+    productsBtn.style.background = "#00C2FF22";
+    productsBtn.style.borderColor = "#00C2FF";
+    productsBtn.style.color = "#00C2FF";
+    if (servicesCta) servicesCta.style.display = "none";
+    if (productsSection) productsSection.style.display = "";
+  } else {
+    servicesBtn.style.background = "#00C2FF22";
+    servicesBtn.style.borderColor = "#00C2FF";
+    servicesBtn.style.color = "#00C2FF";
+    productsBtn.style.background = "transparent";
+    productsBtn.style.borderColor = "#333";
+    productsBtn.style.color = "#888";
+    if (servicesCta) servicesCta.style.display = "";
+    if (productsSection) productsSection.style.display = "none";
+  }
+}
+
+function renderPublicProductGrid(products) {
+  var html = '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:8px 0 24px">';
+  products.forEach(function(prod) {
+    html +=
+      '<div onclick="expandPublicProduct(\'' + prod.id + '\')" style="background:#111118;border:1px solid #1E1E2E;border-radius:14px;overflow:hidden;cursor:pointer;transition:transform .2s,border-color .2s" onmouseover="this.style.borderColor=\'#00C2FF44\';this.style.transform=\'translateY(-2px)\'" onmouseout="this.style.borderColor=\'#1E1E2E\';this.style.transform=\'\'">' +
+        (prod.image_url
+          ? '<div style="width:100%;aspect-ratio:1;overflow:hidden"><img src="' + esc(prod.image_url) + '" alt="' + esc(prod.name) + '" style="width:100%;height:100%;object-fit:cover" /></div>'
+          : '<div style="width:100%;aspect-ratio:1;background:#0D0D12;display:flex;align-items:center;justify-content:center"><span style="font-size:40px;color:#222">&#128722;</span></div>'
+        ) +
+        '<div style="padding:10px 12px 14px">' +
+          '<p style="margin:0 0 4px;font-size:13px;font-weight:700;color:#E8E4DC;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(prod.name) + '</p>' +
+          '<p style="margin:0;font-size:15px;font-weight:700;color:#00C2FF">$' + esc(String(prod.price || '0')) + '</p>' +
+        '</div>' +
+      '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function expandPublicProduct(id) {
+  if (!_apiProducts) return;
+  var prod = null;
+  for (var i = 0; i < _apiProducts.length; i++) {
+    if (_apiProducts[i].id === id) { prod = _apiProducts[i]; break; }
+  }
+  if (!prod) return;
+
+  var modal = document.getElementById("photo-modal");
+  if (!modal) return;
+  modal.style.display = "flex";
+  modal.innerHTML =
+    '<div style="background:#111118;border:1px solid #1E1E2E;border-radius:20px;max-width:400px;width:90%;overflow:hidden;animation:fadeIn .2s">' +
+      (prod.image_url
+        ? '<div style="width:100%;aspect-ratio:4/3;overflow:hidden"><img src="' + esc(prod.image_url) + '" alt="' + esc(prod.name) + '" style="width:100%;height:100%;object-fit:cover" /></div>'
+        : ''
+      ) +
+      '<div style="padding:20px 24px 24px">' +
+        '<h3 style="margin:0 0 6px;font-size:18px;font-weight:700;color:#E8E4DC">' + esc(prod.name) + '</h3>' +
+        '<p style="margin:0 0 12px;font-size:20px;font-weight:700;color:#00C2FF">$' + esc(String(prod.price || '0')) + '</p>' +
+        (prod.description ? '<p style="margin:0 0 16px;font-size:13px;color:#999;line-height:1.7">' + esc(prod.description) + '</p>' : '') +
+        '<p style="margin:0;font-size:11px;color:#555">Contact the detailer to purchase</p>' +
+      '</div>' +
+    '</div>';
+  modal.onclick = function(e) {
+    if (e.target === modal) modal.style.display = "none";
+  };
 }
 
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
