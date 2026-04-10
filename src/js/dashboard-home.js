@@ -31,6 +31,45 @@ function fmtTime(timeStr) {
   return h + ":" + min + " " + ampm;
 }
 
+/** Parse the "PRODUCTS ORDERED" block out of an appointment's notes field.
+ *  Returns { products: [{name, price}], total: number } or null if no products. */
+function parseProductsFromNotes(notes) {
+  if (!notes || typeof notes !== "string") return null;
+  var idx = notes.indexOf("PRODUCTS ORDERED");
+  if (idx === -1) return null;
+  var block = notes.slice(idx);
+  var lines = block.split(/\r?\n/);
+  var products = [];
+  var total = 0;
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i].trim();
+    /* Match "• Product Name — $29.99" or "- Product Name — $29.99" */
+    var m = line.match(/^[•\-\*]\s*(.+?)\s*[—\-]\s*\$?([\d.]+)/);
+    if (m) {
+      var pname = m[1].trim();
+      var pprice = parseFloat(m[2]) || 0;
+      products.push({ name: pname, price: pprice });
+      total += pprice;
+    }
+    var t = line.match(/Products Total:\s*\$?([\d.]+)/i);
+    if (t) total = parseFloat(t[1]) || total;
+  }
+  return products.length > 0 ? { products: products, total: total } : null;
+}
+
+/** Render a compact product badge for dashboard cards */
+function renderProductsBadge(notes) {
+  var parsed = parseProductsFromNotes(notes);
+  if (!parsed) return "";
+  var count = parsed.products.length;
+  var label = count + " product" + (count !== 1 ? "s" : "");
+  var tooltip = parsed.products.map(function(p) { return p.name + " ($" + p.price.toFixed(2) + ")"; }).join(", ");
+  return '<div style="margin-top:6px;padding:6px 10px;background:rgba(162,89,255,0.1);border:1px solid rgba(162,89,255,0.3);border-radius:8px;display:flex;align-items:center;gap:6px;font-size:11px;color:#A259FF;font-weight:600" title="' + tooltip.replace(/"/g, '&quot;') + '">' +
+    '<span>&#128722;</span>' +
+    '<span>+' + label + ' &middot; $' + parsed.total.toFixed(2) + '</span>' +
+  '</div>';
+}
+
 /* Normalize a Supabase appointment row to the shape the UI expects */
 function normalizeAppt(a) {
   return {
@@ -146,6 +185,7 @@ function _renderDashStats(appts, now, thisMonth, thisYear, getMonth, getYear) {
           serviceLine +
           '<p class="dash-col-card-detail">' + (a.vehicle || '') + '</p>' +
           '<p class="dash-col-card-time">' + fmtDate(a.date) + ' · ' + fmtTime(a.time) + '</p>' +
+          renderProductsBadge(a.notes) +
           '<div class="dash-card-actions" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:none;flex-wrap:wrap;gap:6px">' +
             '<button style="' + btnBase + 'background:#00C2FF15;border:1px solid #00C2FF33;color:#00C2FF" onclick="event.stopPropagation();dashAction(\'' + a.id + '\',\'confirmed\')">✓ Confirm</button>' +
             '<button style="' + btnBase + 'background:#A259FF15;border:1px solid #A259FF33;color:#A259FF" onclick="event.stopPropagation();dashAdjust(\'' + a.id + '\')">✎ Adjust</button>' +
@@ -177,6 +217,7 @@ function _renderDashStats(appts, now, thisMonth, thisYear, getMonth, getYear) {
           serviceLine +
           '<p class="dash-col-card-detail">' + (a.vehicle || '') + '</p>' +
           '<p class="dash-col-card-time">' + fmtTime(a.time) + '</p>' +
+          renderProductsBadge(a.notes) +
           '<div class="dash-card-actions" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:none;flex-wrap:wrap;gap:6px">' +
             '<button style="' + btnBase + 'background:#00E5A015;border:1px solid #00E5A033;color:#00E5A0" onclick="event.stopPropagation();dashCameThrough(\'' + a.id + '\')">✅ Came Through</button>' +
             '<button style="' + btnBase + 'background:#A259FF15;border:1px solid #A259FF33;color:#A259FF" onclick="event.stopPropagation();dashAdjust(\'' + a.id + '\')">✎ Adjust</button>' +
