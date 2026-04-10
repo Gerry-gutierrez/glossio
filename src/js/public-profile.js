@@ -287,18 +287,36 @@ function openServicesSheet() {
           '<div class="pub-product-addon-list" style="display:flex;flex-direction:column;gap:8px">';
 
       _apiProducts.forEach(function(prod) {
+        var hasDesc = !!(prod.description && prod.description.trim());
         html +=
-          '<div class="pub-addon-card" data-prod-id="' + prod.id + '" onclick="toggleProductAddon(\'' + prod.id + '\')" style="display:flex;align-items:center;gap:12px;padding:12px;background:#0D0D12;border:1.5px solid #1E1E2E;border-radius:10px;cursor:pointer;transition:all .2s">' +
-            '<div id="addon-check-' + prod.id + '" style="width:22px;height:22px;border-radius:6px;border:2px solid #555;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s"></div>' +
-            (prod.image_url
-              ? '<div style="width:48px;height:48px;border-radius:8px;overflow:hidden;flex-shrink:0;background:#111"><img src="' + esc(prod.image_url) + '" style="width:100%;height:100%;object-fit:cover" alt=""></div>'
-              : '<div style="width:48px;height:48px;border-radius:8px;background:#111;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:22px">&#128722;</div>'
-            ) +
-            '<div style="flex:1;min-width:0">' +
-              '<p style="margin:0 0 2px;font-size:13px;font-weight:700;color:#E8E4DC;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(prod.name) + '</p>' +
-              (prod.description ? '<p style="margin:0;font-size:11px;color:#777;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(prod.description) + '</p>' : '') +
+          '<div class="pub-addon-card" data-prod-id="' + prod.id + '" style="background:#0D0D12;border:1.5px solid #1E1E2E;border-radius:10px;transition:all .2s;overflow:hidden">' +
+            /* Top row — click to toggle selection */
+            '<div onclick="toggleProductAddon(\'' + prod.id + '\')" style="display:flex;align-items:center;gap:12px;padding:12px;cursor:pointer">' +
+              '<div id="addon-check-' + prod.id + '" style="width:22px;height:22px;border-radius:6px;border:2px solid #555;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s"></div>' +
+              (prod.image_url
+                ? '<div style="width:48px;height:48px;border-radius:8px;overflow:hidden;flex-shrink:0;background:#111"><img src="' + esc(prod.image_url) + '" style="width:100%;height:100%;object-fit:cover" alt=""></div>'
+                : '<div style="width:48px;height:48px;border-radius:8px;background:#111;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:22px">&#128722;</div>'
+              ) +
+              '<div style="flex:1;min-width:0">' +
+                '<p style="margin:0 0 2px;font-size:13px;font-weight:700;color:#E8E4DC;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(prod.name) + '</p>' +
+                (hasDesc ? '<p style="margin:0;font-size:11px;color:#777;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(prod.description) + '</p>' : '') +
+              '</div>' +
+              '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">' +
+                '<span style="font-size:14px;font-weight:700;color:#A259FF">+$' + esc(String(prod.price || '0')) + '</span>' +
+                (hasDesc
+                  ? '<span class="pub-addon-toggle" id="addon-toggle-' + prod.id + '" onclick="event.stopPropagation();toggleAddonExpand(\'' + prod.id + '\')" style="font-size:11px;color:#888;cursor:pointer;user-select:none">&#9660; More</span>'
+                  : ''
+                ) +
+              '</div>' +
             '</div>' +
-            '<span style="font-size:14px;font-weight:700;color:#A259FF;flex-shrink:0">+$' + esc(String(prod.price || '0')) + '</span>' +
+            /* Expanded description panel */
+            (hasDesc
+              ? '<div id="addon-expanded-' + prod.id + '" class="pub-addon-expanded" style="display:none;padding:0 14px 14px 14px;border-top:1px solid rgba(162,89,255,0.15)">' +
+                  '<p style="margin:10px 0 0;font-size:10px;color:#A259FF;font-weight:700;letter-spacing:0.15em;text-transform:uppercase">Product Details</p>' +
+                  '<p style="margin:6px 0 0;font-size:12px;color:#C8C4BC;line-height:1.6">' + esc(prod.description) + '</p>' +
+                '</div>'
+              : ''
+            ) +
           '</div>';
       });
 
@@ -433,6 +451,26 @@ function updateSelectionSummary() {
       breakdownEl.style.display = "none";
     }
   }
+}
+
+function toggleAddonExpand(productId) {
+  var expanded = document.getElementById("addon-expanded-" + productId);
+  var toggle = document.getElementById("addon-toggle-" + productId);
+  if (!expanded) return;
+
+  var isOpen = expanded.style.display !== "none";
+  expanded.style.display = isOpen ? "none" : "";
+  if (toggle) toggle.innerHTML = isOpen ? "&#9660; More" : "&#9650; Less";
+
+  /* Collapse other addon cards for a cleaner view */
+  document.querySelectorAll(".pub-addon-expanded").forEach(function(el) {
+    if (el.id !== "addon-expanded-" + productId) {
+      el.style.display = "none";
+      var otherId = el.id.replace("addon-expanded-", "");
+      var otherToggle = document.getElementById("addon-toggle-" + otherId);
+      if (otherToggle) otherToggle.innerHTML = "&#9660; More";
+    }
+  });
 }
 
 function toggleProductAddon(productId) {
