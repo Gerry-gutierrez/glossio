@@ -540,6 +540,43 @@
     })
   };
 
+  /* ── Debts (We Owe tracker) ── */
+  var debts = {
+    list: afterAuth(function() {
+      if (sb() && userId()) {
+        return sb().from("debts").select("*")
+          .eq("profile_id", userId())
+          .order("created_at", { ascending: false })
+          .then(function(r) { return r.data || []; });
+      }
+      return Promise.resolve([]);
+    }),
+
+    create: afterAuth(function(data) {
+      if (sb() && userId()) {
+        data.profile_id = userId();
+        return sb().from("debts").insert(data).select().single()
+          .then(function(r) { return r.data; });
+      }
+      return Promise.resolve(data);
+    }),
+
+    update: afterAuth(function(id, fields) {
+      if (sb() && userId()) {
+        return sb().from("debts").update(fields).eq("id", id).eq("profile_id", userId()).select().single()
+          .then(function(r) { return r.data; });
+      }
+      return Promise.resolve(fields);
+    }),
+
+    remove: afterAuth(function(id) {
+      if (sb() && userId()) {
+        return sb().from("debts").delete().eq("id", id).eq("profile_id", userId());
+      }
+      return Promise.resolve();
+    })
+  };
+
   /* ── Expose globally ── */
   window.db = {
     profile: profile,
@@ -550,6 +587,7 @@
     settings: settings,
     storage: storage,
     products: products,
+    debts: debts,
     isOnline: function() { return !!sb() && !!userId(); },
     ready: _authReady
   };
