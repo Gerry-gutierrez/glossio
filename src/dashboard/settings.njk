@@ -105,7 +105,7 @@ extraJs: settings.js
     </div>
     <div class="settings-chips">
       <span class="settings-chip">Contact Support</span>
-      <span class="settings-chip" onclick="openTutorialModal()" style="cursor:pointer;background:rgba(0,194,255,0.1);border-color:rgba(0,194,255,0.3);color:#00C2FF">View Tutorial</span>
+      <span class="settings-chip" onclick="event.stopPropagation(); openTutorialModal();" style="cursor:pointer;background:rgba(0,194,255,0.1);border-color:rgba(0,194,255,0.3);color:#00C2FF">View Tutorial</span>
     </div>
   </div>
 </div>
