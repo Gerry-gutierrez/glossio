@@ -105,9 +105,178 @@ extraJs: settings.js
     </div>
     <div class="settings-chips">
       <span class="settings-chip">Contact Support</span>
+      <span class="settings-chip" onclick="openTutorialModal()" style="cursor:pointer;background:rgba(0,194,255,0.1);border-color:rgba(0,194,255,0.3);color:#00C2FF">View Tutorial</span>
     </div>
   </div>
 </div>
+
+<!-- ─── Tutorial Modal ───────────────────────────────────────────────── -->
+<div id="tutorial-modal" class="modal-overlay" style="display:none;z-index:9999">
+  <div class="modal-card" style="max-width:640px;max-height:85vh;overflow-y:auto;padding:28px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h2 style="font-size:20px;font-weight:800;color:#fff;margin:0">How GlossIO Works</h2>
+      <button onclick="closeTutorialModal()" style="background:transparent;border:none;color:#888;font-size:24px;cursor:pointer;padding:0;line-height:1" aria-label="Close">&times;</button>
+    </div>
+    <p style="font-size:13px;color:#888;margin:0 0 24px 0">A quick breakdown of every tab so you can get the most out of GlossIO.</p>
+
+    <div id="tutorial-sections">
+      <!-- Dashboard -->
+      <div class="tut-section" style="border:1.5px solid #1E1E2E;border-radius:10px;margin-bottom:10px;overflow:hidden">
+        <button onclick="toggleTutSection(this)" style="width:100%;background:#0D0D12;border:none;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;color:#fff;font-size:14px;font-weight:600;text-align:left">
+          <span>Dashboard</span>
+          <span class="tut-arrow" style="color:#888;transition:transform 0.2s">&#9662;</span>
+        </button>
+        <div class="tut-body" style="display:none;padding:16px 18px;background:#08080C;border-top:1px solid #1E1E2E">
+          <ul style="margin:0;padding-left:18px;color:#ccc;font-size:13px;line-height:1.7">
+            <li>See today's schedule at a glance &mdash; confirmed appointments, pending requests, and what's coming up</li>
+            <li>Revenue MTD card shows how much you've earned from completed jobs this month</li>
+            <li>Pending Appointments widget lets you approve or decline new booking requests in one click</li>
+            <li>The shopping cart badge on a card means the client also ordered a product with their service</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Appointments -->
+      <div class="tut-section" style="border:1.5px solid #1E1E2E;border-radius:10px;margin-bottom:10px;overflow:hidden">
+        <button onclick="toggleTutSection(this)" style="width:100%;background:#0D0D12;border:none;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;color:#fff;font-size:14px;font-weight:600;text-align:left">
+          <span>Appointments</span>
+          <span class="tut-arrow" style="color:#888;transition:transform 0.2s">&#9662;</span>
+        </button>
+        <div class="tut-body" style="display:none;padding:16px 18px;background:#08080C;border-top:1px solid #1E1E2E">
+          <ul style="margin:0;padding-left:18px;color:#ccc;font-size:13px;line-height:1.7">
+            <li>Full history of every booking &mdash; pending, confirmed, completed, and canceled</li>
+            <li>Tap "Confirm" to approve a booking, "Mark Complete" when the job is done</li>
+            <li>Add detailer notes (internal only &mdash; clients never see these)</li>
+            <li>No-shows automatically tag the client as a "flaker" after 2 misses so you know who to be cautious with</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Clients -->
+      <div class="tut-section" style="border:1.5px solid #1E1E2E;border-radius:10px;margin-bottom:10px;overflow:hidden">
+        <button onclick="toggleTutSection(this)" style="width:100%;background:#0D0D12;border:none;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;color:#fff;font-size:14px;font-weight:600;text-align:left">
+          <span>Clients</span>
+          <span class="tut-arrow" style="color:#888;transition:transform 0.2s">&#9662;</span>
+        </button>
+        <div class="tut-body" style="display:none;padding:16px 18px;background:#08080C;border-top:1px solid #1E1E2E">
+          <ul style="margin:0;padding-left:18px;color:#ccc;font-size:13px;line-height:1.7">
+            <li>Every client who's ever booked with you &mdash; auto-created from appointments</li>
+            <li>See their vehicle info, total spent, visit count, and last visit date</li>
+            <li>Filter by "Came Through" vs "Never Came" vs "Flakers" to spot your best (and worst) customers</li>
+            <li>Manually add a walk-in client who booked over the phone</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Services -->
+      <div class="tut-section" style="border:1.5px solid #1E1E2E;border-radius:10px;margin-bottom:10px;overflow:hidden">
+        <button onclick="toggleTutSection(this)" style="width:100%;background:#0D0D12;border:none;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;color:#fff;font-size:14px;font-weight:600;text-align:left">
+          <span>Services</span>
+          <span class="tut-arrow" style="color:#888;transition:transform 0.2s">&#9662;</span>
+        </button>
+        <div class="tut-body" style="display:none;padding:16px 18px;background:#08080C;border-top:1px solid #1E1E2E">
+          <ul style="margin:0;padding-left:18px;color:#ccc;font-size:13px;line-height:1.7">
+            <li>Your service menu &mdash; what clients see when they book</li>
+            <li>Add, edit, or disable any service anytime</li>
+            <li>Toggle "Request Quote" on premium services (like ceramic coatings) to handle custom pricing in person</li>
+            <li>Scroll down to manage Products too &mdash; physical items you sell (sprays, towels, etc.)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Revenue -->
+      <div class="tut-section" style="border:1.5px solid #1E1E2E;border-radius:10px;margin-bottom:10px;overflow:hidden">
+        <button onclick="toggleTutSection(this)" style="width:100%;background:#0D0D12;border:none;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;color:#fff;font-size:14px;font-weight:600;text-align:left">
+          <span>Revenue</span>
+          <span class="tut-arrow" style="color:#888;transition:transform 0.2s">&#9662;</span>
+        </button>
+        <div class="tut-body" style="display:none;padding:16px 18px;background:#08080C;border-top:1px solid #1E1E2E">
+          <ul style="margin:0;padding-left:18px;color:#ccc;font-size:13px;line-height:1.7">
+            <li><strong>This Month</strong> card &mdash; live MTD revenue from completed jobs</li>
+            <li><strong>All-Time Revenue</strong> &mdash; running total from the day you signed up</li>
+            <li><strong>History</strong> &mdash; monthly breakdown, newest first, to spot your strong vs slow months</li>
+            <li><strong>We Owe</strong> (left side) &mdash; jot down clients who owe you money (name, phone, amount). Mark paid when they settle up. Zero connection to other numbers &mdash; pure housekeeping.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- My Profile -->
+      <div class="tut-section" style="border:1.5px solid #1E1E2E;border-radius:10px;margin-bottom:10px;overflow:hidden">
+        <button onclick="toggleTutSection(this)" style="width:100%;background:#0D0D12;border:none;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;color:#fff;font-size:14px;font-weight:600;text-align:left">
+          <span>My Profile</span>
+          <span class="tut-arrow" style="color:#888;transition:transform 0.2s">&#9662;</span>
+        </button>
+        <div class="tut-body" style="display:none;padding:16px 18px;background:#08080C;border-top:1px solid #1E1E2E">
+          <ul style="margin:0;padding-left:18px;color:#ccc;font-size:13px;line-height:1.7">
+            <li>This is your public-facing booking page &mdash; the link you share with clients</li>
+            <li>Upload a logo, write a tagline, add work photos to build trust</li>
+            <li>Your services are auto-pulled from the Services tab, so just keep that up to date</li>
+            <li>Copy your booking link and paste it in your Instagram bio, business card, or text signature</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Settings -->
+      <div class="tut-section" style="border:1.5px solid #1E1E2E;border-radius:10px;margin-bottom:10px;overflow:hidden">
+        <button onclick="toggleTutSection(this)" style="width:100%;background:#0D0D12;border:none;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;color:#fff;font-size:14px;font-weight:600;text-align:left">
+          <span>Settings</span>
+          <span class="tut-arrow" style="color:#888;transition:transform 0.2s">&#9662;</span>
+        </button>
+        <div class="tut-body" style="display:none;padding:16px 18px;background:#08080C;border-top:1px solid #1E1E2E">
+          <ul style="margin:0;padding-left:18px;color:#ccc;font-size:13px;line-height:1.7">
+            <li><strong>Account &amp; Security</strong> &mdash; change password, update email/phone, enable two-factor</li>
+            <li><strong>Availability &amp; Blocking</strong> &mdash; set business hours, block vacation days, control how far out clients can book</li>
+            <li><strong>Notifications</strong> &mdash; get pinged when new bookings come in</li>
+            <li><strong>Subscription &amp; Billing</strong> &mdash; view plan, update payment, see invoices, or cancel</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #1E1E2E;text-align:center">
+      <p style="font-size:12px;color:#555;margin:0">Still stuck? Contact support at <a href="mailto:support@glossio.app" style="color:#00C2FF;text-decoration:none">support@glossio.app</a></p>
+    </div>
+  </div>
+</div>
+
+<script>
+function openTutorialModal() {
+  document.getElementById("tutorial-modal").style.display = "flex";
+  document.body.style.overflow = "hidden";
+}
+function closeTutorialModal() {
+  document.getElementById("tutorial-modal").style.display = "none";
+  document.body.style.overflow = "";
+}
+function toggleTutSection(btn) {
+  var body = btn.nextElementSibling;
+  var arrow = btn.querySelector(".tut-arrow");
+  if (body.style.display === "none" || !body.style.display) {
+    body.style.display = "block";
+    if (arrow) arrow.style.transform = "rotate(180deg)";
+  } else {
+    body.style.display = "none";
+    if (arrow) arrow.style.transform = "rotate(0deg)";
+  }
+}
+/* Close on ESC */
+document.addEventListener("keydown", function(e) {
+  if (e.key === "Escape") {
+    var m = document.getElementById("tutorial-modal");
+    if (m && m.style.display === "flex") closeTutorialModal();
+  }
+});
+/* Close on overlay click */
+document.addEventListener("DOMContentLoaded", function() {
+  var m = document.getElementById("tutorial-modal");
+  if (m) {
+    m.addEventListener("click", function(e) {
+      if (e.target === m) closeTutorialModal();
+    });
+  }
+});
+</script>
 
 <!-- Bottom Note -->
 <div class="settings-note">
