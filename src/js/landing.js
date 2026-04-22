@@ -74,3 +74,88 @@ document.addEventListener('DOMContentLoaded', function() {
   }, { threshold: 0.15 });
   reveals.forEach(function(el) { observer.observe(el); });
 });
+
+// Product Showcase slideshow
+document.addEventListener('DOMContentLoaded', function() {
+  var stage = document.getElementById('showcaseStage');
+  if (!stage) return;
+
+  var slides = stage.querySelectorAll('.showcase-slide');
+  var tabs = document.querySelectorAll('.showcase-tab');
+  var dots = document.querySelectorAll('.showcase-dot');
+  var prev = document.getElementById('showcasePrev');
+  var next = document.getElementById('showcaseNext');
+
+  var current = 0;
+  var total = slides.length;
+  var autoTimer = null;
+  var AUTO_MS = 7000;
+
+  function setActive(index) {
+    current = (index + total) % total;
+    slides.forEach(function(s, i) {
+      s.classList.toggle('showcase-slide-active', i === current);
+    });
+    tabs.forEach(function(t, i) {
+      t.classList.toggle('showcase-tab-active', i === current);
+    });
+    dots.forEach(function(d, i) {
+      d.classList.toggle('showcase-dot-active', i === current);
+    });
+  }
+
+  function nextSlide() { setActive(current + 1); }
+  function prevSlide() { setActive(current - 1); }
+
+  function startAuto() {
+    stopAuto();
+    autoTimer = setInterval(nextSlide, AUTO_MS);
+  }
+  function stopAuto() {
+    if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+  }
+
+  function resetAuto() { if (autoTimer) startAuto(); }
+
+  if (next) next.addEventListener('click', function() { nextSlide(); resetAuto(); });
+  if (prev) prev.addEventListener('click', function() { prevSlide(); resetAuto(); });
+
+  tabs.forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      setActive(parseInt(tab.getAttribute('data-slide'), 10));
+      resetAuto();
+    });
+  });
+  dots.forEach(function(dot) {
+    dot.addEventListener('click', function() {
+      setActive(parseInt(dot.getAttribute('data-slide'), 10));
+      resetAuto();
+    });
+  });
+
+  // Pause on hover / touch interaction
+  stage.addEventListener('mouseenter', stopAuto);
+  stage.addEventListener('mouseleave', startAuto);
+
+  // Touch swipe
+  var touchStartX = 0;
+  stage.addEventListener('touchstart', function(e) {
+    touchStartX = e.touches[0].clientX;
+  }, { passive: true });
+  stage.addEventListener('touchend', function(e) {
+    var dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 40) {
+      if (dx < 0) nextSlide(); else prevSlide();
+      resetAuto();
+    }
+  });
+
+  // Only auto-advance when section is in view
+  var sectionObserver = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) startAuto();
+      else stopAuto();
+    });
+  }, { threshold: 0.25 });
+  sectionObserver.observe(stage);
+});

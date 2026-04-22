@@ -174,6 +174,120 @@
 .how-card-title { font-size: 18px; font-weight: 600; margin: 0 0 10px; }
 .how-card-desc { font-size: 13px; color: var(--text-dim); line-height: 1.6; margin: 0; }
 
+/* ─── Product Showcase ───────────────────────────────────────────────────── */
+.showcase {
+  padding: 100px 60px;
+}
+
+.showcase-inner {
+  max-width: 1100px; margin: 0 auto;
+}
+
+.showcase-tabs {
+  display: flex; justify-content: center; flex-wrap: wrap;
+  gap: 6px; margin-bottom: 40px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 6px;
+  max-width: fit-content; margin-left: auto; margin-right: auto;
+}
+
+.showcase-tab {
+  background: transparent; border: none; cursor: pointer;
+  color: var(--text-dim); font-size: 13px; font-weight: 600;
+  padding: 10px 18px; min-height: 44px; border-radius: 8px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.showcase-tab:hover { color: var(--text-muted); }
+
+.showcase-tab-active {
+  background: var(--primary); color: #fff;
+}
+
+.showcase-stage {
+  position: relative;
+  display: grid;
+}
+
+.showcase-slide {
+  grid-column: 1; grid-row: 1;
+  display: grid; grid-template-columns: 1fr 1.25fr;
+  gap: 48px; align-items: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+.showcase-slide-active {
+  opacity: 1; pointer-events: auto;
+}
+
+.showcase-copy {
+  padding: 0 20px;
+}
+
+.showcase-headline {
+  font-size: 32px; font-weight: 700;
+  line-height: 1.2; margin: 0 0 16px;
+}
+
+.showcase-sub {
+  font-size: 16px; color: var(--text-muted);
+  line-height: 1.7; margin: 0;
+}
+
+.showcase-frame {
+  background: var(--bg-card); border: 1px solid var(--border-light);
+  border-radius: 12px; overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(0, 194, 255, 0.04);
+}
+
+.showcase-frame-bar {
+  background: var(--bg-sidebar);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 14px; display: flex; gap: 6px;
+}
+
+.showcase-dot-light {
+  width: 11px; height: 11px; border-radius: 50%; display: inline-block;
+}
+.showcase-dot-red    { background: #FF5F57; }
+.showcase-dot-yellow { background: #FEBC2E; }
+.showcase-dot-green  { background: #28C840; }
+
+.showcase-img {
+  display: block; width: 100%; height: auto;
+}
+
+.showcase-arrow {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  z-index: 5;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--bg-card); border: 1px solid var(--border-light);
+  color: var(--text); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background-color 0.2s, border-color 0.2s, opacity 0.2s;
+  opacity: 0.7;
+}
+.showcase-arrow:hover { opacity: 1; border-color: var(--primary); }
+.showcase-arrow-prev { left: -22px; }
+.showcase-arrow-next { right: -22px; }
+
+.showcase-dots {
+  display: flex; justify-content: center; gap: 10px; margin-top: 40px;
+}
+
+.showcase-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--border-light); border: none; cursor: pointer;
+  padding: 0; transition: background-color 0.2s, width 0.2s;
+}
+
+.showcase-dot:hover { background: var(--text-dim); }
+
+.showcase-dot-active {
+  background: var(--primary); width: 28px; border-radius: 4px;
+}
+
 /* Pricing */
 .pricing {
   padding: 100px 60px; max-width: 800px; margin: 0 auto;
@@ -351,6 +465,27 @@
 
   .how-section { padding: 60px 20px; }
   .how-grid { grid-template-columns: 1fr 1fr; gap: 14px; }
+
+  .showcase { padding: 60px 20px; }
+  .showcase-tabs {
+    max-width: 100%; overflow-x: auto; flex-wrap: nowrap;
+    justify-content: flex-start; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .showcase-tabs::-webkit-scrollbar { display: none; }
+  .showcase-tab { flex-shrink: 0; padding: 10px 14px; font-size: 12px; }
+  .showcase-slide {
+    grid-template-columns: 1fr; gap: 24px;
+  }
+  .showcase-copy { padding: 0; text-align: center; }
+  .showcase-headline { font-size: 24px; }
+  .showcase-sub { font-size: 15px; }
+  .showcase-arrow-prev { left: 4px; }
+  .showcase-arrow-next { right: 4px; }
+  .showcase-arrow {
+    width: 38px; height: 38px;
+    background: rgba(10,10,15,0.85); backdrop-filter: blur(6px);
+  }
 
   .pricing { padding: 60px 20px; }
   .price-card { padding: 32px 24px; }
