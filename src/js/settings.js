@@ -1684,3 +1684,98 @@ document.addEventListener("DOMContentLoaded", function() {
     chip.style.cursor = "pointer";
   });
 });
+
+/* ─── Danger Zone — Delete My Account ───────────────────────────────────── */
+
+function openSelfDeleteModal() {
+  var modal = document.getElementById("selfDeleteModal");
+  var input = document.getElementById("selfDeleteInput");
+  var btn = document.getElementById("selfDeleteConfirmBtn");
+  var err = document.getElementById("selfDeleteError");
+  if (!modal) return;
+
+  input.value = "";
+  btn.disabled = true;
+  btn.textContent = "Delete Forever";
+  err.classList.remove("show");
+  modal.classList.add("show");
+  setTimeout(function() { input.focus(); }, 50);
+}
+window.openSelfDeleteModal = openSelfDeleteModal;
+
+function closeSelfDeleteModal() {
+  var modal = document.getElementById("selfDeleteModal");
+  if (modal) modal.classList.remove("show");
+}
+window.closeSelfDeleteModal = closeSelfDeleteModal;
+
+function confirmSelfDelete() {
+  var input = document.getElementById("selfDeleteInput");
+  var btn = document.getElementById("selfDeleteConfirmBtn");
+  var err = document.getElementById("selfDeleteError");
+  if (input.value.trim() !== "DELETE") {
+    err.textContent = "Please type DELETE to confirm.";
+    err.classList.add("show");
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = "Deleting...";
+  err.classList.remove("show");
+
+  /* Grab the current Supabase session token */
+  var session = (window.sbAuth && typeof window.sbAuth.getSession === "function")
+    ? window.sbAuth.getSession()
+    : Promise.resolve(null);
+
+  Promise.resolve(session).then(function(s) {
+    var token = s && s.access_token ? s.access_token : (s && s.data && s.data.session && s.data.session.access_token) || null;
+    if (!token) {
+      throw new Error("Session expired. Please sign in again.");
+    }
+    return fetch("/.netlify/functions/delete-account", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accessToken: token, confirmation: "DELETE" }),
+    });
+  }).then(function(r) {
+    return r.json().then(function(d) { return { status: r.status, data: d }; });
+  }).then(function(res) {
+    if (res.status === 200 && res.data.ok) {
+      /* Sign out locally just in case, then redirect to landing */
+      try { if (window.sbAuth && window.sbAuth.signOut) window.sbAuth.signOut(); } catch (_) {}
+      try { sessionStorage.clear(); } catch (_) {}
+      try { localStorage.removeItem("glossio_settings"); } catch (_) {}
+      window.location.replace("/?deleted=1");
+    } else {
+      throw new Error(res.data.error || "Failed to delete your account. Please try again.");
+    }
+  }).catch(function(e) {
+    err.textContent = e.message || "Something went wrong. Please try again or email support@glossio.app.";
+    err.classList.add("show");
+    btn.disabled = false;
+    btn.textContent = "Delete Forever";
+  });
+}
+window.confirmSelfDelete = confirmSelfDelete;
+
+/* Enable confirm button only when input matches */
+document.addEventListener("DOMContentLoaded", function() {
+  var input = document.getElementById("selfDeleteInput");
+  var btn = document.getElementById("selfDeleteConfirmBtn");
+  var modal = document.getElementById("selfDeleteModal");
+  if (!input || !btn || !modal) return;
+
+  input.addEventListener("input", function() {
+    btn.disabled = input.value.trim() !== "DELETE";
+  });
+
+  /* ESC closes */
+  document.addEventListener("keydown", function(e) {
+    if (e.key === "Escape" && modal.classList.contains("show")) closeSelfDeleteModal();
+  });
+
+  /* Click outside closes */
+  modal.addEventListener("click", function(e) {
+    if (e.target === modal) closeSelfDeleteModal();
+  });
+});

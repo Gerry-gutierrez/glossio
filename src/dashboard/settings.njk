@@ -39,6 +39,7 @@ extraJs: settings.js
       <span class="settings-chip">Email</span>
       <span class="settings-chip">Phone</span>
       <span class="settings-chip">Two-Factor</span>
+      <span class="settings-chip settings-chip-danger" onclick="event.stopPropagation(); openSelfDeleteModal()">Delete Account</span>
     </div>
   </div>
 
@@ -278,11 +279,113 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 </script>
 
+<!-- Self-Delete Confirmation Modal -->
+<div id="selfDeleteModal" class="self-delete-overlay" role="dialog" aria-modal="true" aria-labelledby="selfDeleteTitle">
+  <div class="self-delete-modal">
+    <div class="self-delete-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF3366" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
+      </svg>
+    </div>
+    <h3 id="selfDeleteTitle">Delete your account?</h3>
+    <p>Once deleted, your data is gone forever. We cannot recover it.</p>
+
+    <div class="self-delete-warning">
+      <strong>What gets deleted:</strong>
+      <ul>
+        <li>Your profile and login</li>
+        <li>All services, products, and pricing</li>
+        <li>All client records and appointment history</li>
+        <li>All work photos and your booking page</li>
+        <li>Your active subscription (cancelled immediately)</li>
+      </ul>
+    </div>
+
+    <p class="self-delete-prompt">Type <strong>DELETE</strong> below to confirm:</p>
+    <input type="text" id="selfDeleteInput" class="self-delete-input" placeholder="DELETE" autocomplete="off">
+
+    <div class="self-delete-actions">
+      <button class="self-delete-btn self-delete-cancel" onclick="closeSelfDeleteModal()">Keep My Account</button>
+      <button class="self-delete-btn self-delete-confirm" id="selfDeleteConfirmBtn" onclick="confirmSelfDelete()" disabled>Delete Forever</button>
+    </div>
+    <div class="self-delete-error" id="selfDeleteError"></div>
+  </div>
+</div>
+
 <!-- Bottom Note -->
 <div class="settings-note">
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
   <span>Your data is encrypted and never shared. For urgent account issues contact us at support@glossio.app</span>
 </div>
+
+<style>
+  /* Red chip variant for destructive actions */
+  .settings-chip-danger {
+    background: rgba(255,51,102,0.1) !important;
+    color: #FF3366 !important;
+    border: 1px solid rgba(255,51,102,0.35) !important;
+  }
+  .settings-chip-danger:hover {
+    background: #FF3366 !important;
+    color: #fff !important;
+    border-color: #FF3366 !important;
+  }
+
+  /* Self-delete modal */
+  .self-delete-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 200;
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .self-delete-overlay.show { display: flex; }
+  .self-delete-modal {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 32px; max-width: 480px; width: 100%;
+    max-height: 90vh; overflow-y: auto;
+  }
+  .self-delete-icon {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: rgba(255,51,102,0.15); display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px;
+  }
+  .self-delete-modal h3 {
+    font-size: 22px; font-weight: 700; color: var(--text);
+    margin: 0 0 8px; text-align: center;
+  }
+  .self-delete-modal p { font-size: 14px; color: var(--text-muted); margin: 0 0 16px; text-align: center; line-height: 1.6; }
+  .self-delete-modal strong { color: var(--text); }
+  .self-delete-warning {
+    background: rgba(255,51,102,0.07); border: 1px solid rgba(255,51,102,0.18);
+    border-radius: 10px; padding: 14px 16px; margin-bottom: 20px;
+    text-align: left; font-size: 13px; color: var(--text-muted);
+  }
+  .self-delete-warning strong { color: #FF3366; display: block; margin-bottom: 6px; }
+  .self-delete-warning ul { margin: 0; padding-left: 18px; line-height: 1.7; }
+  .self-delete-prompt { text-align: left !important; font-size: 13px !important; margin-bottom: 8px !important; }
+  .self-delete-input {
+    width: 100%; padding: 12px 14px; background: var(--bg-input); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-size: 14px; margin-bottom: 18px;
+    font-family: inherit; box-sizing: border-box;
+  }
+  .self-delete-input:focus { outline: none; border-color: #FF3366; }
+  .self-delete-actions { display: flex; gap: 10px; }
+  .self-delete-btn {
+    flex: 1; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: opacity 0.15s; border: 1px solid var(--border);
+    min-height: 44px;
+  }
+  .self-delete-cancel { background: transparent; color: var(--text); }
+  .self-delete-cancel:hover { background: var(--bg-hover); }
+  .self-delete-confirm { background: #FF3366; color: #fff; border-color: #FF3366; }
+  .self-delete-confirm:hover:not(:disabled) { opacity: 0.9; }
+  .self-delete-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+  .self-delete-error {
+    background: rgba(255,51,102,0.1); border: 1px solid rgba(255,51,102,0.3);
+    color: #FF3366; border-radius: 8px; padding: 10px 12px;
+    font-size: 13px; margin-top: 14px; display: none; text-align: left;
+  }
+  .self-delete-error.show { display: block; }
+
+</style>
 
 </div><!-- /settings-hub -->
 

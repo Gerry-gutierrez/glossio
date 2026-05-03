@@ -83,6 +83,64 @@ pageTitle: "Admin Dashboard"
   .admin-empty { text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 14px; }
   .admin-loading { text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 14px; }
 
+  /* Delete button */
+  .delete-btn {
+    background: rgba(255,51,102,0.12); color: var(--danger);
+    border: 1px solid rgba(255,51,102,0.3); border-radius: 6px;
+    padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .delete-btn:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+  .delete-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Delete confirmation modal */
+  .delete-modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200;
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .delete-modal-overlay.show { display: flex; }
+  .delete-modal {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 32px; max-width: 460px; width: 100%;
+  }
+  .delete-modal-icon {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: rgba(255,51,102,0.15); display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px;
+  }
+  .delete-modal h3 { font-size: 20px; font-weight: 700; color: var(--text); margin: 0 0 8px; text-align: center; }
+  .delete-modal p { font-size: 14px; color: var(--text-muted); margin: 0 0 20px; text-align: center; line-height: 1.6; }
+  .delete-modal strong { color: var(--text); }
+  .delete-modal-warning {
+    background: rgba(255,51,102,0.08); border: 1px solid rgba(255,51,102,0.2);
+    border-radius: 8px; padding: 12px 14px; font-size: 13px; color: var(--text-muted);
+    margin-bottom: 20px; line-height: 1.5;
+  }
+  .delete-modal-input {
+    width: 100%; padding: 12px 14px; background: var(--bg-input); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-size: 14px; margin-bottom: 16px;
+    font-family: inherit;
+  }
+  .delete-modal-input:focus { outline: none; border-color: var(--danger); }
+  .delete-modal-actions { display: flex; gap: 10px; }
+  .delete-modal-btn {
+    flex: 1; padding: 11px; border-radius: 8px; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: opacity 0.15s; border: 1px solid var(--border);
+  }
+  .delete-modal-cancel { background: transparent; color: var(--text); }
+  .delete-modal-cancel:hover { background: var(--bg-hover); }
+  .delete-modal-confirm {
+    background: var(--danger); color: #fff; border-color: var(--danger);
+  }
+  .delete-modal-confirm:hover:not(:disabled) { opacity: 0.9; }
+  .delete-modal-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+  .delete-modal-error {
+    background: rgba(255,51,102,0.1); border: 1px solid rgba(255,51,102,0.3);
+    color: var(--danger); border-radius: 8px; padding: 10px 12px;
+    font-size: 13px; margin-top: 12px; display: none;
+  }
+  .delete-modal-error.show { display: block; }
+
   /* Sign out link */
   .admin-signout {
     font-size: 13px; color: var(--text-muted); cursor: pointer;
@@ -148,11 +206,40 @@ pageTitle: "Admin Dashboard"
   </div>
 </div>
 
+<!-- DELETE CONFIRMATION MODAL -->
+<div id="deleteModal" class="delete-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
+  <div class="delete-modal">
+    <div class="delete-modal-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF3366" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
+      </svg>
+    </div>
+    <h3 id="deleteModalTitle">Delete user?</h3>
+    <p>You are about to permanently delete <strong id="deleteUserName">this user</strong>. This action cannot be undone.</p>
+
+    <div class="delete-modal-warning">
+      <strong>This will also:</strong><br>
+      • Cancel any active Stripe subscription immediately<br>
+      • Delete all their services, clients, appointments, photos, and history
+    </div>
+
+    <p style="text-align:left;font-size:13px;margin-bottom:8px">Type <strong>DELETE</strong> to confirm:</p>
+    <input type="text" id="deleteConfirmInput" class="delete-modal-input" placeholder="DELETE" autocomplete="off">
+
+    <div class="delete-modal-actions">
+      <button class="delete-modal-btn delete-modal-cancel" onclick="closeDeleteModal()">Cancel</button>
+      <button class="delete-modal-btn delete-modal-confirm" id="deleteConfirmBtn" onclick="confirmDelete()" disabled>Delete Permanently</button>
+    </div>
+    <div class="delete-modal-error" id="deleteModalError"></div>
+  </div>
+</div>
+
 <script>
 (function () {
   var ADMIN_PASS_HASH = null; // We'll use a simple check via env
   var users = [];
   var currentFilter = 'all';
+  var pendingDeleteUser = null; // { id, label }
 
   /* ── Auth ── */
   function adminAuth() {
@@ -260,7 +347,7 @@ pageTitle: "Admin Dashboard"
     }
 
     var html = '<table class="admin-table"><thead><tr>' +
-      '<th>Business</th><th>Email</th><th>Phone</th><th>Status</th><th>Plan</th><th>Signed Up</th>' +
+      '<th>Business</th><th>Email</th><th>Phone</th><th>Status</th><th>Plan</th><th>Signed Up</th><th></th>' +
       '</tr></thead><tbody>';
 
     filtered.forEach(function(u) {
@@ -271,6 +358,7 @@ pageTitle: "Admin Dashboard"
         ? '<span style="color:var(--success)">● Active</span>'
         : '<span style="color:var(--text-muted)">● Paused</span>';
 
+      var safeLabel = (u.company_name || u.email || 'this user').replace(/'/g, "\\'");
       html += '<tr>' +
         '<td>' + (u.company_name || '—') + '</td>' +
         '<td style="color:var(--text-muted)">' + (u.email || '—') + '</td>' +
@@ -278,12 +366,88 @@ pageTitle: "Admin Dashboard"
         '<td>' + statusDot + '</td>' +
         '<td><span class="badge ' + badgeClass + '">' + (u.plan || 'Expired') + '</span></td>' +
         '<td style="color:var(--text-muted)">' + dateStr + '</td>' +
+        '<td style="text-align:right">' +
+          '<button class="delete-btn" onclick="openDeleteModal(\'' + u.id + '\', \'' + safeLabel + '\')">Delete</button>' +
+        '</td>' +
         '</tr>';
     });
 
     html += '</tbody></table>';
     document.getElementById('adminTableWrap').innerHTML = html;
   }
+
+  /* ── Delete user flow ── */
+  function openDeleteModal(userId, label) {
+    pendingDeleteUser = { id: userId, label: label };
+    document.getElementById('deleteUserName').textContent = label;
+    document.getElementById('deleteConfirmInput').value = '';
+    document.getElementById('deleteConfirmBtn').disabled = true;
+    document.getElementById('deleteConfirmBtn').textContent = 'Delete Permanently';
+    document.getElementById('deleteModalError').classList.remove('show');
+    document.getElementById('deleteModal').classList.add('show');
+    setTimeout(function() { document.getElementById('deleteConfirmInput').focus(); }, 50);
+  }
+  window.openDeleteModal = openDeleteModal;
+
+  function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.remove('show');
+    pendingDeleteUser = null;
+  }
+  window.closeDeleteModal = closeDeleteModal;
+
+  /* Enable confirm button only when input matches "DELETE" */
+  document.getElementById('deleteConfirmInput').addEventListener('input', function(e) {
+    var btn = document.getElementById('deleteConfirmBtn');
+    btn.disabled = e.target.value.trim() !== 'DELETE';
+  });
+
+  /* ESC closes modal */
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && document.getElementById('deleteModal').classList.contains('show')) {
+      closeDeleteModal();
+    }
+  });
+
+  /* Click outside modal closes it */
+  document.getElementById('deleteModal').addEventListener('click', function(e) {
+    if (e.target.id === 'deleteModal') closeDeleteModal();
+  });
+
+  function confirmDelete() {
+    if (!pendingDeleteUser) return;
+    var btn = document.getElementById('deleteConfirmBtn');
+    var errEl = document.getElementById('deleteModalError');
+    btn.disabled = true;
+    btn.textContent = 'Deleting...';
+    errEl.classList.remove('show');
+
+    var pass = sessionStorage.getItem('glossio_admin_pass') || '';
+
+    fetch('/.netlify/functions/admin-delete-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: pendingDeleteUser.id, pass: pass }),
+    })
+      .then(function(r) { return r.json().then(function(d) { return { status: r.status, data: d }; }); })
+      .then(function(res) {
+        if (res.status === 200 && res.data.ok) {
+          closeDeleteModal();
+          loadUsers(); // refresh table
+        } else {
+          errEl.textContent = res.data.error || 'Failed to delete user. Please try again.';
+          errEl.classList.add('show');
+          btn.disabled = false;
+          btn.textContent = 'Delete Permanently';
+        }
+      })
+      .catch(function(err) {
+        errEl.textContent = 'Network error. Please try again.';
+        errEl.classList.add('show');
+        btn.disabled = false;
+        btn.textContent = 'Delete Permanently';
+      });
+  }
+  window.confirmDelete = confirmDelete;
 
   /* Auto-login if session exists */
   if (sessionStorage.getItem('glossio_admin') === '1') {
