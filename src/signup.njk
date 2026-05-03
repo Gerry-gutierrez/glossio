@@ -19,6 +19,10 @@ extraJs: signup.js
         <div class="progress-dot progress-dot-pending" id="dot2">2</div>
         <span class="progress-step-label" style="color:#444">Create Login</span>
       </div>
+      <div class="progress-step">
+        <div class="progress-dot progress-dot-pending" id="dot3">3</div>
+        <span class="progress-step-label" style="color:#444">Verify Phone</span>
+      </div>
     </div>
     <div class="progress-track">
       <div class="progress-fill" id="progressFill" style="width:0%"></div>
@@ -51,6 +55,7 @@ extraJs: signup.js
 
       <label class="field-label">Cell Phone Number</label>
       <input type="tel" placeholder="(239) 555-0100" class="auth-input" id="cellPhone">
+      <p class="field-hint">Double-check your number — we'll text you a verification code</p>
 
       <label class="field-label">Email Address</label>
       <input type="email" placeholder="carlos@gmail.com" class="auth-input" id="signupEmail">
@@ -94,12 +99,44 @@ extraJs: signup.js
 
       <div class="btn-row">
         <button type="button" class="ghost-btn" onclick="goToStep(1)">&larr; Back</button>
-        <button type="button" class="auth-btn auth-btn-gradient" id="step2Btn" onclick="goToStep(3)">Create My Account →</button>
+        <button type="button" class="auth-btn auth-btn-gradient" id="step2Btn" onclick="goToStep(3)">Continue →</button>
       </div>
     </div>
 
-    <!-- STEP 3: Success -->
-    <div id="step3" style="display:none;text-align:center;padding:20px 0">
+    <!-- STEP 3: SMS Verification -->
+    <div id="step3" style="display:none">
+      <p class="auth-tag">Step 3 of 3</p>
+      <h2 class="auth-title">Verify your phone</h2>
+      <p class="auth-sub">We sent a 6-digit code to <strong id="verifyPhoneDisplay">your phone</strong></p>
+
+      <div class="otp-row" id="otpRow">
+        <input type="text" inputmode="numeric" maxlength="1" class="otp-input" data-otp="0" autocomplete="one-time-code">
+        <input type="text" inputmode="numeric" maxlength="1" class="otp-input" data-otp="1">
+        <input type="text" inputmode="numeric" maxlength="1" class="otp-input" data-otp="2">
+        <input type="text" inputmode="numeric" maxlength="1" class="otp-input" data-otp="3">
+        <input type="text" inputmode="numeric" maxlength="1" class="otp-input" data-otp="4">
+        <input type="text" inputmode="numeric" maxlength="1" class="otp-input" data-otp="5">
+      </div>
+
+      <div id="verifyStatus" class="verify-status"></div>
+
+      <button type="button" class="auth-btn auth-btn-gradient" id="verifyBtn" onclick="submitVerification()" disabled>Verify &amp; Create Account</button>
+
+      <div class="verify-help">
+        <p class="verify-help-title">Never received the code?</p>
+        <div class="verify-help-actions">
+          <button type="button" class="verify-link" id="resendBtn" onclick="resendCode()">Resend Code</button>
+          <span class="verify-divider">·</span>
+          <button type="button" class="verify-link" onclick="changePhoneNumber()">Change Number</button>
+        </div>
+        <p class="verify-help-support" id="verifySupportNote" style="display:none">
+          Still nothing? Email <a href="mailto:support@glossio.app" class="auth-link">support@glossio.app</a>
+        </p>
+      </div>
+    </div>
+
+    <!-- STEP 4: Success -->
+    <div id="step4" style="display:none;text-align:center;padding:20px 0">
       <div class="success-circle">&#10003;</div>
       <h2 class="auth-title" style="text-align:center" id="welcomeTitle">You're in!</h2>
       <p class="auth-sub" style="text-align:center">Your 14-day free trial has started. Head to your dashboard to set up your profile, add your services, and grab your booking link.</p>

@@ -179,6 +179,75 @@
 .btn-row { display: flex; gap: 10px; margin-top: 16px; }
 .btn-row .auth-btn-gradient { flex: 1; }
 
+/* ─── Field hint (small instruction under an input) ────────────────────── */
+.field-hint {
+  font-size: 12px; color: var(--text-faint, #888);
+  margin: 6px 0 16px; line-height: 1.5;
+}
+
+/* ─── SMS Verification (signup step 3) ─────────────────────────────────── */
+
+.otp-row {
+  display: flex; gap: 10px; justify-content: center;
+  margin: 28px 0 16px;
+}
+
+.otp-input {
+  width: 48px; height: 56px;
+  background: var(--bg-input, #f4f4f8);
+  border: 1px solid var(--border, #2a2a30);
+  border-radius: 10px;
+  color: var(--text, #fff);
+  font-size: 24px; font-weight: 700;
+  text-align: center; font-family: inherit;
+  transition: border-color 0.15s, transform 0.1s;
+}
+.otp-input:focus {
+  outline: none; border-color: var(--primary, #00C2FF);
+  transform: translateY(-1px);
+}
+.otp-input:not(:placeholder-shown) { border-color: var(--primary, #00C2FF); }
+
+.verify-status {
+  text-align: center; font-size: 13px; min-height: 18px;
+  margin-bottom: 14px;
+}
+.verify-status-info { color: var(--success, #00E5A0); }
+.verify-status-error { color: var(--danger, #FF3366); }
+
+.verify-help {
+  margin-top: 24px; padding-top: 20px;
+  border-top: 1px solid var(--border, #2a2a30);
+  text-align: center;
+}
+.verify-help-title {
+  font-size: 13px; color: var(--text-muted, #aaa);
+  margin: 0 0 10px;
+}
+.verify-help-actions {
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+}
+.verify-link {
+  background: none; border: none; cursor: pointer;
+  color: var(--primary, #00C2FF);
+  font-size: 14px; font-weight: 600;
+  padding: 8px 4px; min-height: 36px;
+  text-decoration: none;
+  transition: opacity 0.15s;
+  font-family: inherit;
+}
+.verify-link:hover { opacity: 0.8; text-decoration: underline; }
+.verify-divider { color: var(--text-faint, #555); }
+.verify-help-support {
+  font-size: 12px; color: var(--text-muted, #888);
+  margin: 14px 0 0;
+}
+
+@media (max-width: 480px) {
+  .otp-row { gap: 6px; }
+  .otp-input { width: 42px; height: 50px; font-size: 20px; }
+}
+
 /* Strength bar */
 .strength-bar {
   height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 20px;
