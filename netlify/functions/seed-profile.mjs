@@ -40,13 +40,47 @@ export const handler = async (event) => {
       updates.phone_verified_at = new Date().toISOString();
     }
 
-    await supabase
+    /* CRITICAL: check for errors. The Supabase JS client returns { data, error }
+     * on every call — if we ignore `error` we silently drop signup data.
+     * Bug fixed 2026-05-03 after Gerries Auto Spa account was created with
+     * NULL phone/company_name because migration 006 hadn't been run yet. */
+    const { error: updateErr } = await supabase
       .from("profiles")
       .update(updates)
       .eq("id", userId);
 
+    if (updateErr) {
+      console.error("seed-profile update error:", updateErr);
+      /* Try once more without phone_verified_at, in case that column is the
+       * problem — graceful degradation if a migration is pending. */
+      if (updates.phone_verified_at) {
+        delete updates.phone_verified_at;
+        const { error: retryErr } = await supabase
+          .from("profiles")
+          .update(updates)
+          .eq("id", userId);
+        if (retryErr) {
+          return {
+            statusCode: 500,
+            body: JSON.stringify({ error: "Failed to save profile data: " + retryErr.message, code: retryErr.code }),
+          };
+        }
+        /* Retry succeeded — log so we know to run the migration */
+        console.warn("seed-profile: phone_verified_at column missing. Run migration 006.");
+      } else {
+        return {
+          statusCode: 500,
+          body: JSON.stringify({ error: "Failed to save profile data: " + updateErr.message, code: updateErr.code }),
+        };
+      }
+    }
+
     /* Seed business hours, notification settings, availability settings */
-    await supabase.rpc("seed_profile_defaults", { profile_uuid: userId });
+    const { error: rpcErr } = await supabase.rpc("seed_profile_defaults", { profile_uuid: userId });
+    if (rpcErr) {
+      console.error("seed-profile RPC error:", rpcErr);
+      /* Non-fatal — profile is saved, defaults can be re-seeded later */
+    }
 
     return {
       statusCode: 200,
@@ -56,7 +90,7 @@ export const handler = async (event) => {
     console.error("seed-profile error:", err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Seeding failed" }),
+      body: JSON.stringify({ error: "Seeding failed: " + (err.message || "unknown") }),
     };
   }
 };

@@ -286,7 +286,14 @@ function createAccount() {
       phone: digits,
       phoneVerified: true
     });
-  }).then(function() {
+  }).then(function(seedResult) {
+    /* CRITICAL: check that seed-profile actually saved the data.
+     * Previously we ignored its response and assumed success — that masked a
+     * silent failure when migration 006 was pending and an unknown column
+     * crashed the UPDATE. Account was created but phone/company_name dropped. */
+    if (seedResult && seedResult.error) {
+      throw new Error("Couldn't save your profile info: " + seedResult.error + " — please contact support@glossio.app");
+    }
     /* Auto sign in after signup */
     return window.sbAuth.signIn(email, password);
   }).then(function(result) {
