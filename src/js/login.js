@@ -43,7 +43,8 @@
           if (data.email) {
             return doSignIn(data.email, password.value);
           } else {
-            throw new Error("No account found with that phone number.");
+            /* Server-provided message is friendlier ("...try your email instead") */
+            throw new Error(data.error || "Couldn't find that phone number. Try signing in with your email instead.");
           }
         })
         .catch(function(err) {
