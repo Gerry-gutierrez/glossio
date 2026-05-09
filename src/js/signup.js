@@ -279,9 +279,13 @@ function createAccount() {
     var user = result.data.user;
     if (!user) throw new Error("Signup failed");
 
-    /* Seed profile defaults — and stamp phone_verified_at since we just verified via Twilio */
+    /* Seed profile defaults — and stamp phone_verified_at since we just verified via Twilio.
+     * firstName/lastName also passed so they land in public.profiles, not just auth.users
+     * metadata. Bug fixed 2026-05-03 after noticing 6 of 7 profile rows had empty names. */
     return window.api.call("seed-profile", {
       userId: user.id,
+      firstName: firstName,
+      lastName: lastName,
       companyName: companyName || firstName + " " + lastName,
       phone: digits,
       phoneVerified: true

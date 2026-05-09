@@ -11,7 +11,7 @@ export const handler = async (event) => {
   try { body = JSON.parse(event.body || "{}"); } catch (_) {
     return { statusCode: 400, body: JSON.stringify({ error: "Invalid request body" }) };
   }
-  const { userId, companyName, phone, phoneVerified } = body;
+  const { userId, firstName, lastName, companyName, phone, phoneVerified } = body;
   if (!userId) {
     return { statusCode: 400, body: JSON.stringify({ error: "userId required" }) };
   }
@@ -33,6 +33,13 @@ export const handler = async (event) => {
       phone: phone || "",
       slug: slug,
     };
+
+    /* Save first/last name into public.profiles. Supabase Auth already stashed
+     * them in auth.users.user_metadata at signUp time, but they need to live
+     * in public.profiles too so app code can SELECT them with the rest of the row.
+     * Only set when provided to avoid wiping a name that was set elsewhere. */
+    if (firstName) updates.first_name = firstName;
+    if (lastName) updates.last_name = lastName;
 
     /* If the phone was verified via Twilio Verify during signup, stamp it.
      * Existing users (created before this column existed) keep NULL — no gating. */
